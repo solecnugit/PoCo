@@ -10,6 +10,7 @@
     "repl": "pnpm execpx truffle console",
     "clean": "rm -rf build types",
     "test": "pnpm exec truffle test",
+    "localchain": "pnpm exec ganache",
     "postinstall": "pnpm run compile"
   },
   "devDependencies": {
