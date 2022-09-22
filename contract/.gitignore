@@ -131,3 +131,9 @@ dist
 
 # Openzeppelin
 .openzeppelin
+
+# build
+build/
+
+#types
+types/
