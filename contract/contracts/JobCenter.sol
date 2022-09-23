@@ -9,7 +9,8 @@ contract JobCenter is OwnableUpgradeable {
 
     struct Job {
         address owner;
-        uint256 fee;
+        address messenger;
+        address submitter;
         bytes32 secret;
     }
 
@@ -18,8 +19,8 @@ contract JobCenter is OwnableUpgradeable {
 
     uint256 nextJobId;
 
-    event NewJob(uint256 indexed jobId, address owner, uint256 fee);
-    event ClaimJob(uint256 indexed jobId);
+    event NewJob(uint256 indexed jobId, address owner, address messenger);
+    event SubmitJob(uint256 indexed jobId, address claimer);
 
     function initialize() public initializer {
         __JobCenter_init_unchained();
@@ -35,30 +36,30 @@ contract JobCenter is OwnableUpgradeable {
         nextJobId = 1;
     }
 
-    function postJob(uint256 fee, bytes32 secret)
+    function postJob(address messager, bytes32 secret)
         public
         returns (uint256 jobId)
     {
-        require(fee > 0, "fee should greater than zero");
-
         jobId = nextJobId++;
 
-        jobs[jobId] = Job(msg.sender, fee, secret);
+        jobs[jobId] = Job(msg.sender, messager, address(0), secret);
         activeJobs.add(jobId);
 
-        emit NewJob(jobId, msg.sender, fee);
+        emit NewJob(jobId, msg.sender, messager);
     }
 
-    function claimJob(uint256 jobId, bytes memory key) public {
+    function submitJob(uint256 jobId, bytes memory key) public {
         require(activeJobs.contains(jobId), "job must be active");
+        require(jobs[jobId].submitter == address(0), "job must be avaliable");
         require(
             jobs[jobId].secret == keccak256(key),
             "key must match the sercret"
         );
 
         activeJobs.remove(jobId);
+        jobs[jobId].submitter = msg.sender;
 
-        emit ClaimJob(jobId);
+        emit SubmitJob(jobId, msg.sender);
     }
 
     function activeJobCount() public view returns (uint256) {

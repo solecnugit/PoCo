@@ -4,9 +4,14 @@ pragma solidity >=0.4.22 <0.9.0;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-contract UserRegistry is Initializable {
+contract ServiceRegistry is Initializable {
+    enum Role {
+        MESSENGER
+    }
+
     struct Record {
         string endpoint;
+        Role role;
     }
 
     mapping(address => Record) records;
@@ -14,9 +19,12 @@ contract UserRegistry is Initializable {
     using EnumerableSet for EnumerableSet.AddressSet;
     EnumerableSet.AddressSet users;
 
-    event UserJoin(address indexed user, Record record);
-    event UserLeave(address indexed user);
-    event UserRegistryUpdate(address indexed user, Record record);
+    event NewService(Role indexed role, address indexed user, string endpoint);
+    event ServiceUpdate(
+        Role indexed role,
+        address indexed user,
+        string endpoint
+    );
 
     function initialize() public initializer {
         __UserRegistry_init_unchained();
@@ -29,26 +37,17 @@ contract UserRegistry is Initializable {
     function __UserRegistry_init_unchained() internal onlyInitializing {}
 
     function setRecord(Record memory record) public {
-        if (!users.contains(msg.sender)) {
-            emit UserJoin(msg.sender, record);
-        }
-
         records[msg.sender] = record;
 
-        emit UserRegistryUpdate(msg.sender, record);
+        if (!users.contains(msg.sender)) {
+            emit NewService(record.role, msg.sender, record.endpoint);
+        } else {
+            emit ServiceUpdate(record.role, msg.sender, record.endpoint);
+        }
     }
 
     function getRecord(address user) public view returns (Record memory) {
         return records[user];
-    }
-
-    function removeRecord() public {
-        require(users.contains(msg.sender), "user must be valid");
-
-        users.remove(msg.sender);
-        delete records[msg.sender];
-
-        emit UserLeave(msg.sender);
     }
 
     // **Very Expensive, Just for development usage**
