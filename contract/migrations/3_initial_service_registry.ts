@@ -3,24 +3,24 @@ import {
   ContractClass,
   Deployer,
 } from "@openzeppelin/truffle-upgrades/dist/utils";
-import { UserRegistryInstance } from "../types/truffle-contracts";
+import { ServiceRegistryInstance } from "../types/truffle-contracts";
 import chalk from "chalk";
 
-const UserRegistry = artifacts.require("UserRegistry");
+const ServiceRegistry = artifacts.require("ServiceRegistry");
 
 module.exports = async function (deployer: Truffle.Deployer & Deployer) {
   const instance = (await deployProxy(
-    UserRegistry as unknown as ContractClass,
+    ServiceRegistry as unknown as ContractClass,
     [],
     {
       deployer,
       unsafeAllow: [],
     }
-  )) as UserRegistryInstance;
+  )) as ServiceRegistryInstance;
 
   console.log(
     "Contract",
-    chalk.bold.bgCyan("UserRegistry"),
+    chalk.bold.bgCyan("ServiceRegistry"),
     "deployed to",
     chalk.bgGreen(instance.address),
     "."

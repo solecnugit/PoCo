@@ -18,6 +18,7 @@ contract(ContractName, (accounts) => {
 
   let randomKey: string;
   let randomSecret: string;
+  let messager: string;
 
   before(async () => {
     instance = await JobCenter.deployed();
@@ -27,7 +28,9 @@ contract(ContractName, (accounts) => {
     randomKey = web3.utils.encodePacked(
       Math.round(Math.random() * 1000).toString()
     )!;
+
     randomSecret = web3.utils.keccak256(randomKey);
+    messager = owner;
   });
 
   it(`expect ${ContractName} to be deployed`, async () => {
@@ -47,7 +50,7 @@ contract(ContractName, (accounts) => {
   });
 
   it(`expect job to be posted`, async () => {
-    const { logs } = await instance.postJob(1, randomSecret);
+    const { logs } = await instance.postJob(messager, randomSecret);
 
     const { event } = logs[0];
     const args: { jobId: BN; owner: string } = logs[0].args as any;
@@ -58,7 +61,7 @@ contract(ContractName, (accounts) => {
   });
 
   it(`expect job can be listed correctly`, async () => {
-    await instance.postJob(1, randomSecret);
+    await instance.postJob(messager, randomSecret);
 
     const jobs = await instance.getJobs();
 
@@ -73,11 +76,11 @@ contract(ContractName, (accounts) => {
     expect(activeJobCount).to.be.a.bignumber.that.equals(new BN(2));
   });
 
-  it(`expect job to be claimed`, async () => {
-    const { logs } = await instance.claimJob(new BN(1), randomKey);
+  it(`expect job to be submitted`, async () => {
+    const { logs } = await instance.submitJob(new BN(1), randomKey);
 
     const { event } = logs[0];
-    expect(event).to.be.equal("ClaimJob");
+    expect(event).to.be.equal("SubmitJob");
 
     const args: { jobId: BN } = logs[0].args as any;
 

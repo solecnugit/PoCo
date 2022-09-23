@@ -1,4 +1,4 @@
-import { UserRegistryInstance } from "../types/truffle-contracts";
+import { ServiceRegistryInstance } from "../types/truffle-contracts";
 import web3 from "web3";
 import chai from "chai";
 import chainPromise from "chai-as-promised";
@@ -7,18 +7,18 @@ import chaiBN from "chai-bn";
 
 const { expect } = chai.use(chainPromise).use(chaiBN(BN));
 
-const UserRegistry = artifacts.require("UserRegistry");
-const ContractName = "UserRegistry";
+const ServiceRegistry = artifacts.require("ServiceRegistry");
+const ContractName = "ServiceRegistry";
 
 contract(ContractName, (accounts) => {
-  let instance: UserRegistryInstance;
+  let instance: ServiceRegistryInstance;
   let owner: string;
   let user1: string;
   let user2: string;
   let randomString: string;
 
   before(async () => {
-    instance = await UserRegistry.deployed();
+    instance = await ServiceRegistry.deployed();
 
     [owner, user1, user2] = accounts;
 
@@ -27,27 +27,18 @@ contract(ContractName, (accounts) => {
 
   it("expect user can set their registry", async () => {
     const { logs } = await instance.setRecord(
-      { endpoint: randomString },
+      { role: 0, endpoint: randomString },
       {
         from: owner,
       }
     );
 
-    {
-      const { event, args } = logs[0];
+    const { event, args } = logs[0];
 
-      expect(event).to.be.equal("UserJoin");
-      expect(args[0]).to.be.equal(owner);
-      expect((args as any)[1][0] as string).to.be.equal(randomString);
-    }
-
-    {
-      const { event, args } = logs[1];
-
-      expect(event).to.be.equal("UserRegistryUpdate");
-      expect(args[0]).to.be.equal(owner);
-      expect((args as any)[1][0] as string).to.be.equal(randomString);
-    }
+    expect(event).to.be.equal("NewService");
+    expect((args as any)[0]).to.be.a.bignumber.that.equals(new BN(0));
+    expect((args as any)[1]).to.be.equal(owner);
+    expect((args as any)[2]).to.be.equal(randomString);
   });
 
   it("expect user can get other's registry", async () => {
@@ -56,5 +47,23 @@ contract(ContractName, (accounts) => {
     });
 
     expect(endpoint).to.be.equal(randomString);
+  });
+
+  it("expect user can update their registry", async () => {
+    const randomString = Math.random().toString();
+
+    const { logs } = await instance.setRecord(
+      { role: 0, endpoint: randomString },
+      {
+        from: owner,
+      }
+    );
+
+    const { event, args } = logs[0];
+
+    expect(event).to.be.equal("NewService");
+    expect((args as any)[0]).to.be.a.bignumber.that.equals(new BN(0));
+    expect((args as any)[1]).to.be.equal(owner);
+    expect((args as any)[2]).to.be.equal(randomString);
   });
 });
