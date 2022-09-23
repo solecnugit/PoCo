@@ -51,7 +51,7 @@ contract UserRegistry is Initializable {
         emit UserLeave(msg.sender);
     }
 
-    // **Very Expensive**
+    // **Very Expensive, Just for development usage**
     function getUsers() public view returns (address[] memory) {
         return users.values();
     }
