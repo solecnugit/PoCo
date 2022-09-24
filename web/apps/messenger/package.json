@@ -7,7 +7,7 @@
   "types": "./dist/bundle.d.ts",
   "type": "module",
   "scripts": {
-    "dev": "pnpm exec ts-node-esm ./src/index.ts",
+    "serve": "pnpm exec ts-node-esm ./src/index.ts",
     "build": "rollup --config rollup.config.ts"
   },
   "keywords": [],

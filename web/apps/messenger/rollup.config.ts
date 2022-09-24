@@ -12,7 +12,8 @@ export default defineConfig({
         {
             file: "dist/bundle.cjs",
             format: "umd",
-            sourcemap: true
+            sourcemap: true,
+            name: "messenger"
         },
         {
             file: "dist/bundle.mjs",
@@ -27,7 +28,7 @@ export default defineConfig({
         }),
         resolve(),
         commonjs(),
-        typescript({ compilerOptions: { lib: ["esnext"] }, declaration: true, declarationDir: "dist" }),
+        typescript(),
         strip(),
     ],
     watch: {

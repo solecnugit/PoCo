@@ -5,6 +5,7 @@ import commonjs from "@rollup/plugin-commonjs"
 import json from "@rollup/plugin-json"
 import externals from "rollup-plugin-node-externals";
 import strip from "@rollup/plugin-strip";
+import replace from "@rollup/plugin-replace"
 
 export default defineConfig({
     input: "./src/index.ts",
@@ -12,12 +13,21 @@ export default defineConfig({
         {
             file: "dist/bundle.cjs",
             format: "umd",
-            sourcemap: true
+            sourcemap: true,
+            name: 'pocoNet',
+            globals: {
+                "socket.io-client": "socket_ioClient",
+                "lodash": "_"
+            }
         },
         {
             file: "dist/bundle.mjs",
             format: "esm",
-            sourcemap: true
+            sourcemap: true,
+            globals: {
+                "socket.io-client": "socket_ioClient",
+                "lodash": "_"
+            }
         },
     ],
     plugins: [
@@ -25,9 +35,13 @@ export default defineConfig({
         externals({
             devDeps: false,
         }),
+        replace({
+            preventAssignment: true,
+            __PROTOCOL_VERSION__: JSON.stringify("poco-0.1")
+        }),
         resolve(),
         commonjs(),
-        typescript({ compilerOptions: { lib: ["esnext"] }, declaration: true, declarationDir: "dist" }),
+        typescript(),
         strip(),
     ],
     watch: {
