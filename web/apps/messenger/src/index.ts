@@ -71,7 +71,7 @@ io.on("connection", (socket) => {
             return;
         }
 
-        console.log("event", chalk.green(fromAddress), "->", chalk.yellow(toAddress), ": ", payload)
+        console.log("event", chalk.cyan(event), ": ", chalk.green(fromAddress), "->", chalk.yellow(toAddress), ": ", payload)
 
         const toSocket = userMap.get(toAddress)!;
 
@@ -90,7 +90,7 @@ io.on("connection", (socket) => {
         const requestId = `${toAddress}-${fromAddress}`;
 
         if (pendingPeerConnections.has(requestId)) {
-            console.log("User", chalk.green(fromAddress), "connect to", chalk.green(toAddress), "successfully.")
+            console.log("User", chalk.green(fromAddress), "connected to", chalk.green(toAddress), "successfully.")
 
             pendingPeerConnections.delete(requestId);
 
@@ -108,6 +108,20 @@ io.on("connection", (socket) => {
 
             toSocket.emit("peer connection setup", { fromAddress, toAddress });
         }
+    })
+
+    socket.on("peer connection destroy", ({ fromAddress, toAddress }: { fromAddress: string, toAddress: string }) => {
+        if (fromAddress != address) {
+            return;
+        }
+
+        if (!userMap.has(fromAddress) || !userMap.has(toAddress)) {
+            return;
+        }
+
+        const toSocket = userMap.get(toAddress)!;
+
+        toSocket.emit("peer connection destroy")
     })
 })
 

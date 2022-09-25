@@ -2,20 +2,12 @@ import _ from "lodash";
 import { PocoConnectionType, Address, PocoConnectionStatus } from "./types";
 
 export abstract class PocoConnection {
-    protected connectionType: PocoConnectionType;
-    protected localAddress: Address;
+    public connectionType: PocoConnectionType;
+    public localAddress: Address;
 
     constructor(connectionType: PocoConnectionType, localAddress: Address) {
         this.connectionType = connectionType;
         this.localAddress = localAddress;
-    }
-
-    getLocalAddress(): Address {
-        return this.localAddress;
-    }
-
-    getConnectionType(): PocoConnectionType {
-        return this.connectionType;
     }
 
     abstract connect(): Promise<void>
@@ -29,19 +21,12 @@ export abstract class PocoConnection {
 }
 
 
-export type PocoPeerConnectionRequestResponse = {
-    ok: boolean;
-    reason: string;
-}
-
 export abstract class PocoPeerConnection extends PocoConnection {
-    protected remoteAddress: Address;
-    protected options: { timeout: number };
+    public remoteAddress: Address;
 
-    constructor(connectionType: PocoConnectionType, localAddress: Address, remoteAddress: Address, opts?: Partial<{ timeout: number }>) {
+    constructor(connectionType: PocoConnectionType, localAddress: Address, remoteAddress: Address) {
         super(connectionType, localAddress);
 
         this.remoteAddress = remoteAddress;
-        this.options = _.defaults(opts, { timeout: 5000 })
     }
 }

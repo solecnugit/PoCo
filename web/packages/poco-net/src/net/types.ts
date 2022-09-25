@@ -1,29 +1,61 @@
 import { ManagerOptions, SocketOptions } from "socket.io-client";
-import { PocoConnection } from "./connection";
+import { PocoConnection, PocoPeerConnection } from "./connection";
 
 export type PocoConnectionType = "websocket" | "webrtc" | "socketIO"
 
 export class UnknownPocoConnectionTypeError extends Error {
     public type: string;
 
-    constructor(_type: string) {
-        super(`unknown connection type ${_type}`);
-        this.type = _type;
+    constructor(type: string) {
+        super(`unknown connection type ${type}`);
+        this.type = type;
+    }
+}
+
+export class PocoConnectionClosedError extends Error {
+    public connection: PocoConnection;
+
+    constructor(connection: PocoConnection) {
+        super(`connection is closed`)
+
+        this.connection = connection;
+    }
+}
+
+
+export class PocoConnectionTimeoutError extends Error {
+    public connection: PocoConnection;
+
+    constructor(connection: PocoConnection) {
+        super(`connection timeout`)
+
+        this.connection = connection;
     }
 }
 
 export type Address = string;
 export type PocoConnectionStatus = "connected" | "disconnected" | "pending" | "connecting";
 
-export type PocoConnectionOptions = ({
-    type: "socketIO"
-    uri?: string,
-    localAddress: Address;
-} & (Partial<ManagerOptions & SocketOptions> | undefined))
+export type PocoSocketIOConnectionOptions = {
+    type: "socketIO";
+    uri: string;
+} & Partial<ManagerOptions> & Partial<SocketOptions>;
 
-export type PocoPeerConnectionOptions = ({
+export type PocoConnectionOptions = { localAddress: Address; } & PocoSocketIOConnectionOptions;
+
+export type PocoPeerSocketIOConnectionOptions = {
     type: "socketIO",
     connection: PocoConnection,
-    remoteAddress: Address,
     timeout: number;
-})
+}
+
+export type PocoPeerWebRTCConnectionOptions = {
+    type: "webrtc";
+    connection: PocoPeerConnection;
+    offer?: RTCSessionDescriptionInit;
+    rtcConfiguration?: RTCConfiguration
+    rtcOfferOptions?: RTCOfferOptions
+    rtcAnswerOptions?: RTCAnswerOptions
+};
+
+export type PocoPeerConnectionOptions = { remoteAddress: Address } & (PocoPeerSocketIOConnectionOptions | PocoPeerWebRTCConnectionOptions)

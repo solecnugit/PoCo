@@ -13,36 +13,42 @@ export default defineConfig({
         {
             file: "dist/bundle.cjs",
             format: "umd",
-            sourcemap: true,
+            sourcemap: "inline",
             name: 'pocoNet',
             globals: {
                 "socket.io-client": "socket_ioClient",
                 "lodash": "_"
-            }
+            },
+            compact: false
         },
         {
             file: "dist/bundle.mjs",
             format: "esm",
-            sourcemap: true,
+            sourcemap: "inline",
             globals: {
                 "socket.io-client": "socket_ioClient",
                 "lodash": "_"
-            }
+            },
+            compact: false
         },
     ],
     plugins: [
-        json(),
-        externals({
-            devDeps: false,
-        }),
         replace({
             preventAssignment: true,
             __PROTOCOL_VERSION__: JSON.stringify("poco-0.1")
         }),
+        json(),
         resolve(),
-        commonjs(),
-        typescript(),
-        strip(),
+        typescript({
+            sourceMap: true,
+        }),
+        commonjs({
+            sourceMap: true
+        }),
+        externals({
+            devDeps: false,
+        }),
+        process.env.development ? strip() : undefined,
     ],
     watch: {
         exclude: "node_modules/**",

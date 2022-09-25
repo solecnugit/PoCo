@@ -7,14 +7,15 @@ let remoteAddress = $ref("")
 let history = $ref("");
 let message = $ref("");
 
-let socket: poco.net.connection.PocoConnection;
-let peer: poco.net.connection.PocoPeerConnection;
+let socket: poco.net.PocoConnection;
+let peer: poco.net.PocoPeerConnection;
+let rtc: poco.net.PocoPeerConnection;
 
 const createConnection = async () => {
     socket = await poco.net.createPocoConnection({
         type: "socketIO",
         uri: "http://localhost:8080",
-        localAddress: localAddress,
+        localAddress,
     });
 
     socket.onEvent("peer connection setup", async ({ fromAddress, toAddress }: { fromAddress: string, toAddress: string }) => {
@@ -29,7 +30,8 @@ const createConnection = async () => {
         peer = await poco.net.createPocoPeerConnection({
             type: "socketIO",
             remoteAddress,
-            connection: socket
+            connection: socket,
+            timeout: 5000
         })
 
         peer.onMessage(async (payload: any) => {
@@ -50,11 +52,18 @@ const createPeerConnection = async () => {
     peer = await poco.net.createPocoPeerConnection({
         type: "socketIO",
         remoteAddress,
-        connection: socket
+        connection: socket,
+        timeout: 5000
     })
 
     peer.onMessage(async (payload: any) => {
         history += `${payload}\n`
+    })
+
+    peer.onEvent("webrtc offer", async (offer: RTCSessionDescriptionInit) => {
+        rtc = new poco.net.PocoPeerWebRTCConnection(peer.remoteAddress, peer.localAddress, peer, {
+            offer: offer
+        });
     })
 
     await peer.connect();
@@ -68,6 +77,16 @@ const sendMessage = async () => {
     if (messageToSend.length === 0) return;
 
     peer.send(messageToSend);
+}
+
+const createWebRTCPeerConnection = async () => {
+    rtc = await poco.net.createPocoPeerConnection({
+        type: "webrtc",
+        remoteAddress,
+        connection: peer
+    })
+
+    await rtc.connect();
 }
 
 </script>
@@ -84,6 +103,11 @@ const sendMessage = async () => {
             <div>Remote Address: </div>
             <input type="text" v-model="remoteAddress" class="border mx-2" />
             <button @click="createPeerConnection"
+                class="bg-purple-500 rounded-md px-4 text-white py-2 text-sm hover:bg-purple-300">connect</button>
+        </div>
+        <div class="flex h-12 items-center">
+            <div class="pr-2">WebRTC Connection: </div>
+            <button @click="createWebRTCPeerConnection"
                 class="bg-purple-500 rounded-md px-4 text-white py-2 text-sm hover:bg-purple-300">connect</button>
         </div>
         <div class="flex h-12 items-center">

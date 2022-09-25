@@ -15,5 +15,9 @@
   "license": "MIT",
   "dependencies": {
     "socket.io-client": "^4.5.2"
+  },
+  "devDependencies": {
+    "@types/node": "^18.7.18",
+    "@types/webrtc": "^0.0.32"
   }
 }

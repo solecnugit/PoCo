@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { Socket, ManagerOptions, SocketOptions, io } from "socket.io-client";
 import { PocoConnection, PocoPeerConnection } from "./connection";
-import { Address, PocoConnectionStatus } from "./types";
+import { Address, PocoConnectionStatus, PocoConnectionTimeoutError, PocoPeerConnectionOptions, PocoPeerSocketIOConnectionOptions, PocoSocketIOConnectionOptions } from "./types";
 
 export class PocoSocketIOConnection extends PocoConnection {
     private socket: Socket;
@@ -62,17 +62,58 @@ export class PocoSocketIOConnection extends PocoConnection {
 export class PocoPeerSocketIOConnection extends PocoPeerConnection {
     private connection: PocoConnection;
     private connectionStatus: PocoConnectionStatus;
+    private options: PocoPeerSocketIOConnectionOptions | undefined;
+    private messageCallback: (payload: any) => Promise<void>;
+    private listeners: Map<string, {
+        callback: (payload: any) => Promise<void>,
+        once: boolean
+    }>;
 
-    constructor(localAddress: Address, remoteAddress: Address, connection: PocoConnection) {
+    constructor(localAddress: Address, remoteAddress: Address, connection: PocoConnection, opts?: PocoPeerSocketIOConnectionOptions) {
         super("socketIO", localAddress, remoteAddress);
 
         this.connection = connection;
         this.connectionStatus = "pending";
+        this.options = opts;
+        this.listeners = new Map();
+        this.messageCallback = async () => { };
+
+        this.connection.onEvent("peer message", async ({ payload, fromAddress, toAddress }: { payload: any, fromAddress: Address, toAddress: Address }) => {
+            if (fromAddress !== this.remoteAddress || toAddress != this.localAddress) {
+                return;
+            }
+
+            this.messageCallback(payload);
+        })
+
+        this.connection.onEvent("peer event", async ({ event, payload, fromAddress, toAddress }: { event: string, payload: any, fromAddress: Address, toAddress: Address }) => {
+            console.log(event, payload, fromAddress, toAddress)
+
+            if (fromAddress !== this.remoteAddress || toAddress != this.localAddress) {
+                return;
+            }
+
+            if (!this.listeners.has(event)) {
+                return;
+            }
+
+            const { once, callback } = this.listeners.get(event)!;
+
+            await callback(payload)
+
+            if (once) {
+                this.listeners.delete(event);
+            }
+        })
+
+        this.connection.onEvent("peer connection destroy", async () => {
+            this.connectionStatus = "disconnected";
+        })
     }
 
     async connect(): Promise<void> {
         if (this.connectionStatus === "connecting") {
-            throw new Error("connecting...")
+            return;
         }
 
         if (this.connection.status() !== "connected") {
@@ -82,7 +123,7 @@ export class PocoPeerSocketIOConnection extends PocoPeerConnection {
         const status = await Promise.race([
             new Promise<string>(resolve => setTimeout(() => {
                 resolve("peer connection timeout")
-            }, this.options.timeout)),
+            }, this.options?.timeout || 5000)),
             new Promise<string>(resolve => {
                 this.connection.onEvent("peer connection established", async () => {
                     resolve("connected")
@@ -98,7 +139,7 @@ export class PocoPeerSocketIOConnection extends PocoPeerConnection {
         } else {
             this.connectionStatus = "disconnected";
 
-            throw new Error("Connection timeout")
+            throw new PocoConnectionTimeoutError(this);
         }
     }
 
@@ -107,7 +148,7 @@ export class PocoPeerSocketIOConnection extends PocoPeerConnection {
             return;
         }
 
-        this.connection.emit("destroy peer connection", { fromAddress: this.localAddress, toAddress: this.remoteAddress })
+        this.connection.emit("peer connection destroy", { fromAddress: this.localAddress, toAddress: this.remoteAddress })
         this.connectionStatus = "disconnected";
     }
 
@@ -124,22 +165,13 @@ export class PocoPeerSocketIOConnection extends PocoPeerConnection {
     }
 
     onMessage<T>(callback: (payload: T) => Promise<void>): void {
-        this.connection.onEvent("peer message", async ({ payload, fromAddress, toAddress }: { payload: T, fromAddress: Address, toAddress: Address }) => {
-            if (fromAddress !== this.remoteAddress || toAddress != this.localAddress) {
-                return;
-            }
-
-            await callback(payload)
-        })
+        this.messageCallback = callback;
     }
 
     onEvent<T>(event: string, callback: (payload: T) => Promise<void>, once?: boolean | undefined): void {
-        this.connection.onEvent("peer event", async ({ event: payloadEvent, payload, fromAddress, toAddress }: { event: string, payload: T, fromAddress: Address, toAddress: Address }) => {
-            if (event != payloadEvent || fromAddress !== this.remoteAddress || toAddress != this.localAddress) {
-                return;
-            }
-
-            await callback(payload)
-        }, once)
+        this.listeners.set(event, {
+            callback,
+            once: once || false
+        })
     }
 }
