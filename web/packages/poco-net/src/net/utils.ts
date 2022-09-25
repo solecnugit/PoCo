@@ -1,16 +1,6 @@
-import { ManagerOptions, SocketOptions } from "socket.io-client";
-import { Address, PocoConnection, PocoPeerConnection, PocoPeerSocketIOConnection, PocoSocketIOConnection, UnknownPocoConnectionTypeError } from "./connection";
-
-export type PocoConnectionOptions = ({
-    type: "socketIO"
-    uri?: string
-} & (Partial<ManagerOptions & SocketOptions> | undefined)) & { localAddress: Address }
-
-export type PocoPeerConnectionOptions = ({
-    type: "socketIO",
-    connection: PocoConnection,
-    remoteAddress: Address
-})
+import { PocoConnection, PocoPeerConnection } from "./connection";
+import { PocoSocketIOConnection, PocoPeerSocketIOConnection } from "./socketIO";
+import { PocoConnectionOptions, PocoPeerConnectionOptions, UnknownPocoConnectionTypeError } from "./types";
 
 export async function createPocoConnection(opts: PocoConnectionOptions): Promise<PocoConnection> {
     if (opts.type === "socketIO") {

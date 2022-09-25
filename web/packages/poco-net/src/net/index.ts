@@ -1,4 +1,4 @@
-import * as connection from "./connection"
-import { createPocoConnection, createPocoPeerConnection } from "./utils"
-
-export { connection, createPocoConnection, createPocoPeerConnection }
+export * from "./connection"
+export * from "./socketIO";
+export * from "./utils"
+export * from "./types"
