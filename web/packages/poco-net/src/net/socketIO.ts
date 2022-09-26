@@ -9,7 +9,7 @@ export class PocoSocketIOConnection extends PocoConnection {
     constructor(localAddress: Address, opts?: Partial<ManagerOptions & SocketOptions & { uri?: string }> | undefined) {
         super("socketIO", localAddress)
 
-        const defaultOpts = { autoConnect: false, transports: ["websocket"], protocols: [__PROTOCOL_VERSION__], auth: { address: localAddress } };
+        const defaultOpts = { autoConnect: false, transports: ["websocket"], protocols: ["poco-alpha"], auth: { address: localAddress } };
 
         if (opts === undefined) {
             this.socket = io(defaultOpts);

@@ -6,47 +6,48 @@ import json from "@rollup/plugin-json"
 import externals from "rollup-plugin-node-externals";
 import strip from "@rollup/plugin-strip";
 import replace from "@rollup/plugin-replace"
+import sourcemaps from 'rollup-plugin-sourcemaps';
+import * as pkg from "./package.json"
 
 export default defineConfig({
     input: "./src/index.ts",
     output: [
         {
-            file: "dist/bundle.cjs",
+            file: pkg.main,
             format: "umd",
-            sourcemap: "inline",
-            name: 'pocoNet',
+            sourcemap: true,
+            name: pkg.name,
             globals: {
                 "socket.io-client": "socket_ioClient",
                 "lodash": "_"
-            },
-            compact: false
+            }
         },
         {
-            file: "dist/bundle.mjs",
+            file: pkg.module,
             format: "esm",
-            sourcemap: "inline",
+            sourcemap: true,
             globals: {
                 "socket.io-client": "socket_ioClient",
                 "lodash": "_"
-            },
-            compact: false
+            }
         },
     ],
     plugins: [
-        replace({
-            preventAssignment: true,
-            __PROTOCOL_VERSION__: JSON.stringify("poco-0.1")
-        }),
         json(),
         resolve(),
-        typescript({
-            sourceMap: true,
-        }),
         commonjs({
             sourceMap: true
         }),
+        typescript({
+            sourceMap: true,
+        }),
+        sourcemaps(),
         externals({
             devDeps: false,
+        }),
+        replace({
+            preventAssignment: true,
+            __PROTOCOL_VERSION__: JSON.stringify("poco-0.1")
         }),
         process.env.development ? strip() : undefined,
     ],
