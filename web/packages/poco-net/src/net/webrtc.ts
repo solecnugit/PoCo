@@ -1,8 +1,9 @@
 import { PocoConnection, PocoPeerConnection } from "./connection";
 import { Address, PocoConnectionClosedError, PocoConnectionStatus, PocoPeerWebRTCConnectionOptions } from "./types";
 import _ from "lodash";
+import { PocoMediaConnection } from "./media";
 
-export class PocoPeerWebRTCConnection extends PocoPeerConnection {
+export class PocoPeerWebRTCConnection extends PocoPeerConnection implements PocoMediaConnection {
     protected rtcConnection: RTCPeerConnection;
     protected peerConnection: PocoConnection;
 
@@ -22,37 +23,40 @@ export class PocoPeerWebRTCConnection extends PocoPeerConnection {
         });
 
         this.rtcConnection = new RTCPeerConnection(this.options.rtcConfiguration);
-        this.rtcConnection.onicecandidate = (event) => {
-            if (event.candidate) {
-                this.peerConnection.emit("webrtc ice candidate", {
-                    type: "new-ice-candidate",
-                    candidate: event.candidate
-                })
+        this.rtcConnection.addEventListener("icecandidate", (event) => {
+            if (event.candidate && this.rtcConnection.remoteDescription) {
+                this.peerConnection.emit("webrtc candidate", event.candidate)
             }
-        }
+        })
 
-        this.rtcConnection.oniceconnectionstatechange = (event) => {
+        this.rtcConnection.addEventListener("iceconnectionstatechange", (event) => {
+            this.setStatus(this.rtcConnection.connectionState)
+
             switch (this.rtcConnection.iceConnectionState) {
                 case "closed":
                 case "failed":
                 case "disconnected":
                     this.cleanup();
             }
-        }
+        });
 
-        this.rtcConnection.onsignalingstatechange = (event) => {
+        this.rtcConnection.addEventListener("signalingstatechange", (event) => {
             switch (this.rtcConnection.signalingState) {
                 case "closed":
                     this.cleanup();
             }
-        }
+        })
 
-        this.rtcConnection.onicegatheringstatechange = (event) => {
+        this.rtcConnection.addEventListener("icegatheringstatechange", () => {
 
-        }
+        })
+
+        this.rtcConnection.addEventListener("connectionstatechange", (event) => {
+            this.setStatus(this.rtcConnection.connectionState)
+        })
 
         this.peerConnection = peerConnection;
-        this.peerConnection.onEvent("webrtc offer", this.onOffer.bind(this));
+
 
         this.peerConnection.onEvent("webrtc answer", async (answer: RTCSessionDescriptionInit) => {
             const description = new RTCSessionDescription(answer);
@@ -60,8 +64,8 @@ export class PocoPeerWebRTCConnection extends PocoPeerConnection {
             await this.rtcConnection.setRemoteDescription(description);
         })
 
-        this.peerConnection.onEvent("webrtc ice candidate", async (event: { candidate: RTCIceCandidateInit, type: string }) => {
-            const candidate = new RTCIceCandidate(event.candidate);
+        this.peerConnection.onEvent("webrtc candidate", async (candidateOpts: RTCIceCandidateInit) => {
+            const candidate = new RTCIceCandidate(candidateOpts);
 
             await this.rtcConnection.addIceCandidate(candidate)
         })
@@ -69,14 +73,10 @@ export class PocoPeerWebRTCConnection extends PocoPeerConnection {
         this.peerConnection.onEvent("webrtc close", async () => {
             this.cleanup();
         })
-
-        if (this.options.offer) {
-            this.onOffer(this.options.offer)
-        }
     }
 
     async connect(): Promise<void> {
-        if (this.peerConnection.status() === "pending") {
+        if (this.peerConnection.status() === "new") {
             await this.peerConnection.connect();
         }
 
@@ -84,13 +84,14 @@ export class PocoPeerWebRTCConnection extends PocoPeerConnection {
             throw new PocoConnectionClosedError(this.peerConnection);
         }
 
-        const offer = await this.rtcConnection.createOffer(this.options?.rtcOfferOptions);
+        if (this.options.offer) {
+            this.onOffer(this.options.offer)
+        } else {
+            const offer = await this.rtcConnection.createOffer(this.options?.rtcOfferOptions);
 
-        await this.rtcConnection.setLocalDescription(offer);
-        await this.peerConnection.emit("webrtc offer", {
-            type: "video-offer",
-            sdp: this.rtcConnection.localDescription
-        });
+            await this.rtcConnection.setLocalDescription(offer);
+            await this.peerConnection.emit("webrtc offer", this.rtcConnection.localDescription);
+        }
     }
 
     cleanup() {
@@ -110,7 +111,7 @@ export class PocoPeerWebRTCConnection extends PocoPeerConnection {
         this.cleanup();
     }
 
-    async onOffer(offer: RTCSessionDescriptionInit) {
+    private async onOffer(offer: RTCSessionDescriptionInit) {
         const description = new RTCSessionDescription(offer);
 
         await this.rtcConnection.setRemoteDescription(description);
@@ -119,14 +120,21 @@ export class PocoPeerWebRTCConnection extends PocoPeerConnection {
 
         await this.rtcConnection.setLocalDescription(answer);
 
-        await this.peerConnection.emit("webrtc answer", {
-            type: "video-answer",
-            sdp: this.rtcConnection.localDescription
-        });
+        await this.peerConnection.emit("webrtc answer", this.rtcConnection.localDescription);
+    }
+
+    async addTrack(track: MediaStreamTrack, ...streams: MediaStream[]) {
+        this.rtcConnection.addTrack(track, ...streams);
+    }
+
+    onTrack(callback: (stream: readonly MediaStream[]) => Promise<void>): void {
+        this.rtcConnection.ontrack = (e) => {
+            callback(e.streams)
+        };
     }
 
     status(): PocoConnectionStatus {
-        throw new Error("Method not implemented.");
+        return this.rtcConnection.connectionState;
     }
 
     send<T>(payload: T): Promise<void> {

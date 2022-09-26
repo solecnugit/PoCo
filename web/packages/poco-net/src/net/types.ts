@@ -34,7 +34,7 @@ export class PocoConnectionTimeoutError extends Error {
 }
 
 export type Address = string;
-export type PocoConnectionStatus = "connected" | "disconnected" | "pending" | "connecting";
+export type PocoConnectionStatus = "closed" | "connected" | "connecting" | "disconnected" | "failed" | "new";
 
 export type PocoSocketIOConnectionOptions = {
     type: "socketIO";
