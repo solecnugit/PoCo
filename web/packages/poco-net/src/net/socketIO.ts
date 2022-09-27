@@ -102,8 +102,6 @@ export class PocoPeerSocketIOConnection extends PocoPeerConnection {
         })
 
         this.connection.onEvent("peer event", async ({ event, payload, fromAddress, toAddress }: { event: string, payload: any, fromAddress: Address, toAddress: Address }) => {
-            debugger
-
             if (fromAddress !== this.remoteAddress || toAddress != this.localAddress) {
                 return;
             }

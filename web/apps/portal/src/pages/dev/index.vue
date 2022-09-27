@@ -17,6 +17,49 @@ let socket: poco.net.PocoConnection;
 let peer: poco.net.PocoPeerConnection;
 let rtc: poco.net.PocoPeerWebRTCConnection;
 
+const setupPeerConnection = async () => {
+    peer.onMessage(async (payload: any) => {
+        history += `${payload}\n`
+    })
+
+    peer.onEvent("webrtc offer", async (offer: RTCSessionDescriptionInit) => {
+        rtc = new poco.net.PocoPeerWebRTCConnection(peer.remoteAddress, peer.localAddress, peer, {
+            offer: offer
+        });
+
+        rtc.onStatusChange(async (status) => {
+            history += `rtc status: ${status}\n`
+        })
+
+        rtc.onTrack(async (streams) => {
+            remoteVideo.srcObject = streams[0]
+        })
+
+        // rtc.addTransceiver("video", {
+        //     direction: "recvonly"
+        // })
+
+        // rtc.addTransceiver("audio", {
+        //     direction: "recvonly"
+        // })
+
+        // localStream = await navigator.mediaDevices.getDisplayMedia();
+
+        // localStream.getTracks().forEach(track => {
+        //     rtc.addTrack(track, localStream)
+        // })
+
+        // localStream.getTracks().forEach(track => {
+        //     // rtc.addTrack(track, localStream)
+        //     rtc.addTransceiver(track, {
+        //         streams: localStream
+        //     })
+        // })
+
+        await rtc.connect();
+    })
+}
+
 const createConnection = async () => {
     socket = await poco.net.createPocoConnection({
         type: "socketIO",
@@ -40,37 +83,7 @@ const createConnection = async () => {
             timeout: 5000
         })
 
-        peer.onMessage(async (payload: any) => {
-            history += `${payload}\n`
-        })
-
-        peer.onEvent("webrtc offer", async (offer: RTCSessionDescriptionInit) => {
-            rtc = new poco.net.PocoPeerWebRTCConnection(peer.remoteAddress, peer.localAddress, peer, {
-                offer: offer
-            });
-
-            rtc.onStatusChange(async (status) => {
-                history += `rtc status: ${status}\n`
-            })
-
-            rtc.onTrack(async (streams) => {
-                remoteVideo.srcObject = streams[0]
-            })
-
-            localStream = await navigator.mediaDevices.getDisplayMedia({
-
-            })
-
-            localVideo.srcObject = localStream;
-
-
-            localStream.getTracks().forEach(track => {
-                rtc.addTrack(track, localStream)
-            })
-
-            await rtc.connect();
-        })
-
+        setupPeerConnection()
 
         await peer.connect();
     })
@@ -90,35 +103,7 @@ const createPeerConnection = async () => {
         timeout: 5000
     })
 
-    peer.onMessage(async (payload: any) => {
-        history += `${payload}\n`
-    })
-
-    peer.onEvent("webrtc offer", async (offer: RTCSessionDescriptionInit) => {
-        rtc = new poco.net.PocoPeerWebRTCConnection(peer.remoteAddress, peer.localAddress, peer, {
-            offer: offer
-        });
-
-        rtc.onStatusChange(async (status) => {
-            history += `rtc status: ${status}\n`
-        })
-
-        rtc.onTrack(async (streams) => {
-            remoteVideo.srcObject = streams[0]
-        })
-
-        localStream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: false
-        })
-
-
-        localStream.getTracks().forEach(track => {
-            rtc.addTrack(track, localStream)
-        })
-
-        await rtc.connect();
-    })
+    setupPeerConnection()
 
     await peer.connect();
 }
@@ -134,10 +119,7 @@ const sendMessage = async () => {
 }
 
 const createWebRTCPeerConnection = async () => {
-    localStream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: false
-    })
+    localStream = await navigator.mediaDevices.getDisplayMedia()
 
     localVideo.srcObject = localStream;
 
@@ -147,13 +129,27 @@ const createWebRTCPeerConnection = async () => {
         connection: peer
     }) as PocoPeerWebRTCConnection
 
+
+    // rtc.addTransceiver("video", {
+    //     direction: "sendonly"
+    // })
+
+    // rtc.addTransceiver("audio", {
+    //     direction: "sendonly"
+    // })
+
     localStream.getTracks().forEach(track => {
-        rtc.addTrack(track, localStream)
+        // rtc.addTrack(track, localStream)
+        rtc.addTransceiver(track, {
+            direction: "sendonly",
+            streams: [localStream],
+        })
     })
 
     rtc.onTrack(async (streams) => {
         remoteVideo.srcObject = streams[0]
     })
+
 
     rtc.onStatusChange(async (status) => {
         history += `rtc status: ${status}\n`

@@ -133,6 +133,10 @@ export class PocoPeerWebRTCConnection extends PocoPeerConnection implements Poco
         };
     }
 
+    addTransceiver(trackOrKind: MediaStreamTrack | string, init?: RTCRtpTransceiverInit): void {
+        this.rtcConnection.addTransceiver(trackOrKind, init)
+    }
+
     status(): PocoConnectionStatus {
         return this.rtcConnection.connectionState;
     }

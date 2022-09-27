@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "",
   "main": "./dist/index.js",
-  "module": "./src/index.ts",
+  "module": "./dist/index.esm.js",
   "types": "./dist/index.d.ts",
   "type": "module",
   "scripts": {
