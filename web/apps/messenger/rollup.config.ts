@@ -10,16 +10,21 @@ export default defineConfig({
     input: "./src/index.ts",
     output: [
         {
-            file: "dist/bundle.cjs",
+            file: "dist/index.umd.js",
             format: "umd",
             sourcemap: true,
             name: "messenger"
         },
         {
-            file: "dist/bundle.mjs",
+            file: "dist/index.esm.js",
             format: "esm",
             sourcemap: true
         },
+        {
+            file: "./dist/index.cjs.js",
+            format: "cjs",
+            sourcemap: true
+        }
     ],
     plugins: [
         json(),

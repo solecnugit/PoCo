@@ -1,47 +1,43 @@
 <script setup lang="ts">
 import { $ref } from "vue/macros"
 import * as poco from "poco-net";
-import { PocoPeerWebRTCConnection } from "poco-net/dist/net";
 
 let localAddress = $ref("")
 let remoteAddress = $ref("")
 let history = $ref("");
-let message = $ref("");
+let socketIOMessage = $ref("");
+let webRTCMessage = $ref("");
 let localVideo = $ref<HTMLVideoElement>();
 let remoteVideo = $ref<HTMLVideoElement>();
 
 let localStream: MediaStream;
 let remoteStream: MediaStream;
 
-let socket: poco.net.PocoConnection;
-let peer: poco.net.PocoPeerConnection;
+let socket: poco.net.PocoSocketIOConnection<poco.protocol.PocoMessage, poco.net.PocoPeerSocketIOConnectionEvents>;
+let peer: poco.net.PocoPeerSocketIOConnection;
 let rtc: poco.net.PocoPeerWebRTCConnection;
 
 const setupPeerConnection = async () => {
-    peer.onMessage(async (payload: any) => {
-        history += `${payload}\n`
+    peer.on("message", (message) => {
+        history += `SocketIO: ${JSON.stringify(message)}\n`;
     })
 
-    peer.onEvent("webrtc offer", async (offer: RTCSessionDescriptionInit) => {
-        rtc = new poco.net.PocoPeerWebRTCConnection(peer.remoteAddress, peer.localAddress, peer, {
+    peer.on("webrtc offer", async ({ offer }) => {
+        rtc = new poco.net.PocoPeerWebRTCConnection(peer.remoteAddress, peer.localAddress, peer as any, {
             offer: offer
         });
 
-        rtc.onStatusChange(async (status) => {
-            history += `rtc status: ${status}\n`
+        rtc.on("status", (status) => {
+            history += `WebRTC status: ${JSON.stringify(status)}\n`
         })
 
-        rtc.onTrack(async (streams) => {
-            remoteVideo.srcObject = streams[0]
+        rtc.on("message", (message) => {
+            history += `WebRTC message: ${JSON.stringify(message)}\n`
         })
 
-        // rtc.addTransceiver("video", {
-        //     direction: "recvonly"
-        // })
-
-        // rtc.addTransceiver("audio", {
-        //     direction: "recvonly"
-        // })
+        rtc.onTrack(async event => {
+            remoteVideo.srcObject = event.streams[0]
+        })
 
         // localStream = await navigator.mediaDevices.getDisplayMedia();
 
@@ -50,9 +46,8 @@ const setupPeerConnection = async () => {
         // })
 
         // localStream.getTracks().forEach(track => {
-        //     // rtc.addTrack(track, localStream)
         //     rtc.addTransceiver(track, {
-        //         streams: localStream
+        //         streams: [localStream]
         //     })
         // })
 
@@ -61,98 +56,106 @@ const setupPeerConnection = async () => {
 }
 
 const createConnection = async () => {
-    socket = await poco.net.createPocoConnection({
+    socket = poco.net.createPocoSocketIOConnection({
         type: "socketIO",
         uri: "http://localhost:8080",
         localAddress,
     });
 
-    socket.onEvent("peer connection setup", async ({ fromAddress, toAddress }: { fromAddress: string, toAddress: string }) => {
-        history += `peer connection request from ${fromAddress}\n`
+    socket.on("peer setup", async ({ from, to }) => {
+        history += `peer connection request from ${from}\n`
 
-        if (toAddress != localAddress) {
+        if (to != localAddress) {
             return;
         }
 
-        remoteAddress = fromAddress;
+        remoteAddress = from;
 
-        peer = await poco.net.createPocoPeerConnection({
+        peer = poco.net.createPocoPeerSocketIOConnection({
             type: "socketIO",
+            localAddress,
             remoteAddress,
-            connection: socket,
+            connection: socket as any,
             timeout: 5000
-        })
+        }) as any
 
         setupPeerConnection()
 
         await peer.connect();
     })
 
-    socket.onEvent("peer connection established", async () => {
-        history += `peer connection established\n`
+    socket.on("peer connected", () => {
+        history += `peer connection established successfully\n`
     })
 
     await socket.connect();
 }
 
 const createPeerConnection = async () => {
-    peer = await poco.net.createPocoPeerConnection({
+    peer = poco.net.createPocoPeerSocketIOConnection({
         type: "socketIO",
+        localAddress,
         remoteAddress,
-        connection: socket,
+        connection: socket as any,
         timeout: 5000
-    })
+    }) as any
 
     setupPeerConnection()
 
     await peer.connect();
 }
 
-const sendMessage = async () => {
-    if (peer.status() != "connected") return;
+const sendMessageBySocketIO = async () => {
+    if (peer.status() !== "connected") return;
 
-    const messageToSend = message.trim();
+    const messageToSend = socketIOMessage.trim();
 
     if (messageToSend.length === 0) return;
 
-    peer.send(messageToSend);
+    peer.send({ message: messageToSend });
+}
+
+const sendMessageByWebRTC = async () => {
+    if (rtc.status() !== "connected") return;
+
+    const messageToSend = webRTCMessage.trim();
+
+    if (messageToSend.length === 0) return;
+
+    rtc.send({ message: messageToSend });
 }
 
 const createWebRTCPeerConnection = async () => {
-    localStream = await navigator.mediaDevices.getDisplayMedia()
+    // localStream = await navigator.mediaDevices.getDisplayMedia()
 
-    localVideo.srcObject = localStream;
+    // localVideo.srcObject = localStream;
 
-    rtc = await poco.net.createPocoPeerConnection({
+    rtc = poco.net.createPocoPeerWebRTCConnection({
         type: "webrtc",
+        localAddress,
         remoteAddress,
-        connection: peer
-    }) as PocoPeerWebRTCConnection
-
-
-    // rtc.addTransceiver("video", {
-    //     direction: "sendonly"
-    // })
-
-    // rtc.addTransceiver("audio", {
-    //     direction: "sendonly"
-    // })
-
-    localStream.getTracks().forEach(track => {
-        // rtc.addTrack(track, localStream)
-        rtc.addTransceiver(track, {
-            direction: "sendonly",
-            streams: [localStream],
-        })
+        connection: peer as any
     })
 
-    rtc.onTrack(async (streams) => {
-        remoteVideo.srcObject = streams[0]
+    // localStream.getTracks().forEach(track => {
+    //     rtc.addTransceiver(track, {
+    //         direction: "sendonly",
+    //         streams: [localStream],
+    //     })
+    // })
+
+    // rtc.onTrack(async event => {
+    //     remoteVideo.srcObject = event.streams[0];
+    // })
+
+    // rtc.setupChannels();
+
+    rtc.on("status", status => {
+        history += `WebRTC status: ${JSON.stringify(status)}\n`
     })
 
-
-    rtc.onStatusChange(async (status) => {
-        history += `rtc status: ${status}\n`
+    rtc.on("message", (message) => {
+        history += `WebRTC message: ${JSON.stringify(message)}\n`
     })
 
     await rtc.connect();
@@ -182,9 +185,15 @@ const createWebRTCPeerConnection = async () => {
                         class="bg-purple-500 rounded-md px-4 text-white py-2 text-sm hover:bg-purple-300">connect</button>
                 </div>
                 <div class="flex h-12 items-center">
-                    <div>Message</div>
-                    <input type="text" v-model="message" class="border mx-2" />
-                    <button @click="sendMessage"
+                    <div>Socket.IO Message</div>
+                    <input type="text" v-model="socketIOMessage" class="border mx-2" />
+                    <button @click="sendMessageBySocketIO"
+                        class="bg-purple-500 rounded-md px-4 text-white py-2 text-sm hover:bg-purple-300">send</button>
+                </div>
+                <div class="flex h-12 items-center">
+                    <div>WebRTC Message</div>
+                    <input type="text" v-model="webRTCMessage" class="border mx-2" />
+                    <button @click="sendMessageByWebRTC"
                         class="bg-purple-500 rounded-md px-4 text-white py-2 text-sm hover:bg-purple-300">send</button>
                 </div>
                 <div class="flex flex-col justify-center">

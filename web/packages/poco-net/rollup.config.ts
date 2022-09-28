@@ -6,30 +6,35 @@ import json from "@rollup/plugin-json"
 import externals from "rollup-plugin-node-externals";
 import strip from "@rollup/plugin-strip";
 import replace from "@rollup/plugin-replace";
+import babel from "@rollup/plugin-babel";
 import * as pkg from "./package.json";
+
+const globals = {
+    "socket.io-client": "socket_ioClient",
+    "lodash": "_",
+    "bson": "bson",
+}
 
 export default defineConfig({
     input: "./src/index.ts",
     output: [
         {
-            file: pkg.main,
+            file: "./dist/index.umd.js",
             format: "umd",
             sourcemap: true,
             name: pkg.name,
-            globals: {
-                "socket.io-client": "socket_ioClient",
-                "lodash": "_"
-            }
+            globals
         },
         {
-            file: pkg.module,
+            file: "./dist/index.esm.js",
             format: "esm",
             sourcemap: true,
-            globals: {
-                "socket.io-client": "socket_ioClient",
-                "lodash": "_"
-            }
         },
+        {
+            file: "./dist/index.cjs.js",
+            format: "cjs",
+            sourcemap: true
+        }
     ],
     plugins: [
         json(),
@@ -45,8 +50,9 @@ export default defineConfig({
         }),
         replace({
             preventAssignment: true,
-            __PROTOCOL_VERSION__: JSON.stringify("poco-0.1")
-        })
+            __POCO_PROTOCOL_VERSION__: JSON.stringify("poco-alpha")
+        }),
+        babel({ babelHelpers: "bundled" }),
     ],
     watch: {
         exclude: "node_modules/**",

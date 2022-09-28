@@ -1,1 +1,1 @@
-declare const __PROTOCOL_VERSION__: PocoProtocolVersion;
+declare const __POCO_PROTOCOL_VERSION__: PocoProtocolVersion;

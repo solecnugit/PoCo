@@ -2,12 +2,12 @@
   "name": "messenger",
   "version": "0.0.1",
   "description": "",
-  "main": "./dist/bundle.cjs",
-  "module": "./dist/bundle.mjs",
-  "types": "./dist/bundle.d.ts",
+  "main": "./dist/index.umd.js",
+  "module": "./dist/index.esm.js",
+  "types": "./dist/index.d.ts",
   "type": "module",
   "scripts": {
-    "serve": "pnpm exec ts-node-esm ./src/index.ts",
+    "serve": "pnpm run build && node ./dist/index.esm.js",
     "build": "rollup --config rollup.config.ts"
   },
   "keywords": [],
@@ -20,6 +20,7 @@
   },
   "devDependencies": {
     "@types/express": "^4.17.14",
+    "poco-net": "workspace: *",
     "ts-node": "^10.9.1"
   }
 }

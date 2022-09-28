@@ -3,59 +3,32 @@ import { PocoConnection, PocoPeerConnection } from "./connection";
 
 export type PocoConnectionType = "websocket" | "webrtc" | "socketIO"
 
-export class UnknownPocoConnectionTypeError extends Error {
-    public type: string;
-
-    constructor(type: string) {
-        super(`unknown connection type ${type}`);
-        this.type = type;
-    }
-}
-
-export class PocoConnectionClosedError extends Error {
-    public connection: PocoConnection;
-
-    constructor(connection: PocoConnection) {
-        super(`connection is closed`)
-
-        this.connection = connection;
-    }
-}
-
-
-export class PocoConnectionTimeoutError extends Error {
-    public connection: PocoConnection;
-
-    constructor(connection: PocoConnection) {
-        super(`connection timeout`)
-
-        this.connection = connection;
-    }
-}
-
 export type Address = string;
+export type ChannelId = string;
+
 export type PocoConnectionStatus = "closed" | "connected" | "connecting" | "disconnected" | "failed" | "new";
 
 export type PocoSocketIOConnectionOptions = {
     type: "socketIO";
     uri: string;
-} & Partial<ManagerOptions> & Partial<SocketOptions>;
-
-export type PocoConnectionOptions = { localAddress: Address; } & PocoSocketIOConnectionOptions;
+    localAddress: Address;
+} & Partial<ManagerOptions & SocketOptions>;
 
 export type PocoPeerSocketIOConnectionOptions = {
     type: "socketIO",
+    localAddress: Address;
+    remoteAddress: Address;
     connection: PocoConnection,
     timeout: number;
 }
 
 export type PocoPeerWebRTCConnectionOptions = {
     type: "webrtc";
+    localAddress: Address;
+    remoteAddress: Address;
     connection: PocoPeerConnection;
     offer?: RTCSessionDescriptionInit;
     rtcConfiguration?: RTCConfiguration
     rtcOfferOptions?: RTCOfferOptions
     rtcAnswerOptions?: RTCAnswerOptions
 };
-
-export type PocoPeerConnectionOptions = { remoteAddress: Address } & (PocoPeerSocketIOConnectionOptions | PocoPeerWebRTCConnectionOptions)

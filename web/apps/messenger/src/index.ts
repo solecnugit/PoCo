@@ -1,127 +1,189 @@
 import express from "express";
 import http from "http";
 import chalk from "chalk";
-import { Server as SocketIOServer, Socket } from "socket.io";
+import { Server as SocketIOServer, Socket, } from "socket.io";
+import * as poco from "poco-net";
+import _ from "lodash";
+
+type Events = poco.net.PocoConnectionEvents
+    & poco.net.PocoSocketIOConnectionEvents<poco.protocol.PocoObject>
+    & poco.net.PocoPeerSocketIOConnectionEvents<poco.protocol.PocoObject, poco.util.DefaultEventsMap>;
 
 const app = express();
 const server = http.createServer(app);
-const io = new SocketIOServer(server, {
-    cors: {
-        origin: "*",
-        methods: ["GET", "POST"]
-    }
-});
+const io = new SocketIOServer<Events, Events, Events>
+    (server, {
+        cors: {
+            origin: "*",
+            methods: ["GET", "POST"]
+        }
+    });
 const port = 8080;
 
-const userMap = new Map<string, Socket>();
+const onlineUsers = new Map<string, Socket<Events, Events>>();
 const pendingPeerConnections = new Set<string>();
 
-io.on("connection", (socket) => {
-    console.log("incomming connection...")
+function hackSocket(socket: Socket): Socket {
+    const oldEmit = socket.emit;
 
+    function emit<Ev extends string>(event: Ev, args: any): boolean {
+        const buffer = poco.protocol.serializePocoMessage(args as any);
+
+        return oldEmit.apply(socket, [event, buffer])
+    }
+
+    socket.emit = emit;
+
+    socket.use((event, next) => {
+
+        if (event[1] && _.isBuffer(event[1])) {
+            event[1] = poco.protocol.deserializePocoMessage(event[1])
+        }
+
+        next();
+    })
+
+    socket.onAnyOutgoing((args) => {
+        console.log(chalk.magenta("Outgoing"), args)
+    })
+
+    return socket;
+}
+
+io.on("connection", (socket) => {
     const address = socket.handshake.auth.address as string | undefined;
     const protocol = (socket.conn.transport as any).socket.protocol as string | undefined;
 
-    if (!address || !protocol) {
-        socket.send("missing address or protocol field\n")
+    if (!address) {
+        socket.emit("disconnected", { reason: "missing address" })
         socket.disconnect()
         return
     }
 
-    const oldConnection = userMap.get(address);
+    if (!protocol) {
+        socket.emit("disconnected", { reason: "invalid protocol" })
+        socket.disconnect()
+        return
+    }
+
+    const oldConnection = onlineUsers.get(address);
 
     if (oldConnection && oldConnection.connected) {
-        socket.send("address already in use\n")
+        socket.emit("disconnected", { reason: "duplicate address" })
         socket.disconnect()
         return
     }
 
     console.log("User", chalk.green(address), "with protocol", chalk.yellow(protocol), "connected.")
 
-    userMap.set(address, socket);
+    onlineUsers.set(address, hackSocket(socket));
 
     socket.on("disconnect", () => {
         console.log("User", chalk.green(address), "disconnected.")
 
-        userMap.delete(address)
+        onlineUsers.delete(address)
     })
 
-    socket.on("peer message", ({ fromAddress, toAddress, payload }: { fromAddress: string, toAddress: string, payload: any }) => {
-        if (fromAddress != address) {
+    socket.on("peer message", ({ from, to, message }) => {
+        if (from != address)
+            return;
+
+        if (!onlineUsers.has(from)) {
+            console.warn("missing sender in online users", chalk.red(from));
             return;
         }
 
-        if (!userMap.has(fromAddress) || !userMap.has(toAddress)) {
+        if (!onlineUsers.has(to)) {
+            console.warn("missing receiver in online users", chalk.red(to));
             return;
         }
 
-        console.log("message", chalk.green(fromAddress), "->", chalk.yellow(toAddress), ": ", payload)
+        console.log("Message from", chalk.green(from), "to", chalk.green(to));
+        console.log(chalk.yellow(JSON.stringify(message)));
 
-        const toSocket = userMap.get(toAddress)!;
+        const receiverSocket = onlineUsers.get(to)!;
 
-        toSocket.emit("peer message", { fromAddress, toAddress, payload });
+        receiverSocket.emit("peer message", { from, to, message });
     })
 
-    socket.on("peer event", ({ fromAddress, toAddress, payload, event }: { fromAddress: string, toAddress: string, payload: any, event: string }) => {
-        if (fromAddress != address) {
+    socket.on("peer event", ({ from, to, payload, event }) => {
+        if (from != address) {
             return;
         }
 
-        if (!userMap.has(fromAddress) || !userMap.has(toAddress)) {
+        if (!onlineUsers.has(from)) {
+            console.warn("missing sender in online users", chalk.red(from));
             return;
         }
 
-        console.log("event", chalk.cyan(event), ": ", chalk.green(fromAddress), "->", chalk.yellow(toAddress), ": ", payload)
+        if (!onlineUsers.has(to)) {
+            console.warn("missing receiver in online users", chalk.red(to));
+            return;
+        }
 
-        const toSocket = userMap.get(toAddress)!;
+        console.log(chalk.cyanBright("Event"), chalk.cyan(event), "from", chalk.green(from), "to", chalk.yellow(to));
+        console.log(chalk.yellow(JSON.stringify(payload)));
 
-        toSocket.emit("peer event", { fromAddress, toAddress, payload, event });
+        const receiverSocket = onlineUsers.get(to)!;
+
+        receiverSocket.emit("peer event", { from, to, event, payload });
     })
 
-    socket.on("peer connection setup", ({ fromAddress, toAddress }: { fromAddress: string, toAddress: string }) => {
-        if (fromAddress != address) {
+    socket.on("peer setup", ({ from, to }) => {
+        if (from != address) {
             return;
         }
 
-        if (!userMap.has(fromAddress) || !userMap.has(toAddress)) {
+        if (!onlineUsers.has(from)) {
+            console.warn("missing sender in online users", chalk.red(from));
             return;
         }
 
-        const requestId = `${toAddress}-${fromAddress}`;
+        if (!onlineUsers.has(to)) {
+            console.warn("missing receiver in online users", chalk.red(to));
+            return;
+        }
+
+        const requestId = `${to}-${from}`;
 
         if (pendingPeerConnections.has(requestId)) {
-            console.log("User", chalk.green(fromAddress), "connected to", chalk.green(toAddress), "successfully.")
+            console.log("User", chalk.green(from), "connected to", chalk.green(to), "successfully.")
 
             pendingPeerConnections.delete(requestId);
 
-            socket.emit("peer connection established")
+            const receiverSocket = onlineUsers.get(to)!;
 
-            const toSocket = userMap.get(toAddress)!;
-
-            toSocket.emit("peer connection established")
+            socket.emit("peer connected", { from, to });
+            receiverSocket.emit("peer connected", { from, to });
         } else {
-            console.log("User", chalk.green(fromAddress), "wants to connect user", chalk.green(toAddress), ".")
+            console.log("User", chalk.green(from), "wants to connect user", chalk.green(to), ".")
 
-            pendingPeerConnections.add(`${fromAddress}-${toAddress}`)
+            pendingPeerConnections.add(`${from}-${to}`)
 
-            const toSocket = userMap.get(toAddress)!;
+            const receiverSocket = onlineUsers.get(to)!;
 
-            toSocket.emit("peer connection setup", { fromAddress, toAddress });
+            receiverSocket.emit("peer setup", { from, to });
         }
     })
 
-    socket.on("peer connection destroy", ({ fromAddress, toAddress }: { fromAddress: string, toAddress: string }) => {
-        if (fromAddress != address) {
+    socket.on("peer destroy", ({ from, to }) => {
+        if (from != address) {
             return;
         }
 
-        if (!userMap.has(fromAddress) || !userMap.has(toAddress)) {
+        if (!onlineUsers.has(from)) {
+            console.warn("missing sender in online users", chalk.red(from));
             return;
         }
 
-        const toSocket = userMap.get(toAddress)!;
+        if (!onlineUsers.has(to)) {
+            console.warn("missing receiver in online users", chalk.red(to));
+            return;
+        }
 
-        toSocket.emit("peer connection destroy")
+        const receiverSocket = onlineUsers.get(to)!;
+
+        receiverSocket.emit("peer destroy", { from, to });
     })
 })
 

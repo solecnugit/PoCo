@@ -1,23 +1,26 @@
-import { PocoConnection, PocoPeerConnection } from "./connection";
+import { PocoMessage } from "../protocol";
+import { DefaultEventsMap, EventsMap } from "../util";
 import { PocoSocketIOConnection, PocoPeerSocketIOConnection } from "./socketIO";
-import { PocoConnectionOptions, PocoPeerConnectionOptions, UnknownPocoConnectionTypeError } from "./types";
+import { PocoPeerSocketIOConnectionOptions, PocoPeerWebRTCConnectionOptions, PocoSocketIOConnectionOptions } from "./types";
 import { PocoPeerWebRTCConnection } from "./webrtc";
 
-export async function createPocoConnection(opts: PocoConnectionOptions): Promise<PocoConnection> {
-    if (opts.type === "socketIO") {
-        return new PocoSocketIOConnection(opts.localAddress, opts);
-    }
-
-    throw new UnknownPocoConnectionTypeError(opts.type)
+export function createPocoSocketIOConnection
+    <MessagePayload extends PocoMessage = PocoMessage,
+        Events extends EventsMap = DefaultEventsMap>
+    (opts: PocoSocketIOConnectionOptions): PocoSocketIOConnection<MessagePayload, Events> {
+    return new PocoSocketIOConnection<MessagePayload, Events>(opts.localAddress, opts);
 }
 
-export async function createPocoPeerConnection(opts: PocoPeerConnectionOptions): Promise<PocoPeerConnection> {
-    if (opts.type === "socketIO") {
-        return new PocoPeerSocketIOConnection(opts.connection.localAddress, opts.remoteAddress, opts.connection, opts);
-    } else if (opts.type === "webrtc") {
-        return new PocoPeerWebRTCConnection(opts.connection.localAddress, opts.remoteAddress, opts.connection as PocoPeerConnection, opts)
-    }
+export function createPocoPeerSocketIOConnection
+    <MessagePayload extends PocoMessage = PocoMessage,
+        Events extends EventsMap = DefaultEventsMap>
+    (opts: PocoPeerSocketIOConnectionOptions): PocoPeerSocketIOConnection<MessagePayload, Events> {
+    return new PocoPeerSocketIOConnection<MessagePayload, Events>(opts.localAddress, opts.remoteAddress, opts.connection as any, opts);
+}
 
-    // @ts-ignore
-    throw new UnknownPocoConnectionTypeError(opts.type)
+export function createPocoPeerWebRTCConnection
+    <MessagePayload extends PocoMessage = PocoMessage,
+        Events extends EventsMap = DefaultEventsMap>
+    (opts: PocoPeerWebRTCConnectionOptions): PocoPeerWebRTCConnection<MessagePayload, Events> {
+    return new PocoPeerWebRTCConnection<MessagePayload, Events>(opts.localAddress, opts.remoteAddress, opts.connection as any, opts);
 }
