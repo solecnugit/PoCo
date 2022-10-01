@@ -5,7 +5,6 @@ import _ from "lodash";
 import { PocoConnectionClosedError } from "./error";
 import { deserializePocoObject, PocoObject, serializePocoObject } from "../protocol";
 import { DefaultEventsMap, EventNames, EventParameter, EventParameters, EventsMap } from "./event";
-import { Expand } from "../util";
 
 export type PocoPeerWebRTCInternalChannel = "message" | "event";
 
@@ -182,10 +181,6 @@ export class PocoPeerWebRTCConnection<Events extends EventsMap = DefaultEventsMa
         this.rtcConnection.addTransceiver(trackOrKind, init)
     }
 
-    // status(): PocoConnectionStatus {
-    //     return this.rtcConnection.connectionState;
-    // }
-
     getChannel(id: ChannelId, opts?: RTCDataChannelInit): RTCDataChannel {
         let channel = this.channels.get(id);
 
@@ -247,9 +242,7 @@ export class PocoPeerWebRTCConnection<Events extends EventsMap = DefaultEventsMa
     send(payload: PocoObject): void | Promise<void> {
         const channel = this.getChannel("message");
 
-        channel.send(serializePocoObject({
-            message: payload
-        }));
+        channel.send(serializePocoObject(payload));
     }
 
     emit<Event extends EventNames<Events & PocoConnectionEvents>, Payload extends EventParameter<Events & PocoConnectionEvents, Event> = EventParameter<Events & PocoConnectionEvents, Event>>
@@ -260,9 +253,5 @@ export class PocoPeerWebRTCConnection<Events extends EventsMap = DefaultEventsMa
             event: event as string,
             payload: payload as any
         }))
-    }
-
-    onMessage(message: PocoObject): void | Promise<void> {
-        this.triggerEvent("message", { message });
     }
 }

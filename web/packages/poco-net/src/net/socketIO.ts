@@ -1,10 +1,9 @@
 import _ from "lodash";
 import { Socket, ManagerOptions, SocketOptions, io } from "socket.io-client";
 import { deserializePocoObject, PocoObject, serializePocoObject } from "../protocol";
-import { Expand } from "../util";
 import { PocoConnection, PocoConnectionEvents, PocoPeerConnection } from "./connection";
 import { PocoConnectionError } from "./error";
-import { EventsMap, DefaultEventsMap, EventNames, EventParameter, EventHandler } from "./event";
+import { EventsMap, DefaultEventsMap, EventNames, EventParameter } from "./event";
 import { Address, PocoPeerSocketIOConnectionOptions } from "./types";
 
 export interface PocoSocketIOConnectionEvents extends PocoConnectionEvents { };
@@ -103,11 +102,6 @@ export class PocoSocketIOConnection
 
         this.socket.emit(event as string, buffer)
     }
-
-
-    // onMessage(message: MessagePayload): void | Promise<void> {
-    //     this.triggerEvent("message", { message })
-    // }
 }
 
 export type PocoPeerAddressPayload = { from: Address, to: Address };
@@ -221,9 +215,5 @@ export class PocoPeerSocketIOConnection<
             event: event as any,
             payload: payload
         })
-    }
-
-    onMessage(message: PocoObject): void | Promise<void> {
-        this.triggerEvent("message", message)
     }
 }

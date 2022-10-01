@@ -143,7 +143,7 @@ export abstract class PocoConnection<
         (event: Event, payload: Payload): Promise<void> | void;
 
     onMessage(message: PocoObject): Promise<void> | void {
-        this.triggerEvent("message", { message });
+        this.triggerEvent("message", message);
     }
 }
 

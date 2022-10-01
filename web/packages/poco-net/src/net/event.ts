@@ -1,5 +1,4 @@
 import { PocoObject } from "../protocol";
-import { Expand } from "../util/type";
 
 export interface EventsMap {
     [event: string]: any;

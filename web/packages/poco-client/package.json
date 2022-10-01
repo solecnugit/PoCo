@@ -1,5 +1,5 @@
 {
-  "name": "poco-net",
+  "name": "poco-client",
   "version": "0.0.1",
   "description": "",
   "main": "./dist/index.umd.js",
@@ -14,9 +14,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "socket.io-client": "^4.5.2"
+    "poco-net": "workspace: *"
   },
-  "devDependencies": {
-    "@types/webrtc": "^0.0.32"
-  }
+  "devDependencies": {}
 }
