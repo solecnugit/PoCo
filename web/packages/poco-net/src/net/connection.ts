@@ -87,7 +87,10 @@ export abstract class PocoConnection<
         if (!listeners)
             return;
 
-        const newListeners = [];
+        const newListeners: {
+            callback: EventHandlers<ReservedOrUserEvents<ListenEvents>>;
+            once: boolean;
+        }[] = [];
 
         for (const handler of listeners) {
             handler.callback.apply(this, [args]);
