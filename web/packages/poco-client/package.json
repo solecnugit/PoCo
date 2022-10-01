@@ -14,7 +14,8 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@truffle/contract": "^4.6.2",
     "poco-net": "workspace: *",
-    "web3": "4.0.1-alpha.0"
+    "web3": "^1.8.0"
   }
 }

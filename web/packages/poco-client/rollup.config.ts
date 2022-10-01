@@ -5,6 +5,7 @@ import commonjs from "@rollup/plugin-commonjs"
 import json from "@rollup/plugin-json"
 import externals from "rollup-plugin-node-externals";
 import strip from "@rollup/plugin-strip";
+import alias from "@rollup/plugin-alias";
 import replace from "@rollup/plugin-replace";
 import babel from "@rollup/plugin-babel";
 import * as pkg from "./package.json";
@@ -37,6 +38,12 @@ export default defineConfig({
         }
     ],
     plugins: [
+        alias({
+            entries: [
+                { find: "@poco-contract-abi", replacement: "../../../contract/build/contracts" },
+                { find: "@poco-contract", replacement: "../../../contract/types/truffle-contracts" },
+            ]
+        }),
         json(),
         resolve(),
         commonjs({

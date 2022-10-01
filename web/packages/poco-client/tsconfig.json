@@ -1,7 +1,16 @@
 {
   "compilerOptions": {
-    "rootDir": "./src/"
+    "rootDir": "./src/",
+    "baseUrl": ".",
+    "paths": {
+      "poco-contract-abi": ["../../../contract/build/contracts/*"],
+      "poco-contract": ["../../../contract/types/truffle-contracts/index.d.ts"]
+    }
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts"],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.d.ts",
+    "../../../contract/types/truffle-contracts/*.d.ts"
+  ],
   "extends": "../tsconfig.base.json"
 }
