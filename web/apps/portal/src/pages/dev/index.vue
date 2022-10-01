@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { $ref } from "vue/macros"
-import * as poco from "poco-net";
+import { PocoSocketIOConnection, PocoPeerSocketIOConnectionEvents, PocoPeerSocketIOConnection, PocoPeerWebRTCConnection, createPocoSocketIOConnection, createPocoPeerSocketIOConnection, createPocoPeerWebRTCConnection, ExpandRecursively, PocoObject, Expand } from "poco-net";
 
 let localAddress = $ref("")
 let remoteAddress = $ref("")
@@ -13,9 +13,11 @@ let remoteVideo = $ref<HTMLVideoElement>();
 let localStream: MediaStream;
 let remoteStream: MediaStream;
 
-let socket: poco.net.PocoSocketIOConnection<poco.protocol.PocoMessage, poco.net.PocoPeerSocketIOConnectionEvents>;
-let peer: poco.net.PocoPeerSocketIOConnection;
-let rtc: poco.net.PocoPeerWebRTCConnection;
+type c = Expand<PocoSocketIOConnection<PocoObject, PocoPeerSocketIOConnectionEvents>>["on"];
+
+let socket: PocoSocketIOConnection<PocoObject, PocoPeerSocketIOConnectionEvents>;
+let peer: PocoPeerSocketIOConnection;
+let rtc: PocoPeerWebRTCConnection;
 
 const setupPeerConnection = async () => {
     peer.on("message", (message) => {
@@ -23,7 +25,7 @@ const setupPeerConnection = async () => {
     })
 
     peer.on("webrtc offer", async ({ offer }) => {
-        rtc = new poco.net.PocoPeerWebRTCConnection(peer.remoteAddress, peer.localAddress, peer as any, {
+        rtc = new PocoPeerWebRTCConnection(peer.remoteAddress, peer.localAddress, peer as any, {
             offer: offer
         });
 
@@ -56,7 +58,7 @@ const setupPeerConnection = async () => {
 }
 
 const createConnection = async () => {
-    socket = poco.net.createPocoSocketIOConnection({
+    socket = createPocoSocketIOConnection({
         type: "socketIO",
         uri: "http://localhost:8080",
         localAddress,
@@ -71,7 +73,7 @@ const createConnection = async () => {
 
         remoteAddress = from;
 
-        peer = poco.net.createPocoPeerSocketIOConnection({
+        peer = createPocoPeerSocketIOConnection({
             type: "socketIO",
             localAddress,
             remoteAddress,
@@ -92,7 +94,7 @@ const createConnection = async () => {
 }
 
 const createPeerConnection = async () => {
-    peer = poco.net.createPocoPeerSocketIOConnection({
+    peer = createPocoPeerSocketIOConnection({
         type: "socketIO",
         localAddress,
         remoteAddress,
@@ -130,7 +132,7 @@ const createWebRTCPeerConnection = async () => {
 
     // localVideo.srcObject = localStream;
 
-    rtc = poco.net.createPocoPeerWebRTCConnection({
+    rtc = createPocoPeerWebRTCConnection({
         type: "webrtc",
         localAddress,
         remoteAddress,

@@ -1,10 +1,11 @@
-import { PocoPeerConnection } from "./connection";
+import { PocoConnectionEvents, PocoPeerConnection } from "./connection";
 import { Address, ChannelId, PocoPeerWebRTCConnectionOptions } from "./types";
 import { PocoMediaConnection } from "./media";
 import _ from "lodash";
 import { PocoConnectionClosedError } from "./error";
-import { deserializePocoObject, PocoMessage, serializePocoObject } from "../protocol";
-import { EventsMap, DefaultEventsMap, EventNames, EventParameter, EventParameters } from "../util";
+import { deserializePocoObject, PocoObject, serializePocoObject } from "../protocol";
+import { DefaultEventsMap, EventNames, EventParameter, EventParameters, EventsMap } from "./event";
+import { Expand } from "../util";
 
 export type PocoPeerWebRTCInternalChannel = "message" | "event";
 
@@ -15,21 +16,20 @@ export interface PocoPeerWebRTCConnectionEvents {
     "webrtc destroy": (this: PocoPeerWebRTCConnection, args: {}) => void;
 }
 
-export class PocoPeerWebRTCConnection
-    <MessagePayload extends PocoMessage = PocoMessage,
-        Events extends EventsMap = DefaultEventsMap>
-    extends PocoPeerConnection<MessagePayload, Events>
+export class PocoPeerWebRTCConnection<Events extends EventsMap = DefaultEventsMap>
+    extends PocoPeerConnection<Events>
+
     implements PocoMediaConnection {
 
     protected rtcConnection: RTCPeerConnection;
-    protected peerConnection: PocoPeerConnection<{}, PocoPeerWebRTCConnectionEvents>;
+    protected peerConnection: PocoPeerConnection<PocoPeerWebRTCConnectionEvents>;
 
     protected options: Partial<PocoPeerWebRTCConnectionOptions>;
     protected channels: Map<ChannelId, RTCDataChannel>;
 
     constructor(localAddress: Address,
         remoteAddress: Address,
-        peerConnection: PocoPeerConnection<{}, PocoPeerWebRTCConnectionEvents>,
+        peerConnection: PocoPeerConnection<PocoPeerWebRTCConnectionEvents>,
         opts?: Partial<PocoPeerWebRTCConnectionOptions>) {
 
         super("webrtc", localAddress, remoteAddress)
@@ -170,11 +170,11 @@ export class PocoPeerWebRTCConnection
         return this.rtcConnection;
     }
 
-    async addTrack(track: MediaStreamTrack, ...streams: MediaStream[]) {
+    addTrack(track: MediaStreamTrack, ...streams: MediaStream[]) {
         this.rtcConnection.addTrack(track, ...streams);
     }
 
-    onTrack(callback: (event: RTCTrackEvent) => Promise<void>): void {
+    onTrack(callback: (event: RTCTrackEvent) => void): void {
         this.rtcConnection.addEventListener("track", callback)
     }
 
@@ -218,9 +218,9 @@ export class PocoPeerWebRTCConnection
         this.setupInternalChannel(messageChannel);
 
         messageChannel.addEventListener("message", ({ data }) => {
-            const { message } = deserializePocoObject(data);
+            const message = deserializePocoObject(data);
 
-            this.onMessage(message as MessagePayload);
+            this.onMessage(message);
         })
     }
 
@@ -244,7 +244,7 @@ export class PocoPeerWebRTCConnection
         this.setupMessageChannel();
     }
 
-    send(payload: MessagePayload): void | Promise<void> {
+    send(payload: PocoObject): void | Promise<void> {
         const channel = this.getChannel("message");
 
         channel.send(serializePocoObject({
@@ -252,7 +252,8 @@ export class PocoPeerWebRTCConnection
         }));
     }
 
-    emit<Event extends EventNames<Events>, Payload extends EventParameter<Events, Event> = EventParameter<Events, Event>>(event: Event, payload: Payload): void | Promise<void> {
+    emit<Event extends EventNames<Events & PocoConnectionEvents>, Payload extends EventParameter<Events & PocoConnectionEvents, Event> = EventParameter<Events & PocoConnectionEvents, Event>>
+        (event: Event, payload: Payload): void | Promise<void> {
         const channel = this.getChannel("event");
 
         channel.send(serializePocoObject({
@@ -261,7 +262,7 @@ export class PocoPeerWebRTCConnection
         }))
     }
 
-    onMessage(message: MessagePayload): void | Promise<void> {
-        this.triggerEvent("message", message);
+    onMessage(message: PocoObject): void | Promise<void> {
+        this.triggerEvent("message", { message });
     }
 }

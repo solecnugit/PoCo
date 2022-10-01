@@ -13,7 +13,7 @@ import require$$4$1 from 'node:tls';
 import require$$5 from 'node:crypto';
 import require$$0$2 from 'node:stream';
 import require$$0$1 from 'node:zlib';
-import { serialize, deserialize } from 'bson';
+import { deserialize, serialize } from 'bson';
 
 function _mergeNamespaces(n, m) {
     m.forEach(function (e) {
@@ -8187,14 +8187,6 @@ function deserializePocoObject(buffer) {
     return deserialize(buffer);
 }
 
-var index$2 = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    serializePocoObject: serializePocoObject,
-    deserializePocoObject: deserializePocoObject,
-    serializePocoMessage: serializePocoObject,
-    deserializePocoMessage: deserializePocoObject
-});
-
 const app = express();
 const server = require$$3.createServer(app);
 const io = new Server(server, {
@@ -8209,13 +8201,13 @@ const pendingPeerConnections = new Set();
 function hackSocket(socket) {
     const oldEmit = socket.emit;
     function emit(event, args) {
-        const buffer = index$2.serializePocoMessage(args);
+        const buffer = serializePocoObject(args);
         return oldEmit.apply(socket, [event, buffer]);
     }
     socket.emit = emit;
     socket.use((event, next) => {
         if (event[1] && _.isBuffer(event[1])) {
-            event[1] = index$2.deserializePocoMessage(event[1]);
+            event[1] = deserializePocoObject(event[1]);
         }
         next();
     });
@@ -8224,27 +8216,34 @@ function hackSocket(socket) {
     });
     return socket;
 }
-io.on("connection", (socket) => {
-    const address = socket.handshake.auth.address;
-    const protocol = socket.conn.transport.socket.protocol;
+io.on("connection", (_socket) => {
+    const address = _socket.handshake.auth.address;
+    const protocol = _socket.conn.transport.socket.protocol;
+    const socket = hackSocket(_socket);
     if (!address) {
-        socket.emit("disconnected", { reason: "missing address" });
-        socket.disconnect();
+        socket.emit("error", { error: "missing address" });
+        setTimeout(() => {
+            socket.disconnect(true);
+        }, 500);
         return;
     }
     if (!protocol) {
-        socket.emit("disconnected", { reason: "invalid protocol" });
-        socket.disconnect();
+        socket.emit("error", { error: "invalid protocol" });
+        setTimeout(() => {
+            socket.disconnect(true);
+        }, 500);
         return;
     }
     const oldConnection = onlineUsers.get(address);
     if (oldConnection && oldConnection.connected) {
-        socket.emit("disconnected", { reason: "duplicate address" });
-        socket.disconnect();
+        socket.emit("error", { error: "duplicate address" });
+        setTimeout(() => {
+            socket.disconnect(true);
+        }, 500);
         return;
     }
     console.log("User", chalk.green(address), "with protocol", chalk.yellow(protocol), "connected.");
-    onlineUsers.set(address, hackSocket(socket));
+    onlineUsers.set(address, socket);
     socket.on("disconnect", () => {
         console.log("User", chalk.green(address), "disconnected.");
         onlineUsers.delete(address);

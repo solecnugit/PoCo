@@ -8,8 +8,3 @@ export function serializePocoObject(object: PocoObject): ArrayBuffer {
 export function deserializePocoObject(buffer: ArrayBuffer): PocoObject {
     return deserialize(buffer)
 }
-
-export {
-    serializePocoObject as serializePocoMessage,
-    deserializePocoObject as deserializePocoMessage
-}

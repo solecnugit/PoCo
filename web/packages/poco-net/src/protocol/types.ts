@@ -10,6 +10,3 @@ export type PocoObjectElement =
 export type PocoObject = {
     [key: string]: PocoObjectElement
 }
-
-export type PocoMessage = PocoObject;
-

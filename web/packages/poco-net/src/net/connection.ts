@@ -1,30 +1,33 @@
 import _ from "lodash";
-import { PocoMessage } from "../protocol";
-import { EventHandler, EventHandlers, EventNames, EventParameter, EventsMap } from "../util";
+import { PocoObject } from "../protocol";
+import { EventsMap, Compose, DefaultEventsMap, EventNames, EventHandlers, EventHandler, EventParameter } from "./event";
 import { PocoConnectionType, Address, PocoConnectionStatus } from "./types";
 
-export type PocoConnectionDisconnectedReason = "user closed" | "invalid protocol" | "missing address" | "duplicate address";
+export type PocoConnectionClosedReason = "user closed" | "invalid protocol" | "missing address" | "duplicate address";
 
-export interface PocoConnectionEvents {
+export interface PocoConnectionEvents extends EventsMap {
     status: (this: PocoConnection, args: { status: PocoConnectionStatus }) => void;
     connected: (this: PocoConnection, args: {}) => void;
-    disconnected: (this: PocoConnection, args: { reason: PocoConnectionDisconnectedReason }) => void;
+    disconnected: (this: PocoConnection, args: { reason: PocoConnectionClosedReason }) => void;
+    message: (this: PocoConnection, args: { message: PocoObject }) => void;
+    error: (this: PocoConnection, args: { error: string }) => void;
 }
 
-export abstract class PocoConnection<
-    MessagePayload extends PocoMessage = PocoMessage,
-    ListenEvents extends EventsMap = PocoConnectionEvents,
-    EmitEvents extends EventsMap = ListenEvents
-> {
+type ReservedOrUserEvents<T extends EventsMap> = Compose<T, PocoConnectionEvents>
 
+export abstract class PocoConnection<
+    ListenEvents extends EventsMap = DefaultEventsMap,
+    EmitEvents extends EventsMap = ListenEvents,
+> {
     public connectionType: PocoConnectionType;
     public localAddress: Address;
 
     protected connectionStatus: PocoConnectionStatus;
-    protected listeners: Map<EventNames<ListenEvents>, {
-        callback: EventHandlers<ListenEvents>,
+    protected listeners: Map<EventNames<ReservedOrUserEvents<ListenEvents>>, {
+        callback: EventHandlers<ReservedOrUserEvents<ListenEvents>>,
         once: boolean
     }[]>;
+
 
     constructor(connectionType: PocoConnectionType, localAddress: Address) {
         this.connectionType = connectionType;
@@ -33,8 +36,9 @@ export abstract class PocoConnection<
         this.listeners = new Map();
     }
 
-    protected addEventListener<Event extends EventNames<ListenEvents>,
-        Callback extends EventHandlers<ListenEvents> = EventHandler<ListenEvents, Event>>
+    protected addEventListener
+        <Event extends EventNames<ReservedOrUserEvents<ListenEvents>>,
+            Callback extends EventHandlers<ReservedOrUserEvents<ListenEvents>>>
         (event: Event, callback: Callback, once: boolean = false) {
         const listeners = this.listeners.get(event);
 
@@ -56,8 +60,8 @@ export abstract class PocoConnection<
         })
     }
 
-    protected removeEventListener<Event extends EventNames<ListenEvents>,
-        Callback extends EventHandlers<ListenEvents> = EventHandler<ListenEvents, Event>>
+    protected removeEventListener<Event extends EventNames<ReservedOrUserEvents<ListenEvents>>,
+        Callback extends EventHandlers<ReservedOrUserEvents<ListenEvents>> = EventHandler<ReservedOrUserEvents<ListenEvents>, Event>>
         (event: Event, callback: Callback, includeOnce: boolean = false) {
         const listeners = this.listeners.get(event);
 
@@ -73,11 +77,10 @@ export abstract class PocoConnection<
     }
 
     protected triggerEvent
-        <Event extends EventNames<ListenEvents>,
-            Parameters extends EventParameter<ListenEvents, Event>>
+        <Event extends EventNames<ReservedOrUserEvents<ListenEvents>>,
+            Parameters extends EventParameter<ReservedOrUserEvents<ListenEvents>, Event>>
         (event: Event, args: Parameters) {
-
-        console.log(event)
+        debugger
 
         const listeners = this.listeners.get(event)?.slice();
 
@@ -110,46 +113,43 @@ export abstract class PocoConnection<
 
         this.triggerEvent("status", { status });
 
-        if (this.connectionStatus === "connected") {
-            this.triggerEvent("connected", {})
-        } else if (this.connectionStatus === "disconnected") {
-            this.triggerEvent("disconnected", {})
+        if (status === "failed") {
+            this.disconnect()
         }
     }
 
-    once<Event extends EventNames<ListenEvents>,
-        Callback extends EventHandlers<ListenEvents> = EventHandler<ListenEvents, Event>>
+    once<Event extends EventNames<ReservedOrUserEvents<ListenEvents>>,
+        Callback extends EventHandlers<ReservedOrUserEvents<ListenEvents>> = EventHandler<ReservedOrUserEvents<ListenEvents>, Event>>
         (event: Event, callback: Callback) {
         this.addEventListener(event, callback, true);
     }
 
-    on<Event extends EventNames<ListenEvents>,
-        Callback extends EventHandlers<ListenEvents> = EventHandler<ListenEvents, Event>>
+    on<Event extends EventNames<ReservedOrUserEvents<ListenEvents>>,
+        Callback extends EventHandlers<ReservedOrUserEvents<ListenEvents>> = EventHandler<ReservedOrUserEvents<ListenEvents>, Event>>
         (event: Event, callback: Callback, once: boolean = false) {
         this.addEventListener(event, callback, once);
     }
 
-    off<Event extends EventNames<ListenEvents>,
-        Callback extends EventHandlers<ListenEvents> = EventHandler<ListenEvents, Event>>
+    off<Event extends EventNames<ReservedOrUserEvents<ListenEvents>>,
+        Callback extends EventHandlers<ReservedOrUserEvents<ListenEvents>> = EventHandler<ReservedOrUserEvents<ListenEvents>, Event>>
         (event: Event, callback: Callback, includeOnce: boolean = false) {
         this.removeEventListener(event, callback, includeOnce);
     }
 
-    abstract send(payload: MessagePayload): Promise<void> | void;
+    abstract send(payload: PocoObject): Promise<void> | void;
 
-    abstract emit<Event extends EventNames<EmitEvents>,
-        Payload extends EventParameter<EmitEvents, Event> = EventParameter<EmitEvents, Event>>
+    abstract emit<Event extends EventNames<ReservedOrUserEvents<EmitEvents>>,
+        Payload extends EventParameter<ReservedOrUserEvents<EmitEvents>, Event> = EventParameter<ReservedOrUserEvents<EmitEvents>, Event>>
         (event: Event, payload: Payload): Promise<void> | void;
 
-    abstract onMessage(message: MessagePayload): Promise<void> | void;
+    onMessage(message: PocoObject): Promise<void> | void {
+        this.triggerEvent("message", { message });
+    }
 }
 
-
 export abstract class PocoPeerConnection<
-    MessagePayload extends PocoMessage = PocoMessage,
-    ListenEvents extends EventsMap = PocoConnectionEvents,
-    EmitEvents extends EventsMap = ListenEvents,
-> extends PocoConnection<MessagePayload, ListenEvents, EmitEvents> {
+    Events extends EventsMap = PocoConnectionEvents,
+> extends PocoConnection<Events, Events> {
 
     public remoteAddress: Address;
 

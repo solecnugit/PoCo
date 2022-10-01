@@ -2,12 +2,12 @@ import express from "express";
 import http from "http";
 import chalk from "chalk";
 import { Server as SocketIOServer, Socket, } from "socket.io";
-import * as poco from "poco-net";
 import _ from "lodash";
+import { DefaultEventsMap, deserializePocoObject, PocoConnectionEvents, PocoObject, PocoPeerSocketIOConnectionEvents, PocoSocketIOConnectionEvents, serializePocoObject } from "poco-net";
 
-type Events = poco.net.PocoConnectionEvents
-    & poco.net.PocoSocketIOConnectionEvents<poco.protocol.PocoObject>
-    & poco.net.PocoPeerSocketIOConnectionEvents<poco.protocol.PocoObject, poco.util.DefaultEventsMap>;
+type Events = PocoConnectionEvents
+    & PocoSocketIOConnectionEvents
+    & PocoPeerSocketIOConnectionEvents<DefaultEventsMap>;
 
 const app = express();
 const server = http.createServer(app);
@@ -27,7 +27,7 @@ function hackSocket(socket: Socket): Socket {
     const oldEmit = socket.emit;
 
     function emit<Ev extends string>(event: Ev, args: any): boolean {
-        const buffer = poco.protocol.serializePocoMessage(args as any);
+        const buffer = serializePocoObject(args as any);
 
         return oldEmit.apply(socket, [event, buffer])
     }
@@ -37,7 +37,7 @@ function hackSocket(socket: Socket): Socket {
     socket.use((event, next) => {
 
         if (event[1] && _.isBuffer(event[1])) {
-            event[1] = poco.protocol.deserializePocoMessage(event[1])
+            event[1] = deserializePocoObject(event[1])
         }
 
         next();
@@ -50,33 +50,41 @@ function hackSocket(socket: Socket): Socket {
     return socket;
 }
 
-io.on("connection", (socket) => {
-    const address = socket.handshake.auth.address as string | undefined;
-    const protocol = (socket.conn.transport as any).socket.protocol as string | undefined;
+io.on("connection", (_socket) => {
+    const address = _socket.handshake.auth.address as string | undefined;
+    const protocol = (_socket.conn.transport as any).socket.protocol as string | undefined;
+
+    const socket = hackSocket(_socket);
 
     if (!address) {
-        socket.emit("disconnected", { reason: "missing address" })
-        socket.disconnect()
+        socket.emit("error", { error: "missing address" })
+        setTimeout(() => {
+            socket.disconnect(true)
+        }, 500)
         return
     }
 
     if (!protocol) {
-        socket.emit("disconnected", { reason: "invalid protocol" })
-        socket.disconnect()
+        socket.emit("error", { error: "invalid protocol" })
+        setTimeout(() => {
+            socket.disconnect(true)
+        }, 500)
         return
     }
 
     const oldConnection = onlineUsers.get(address);
 
     if (oldConnection && oldConnection.connected) {
-        socket.emit("disconnected", { reason: "duplicate address" })
-        socket.disconnect()
+        socket.emit("error", { error: "duplicate address" })
+        setTimeout(() => {
+            socket.disconnect(true)
+        }, 500)
         return
     }
 
     console.log("User", chalk.green(address), "with protocol", chalk.yellow(protocol), "connected.")
 
-    onlineUsers.set(address, hackSocket(socket));
+    onlineUsers.set(address, socket);
 
     socket.on("disconnect", () => {
         console.log("User", chalk.green(address), "disconnected.")
