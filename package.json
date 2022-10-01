@@ -1,4 +1,6 @@
 {
+  "name": "poco",
+  "version": "0.0.2",
   "scripts": {
     "prepare": "husky install",
     "hook": "pnpm exec husky add .husky/commit-msg 'pnpm exec commitlint --edit $1'",
