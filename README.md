@@ -7,6 +7,8 @@
 
 ## 项目 Commit 格式
 
+**请使用 `pnpm run cz` 进行递交**
+
 每次提交的 Commit message 都包括三个部分：`Header`，`Body` 和 `Footer`。
 
 ```text
@@ -27,13 +29,19 @@
 
     `type` 用于说明 commit 的类别，只允许使用下面 7 个标识。
 
-    * `feat`：新功能（feature）
+    * `feat`：新功能
     * `fix`：修补 bug
-    * `docs`：文档（documentation）
-    * `style`： 格式（不影响代码运行的变动）
-    * `refactor`：重构（即不是新增功能，也不是修改 bug 的代码变动）
+    * `perf`：性能优化相关
+    * `docs`：文档
+    * `style`： 格式化
+    * `refactor`：重构
     * `test`：增加测试
     * `chore`：构建过程或辅助工具的变动
+    * `merge`：合并分支
+    * `build`：构建相关
+    * `ci`: 持续集成相关
+    * `revert`：撤回 commit
+    * `sync`：用以临时同步，不应存在于最后发布的分支
 
 2. `scope`
 
