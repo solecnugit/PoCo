@@ -40,8 +40,8 @@ export default defineConfig({
     plugins: [
         alias({
             entries: [
-                { find: "@poco-contract-abi", replacement: "../../../contract/build/contracts" },
-                { find: "@poco-contract", replacement: "../../../contract/types/truffle-contracts" },
+                { find: "@poco-contract-abi", replacement: "../../contract/build/contracts" },
+                { find: "@poco-contract", replacement: "../../contract/types/truffle-contracts/index.d.ts" },
             ]
         }),
         json(),
