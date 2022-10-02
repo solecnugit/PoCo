@@ -5,15 +5,13 @@ import commonjs from "@rollup/plugin-commonjs"
 import json from "@rollup/plugin-json"
 import externals from "rollup-plugin-node-externals";
 import strip from "@rollup/plugin-strip";
-import alias from "@rollup/plugin-alias";
 import replace from "@rollup/plugin-replace";
 import babel from "@rollup/plugin-babel";
 import * as pkg from "./package.json";
 
 const globals = {
-    "socket.io-client": "socket_ioClient",
-    "lodash": "_",
-    "bson": "bson",
+    "@truffle/contract": "contract",
+    "web3": "web3"
 }
 
 export default defineConfig({
@@ -37,17 +35,17 @@ export default defineConfig({
             sourcemap: true
         }
     ],
+    external: [
+        "@truffle/contract",
+        "web3"
+    ],
     plugins: [
-        alias({
-            entries: [
-                { find: "@poco-contract-abi", replacement: "../../contract/build/contracts" },
-                { find: "@poco-contract", replacement: "../../contract/types/truffle-contracts/index.d.ts" },
-            ]
-        }),
         json(),
-        resolve(),
+        resolve({
+            browser: true
+        }),
         commonjs({
-            sourceMap: true
+            sourceMap: false
         }),
         typescript({
             sourceMap: true,

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { $ref } from "vue/macros"
-import { PocoSocketIOConnection, PocoPeerSocketIOConnectionEvents, PocoPeerSocketIOConnection, PocoPeerWebRTCConnection, createPocoSocketIOConnection, createPocoPeerSocketIOConnection, createPocoPeerWebRTCConnection, ExpandRecursively, PocoObject, Expand } from "poco-net";
+import { PocoSocketIOConnection, PocoPeerSocketIOConnection, PocoPeerWebRTCConnection, createPocoSocketIOConnection, createPocoPeerSocketIOConnection, createPocoPeerWebRTCConnection } from "poco-net";
 
 let localAddress = $ref("")
 let remoteAddress = $ref("")
@@ -13,9 +13,7 @@ let remoteVideo = $ref<HTMLVideoElement>();
 let localStream: MediaStream;
 let remoteStream: MediaStream;
 
-type c = Expand<PocoSocketIOConnection<PocoObject, PocoPeerSocketIOConnectionEvents>>["on"];
-
-let socket: PocoSocketIOConnection<PocoObject, PocoPeerSocketIOConnectionEvents>;
+let socket: PocoSocketIOConnection;
 let peer: PocoPeerSocketIOConnection;
 let rtc: PocoPeerWebRTCConnection;
 

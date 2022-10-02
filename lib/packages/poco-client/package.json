@@ -14,8 +14,20 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@metamask/detect-provider": "^1.2.0",
     "@truffle/contract": "^4.6.2",
+    "bn.js": "^5.2.1",
+    "events": "^3.3.0",
+    "poco-contract": "workspace: *",
     "poco-net": "workspace: *",
-    "web3": "^1.8.0"
+    "web3": "^1.8.0",
+    "web3-core": "^1.8.0",
+    "web3-eth-contract": "^1.8.0",
+    "web3-utils": "^1.8.0"
+  },
+  "devDependencies": {
+    "@types/bn.js": "^5.1.1",
+    "@types/events": "^3.0.0",
+    "@types/web3": "^1.2.2"
   }
 }

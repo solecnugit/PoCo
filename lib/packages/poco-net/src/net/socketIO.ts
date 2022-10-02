@@ -20,6 +20,8 @@ export class PocoSocketIOConnection
     > {
 
     private socket: Socket;
+    private connectRejectCallback: ((reason: any) => void) | null;
+    private connectResolveCallback: ((value: void | PromiseLike<void>) => void) | null;
 
     constructor(localAddress: Address, opts?: Partial<ManagerOptions & SocketOptions & { uri?: string }> | undefined) {
         super("socketIO", localAddress)
@@ -31,6 +33,9 @@ export class PocoSocketIOConnection
             auth: { address: localAddress }
         };
 
+        this.connectRejectCallback = null;
+        this.connectResolveCallback = null;
+
         if (opts === undefined) {
             this.socket = io(defaultOpts);
         } else if (opts.uri === undefined) {
@@ -41,6 +46,13 @@ export class PocoSocketIOConnection
 
         this.socket.on("connect", () => {
             this.setStatus("connected")
+
+            if (this.connectResolveCallback) {
+                const callback = this.connectResolveCallback;
+                this.connectResolveCallback = null;
+
+                callback();
+            }
         })
 
         this.socket.on("disconnect", (reason: string) => {
@@ -53,9 +65,18 @@ export class PocoSocketIOConnection
         })
 
         this.socket.on("connect_error", (error: Error) => {
-            this.setStatus("disconnected")
+            if (this.connectRejectCallback) {
+                const callback = this.connectRejectCallback;
+                this.connectRejectCallback = null;
 
-            throw error;
+                callback(error);
+
+                this.setStatus("failed")
+            } else {
+                this.setStatus("failed")
+
+                throw error;
+            }
         })
 
         this.socket.on("message", (buffer: ArrayBuffer) => {
@@ -82,7 +103,12 @@ export class PocoSocketIOConnection
     async connect(): Promise<void> {
         this.setStatus("connecting")
 
-        this.socket.connect()
+        return new Promise((resolve, reject) => {
+            this.connectResolveCallback = resolve;
+            this.connectRejectCallback = reject;
+
+            this.socket.connect();
+        })
     }
 
     async disconnect(): Promise<void> {

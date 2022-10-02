@@ -80,8 +80,6 @@ export abstract class PocoConnection<
         <Event extends EventNames<ReservedOrUserEvents<ListenEvents>>,
             Parameters extends EventParameter<ReservedOrUserEvents<ListenEvents>, Event>>
         (event: Event, args: Parameters) {
-        debugger
-
         const listeners = this.listeners.get(event)?.slice();
 
         if (!listeners)
