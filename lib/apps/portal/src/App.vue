@@ -1,8 +1,12 @@
 <script setup lang="ts">
+import Dev from './pages/dev/index.vue';
 </script>
 
 <template>
-  <RouterView></RouterView>
+  <!-- <RouterView></RouterView> -->
+  <Suspense>
+    <Dev></Dev>
+  </Suspense>
 </template>
 
 <style scoped>

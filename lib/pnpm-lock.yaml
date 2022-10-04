@@ -69,6 +69,7 @@ importers:
       '@truffle/contract': ^4.6.2
       '@vitejs/plugin-vue': ^3.1.0
       autoprefixer: ^10.4.12
+      events: ^3.3.0
       flowbite: ^1.5.3
       poco-client: 'worksapce: *'
       poco-net: workspace:*
@@ -82,6 +83,7 @@ importers:
       web3: ^1.8.0
     dependencies:
       '@truffle/contract': 4.6.2
+      events: 3.3.0
       flowbite: 1.5.3
       poco-client: link:../../packages/poco-client
       poco-net: link:../../packages/poco-net
@@ -105,9 +107,9 @@ importers:
       '@types/events': ^3.0.0
       '@types/web3': ^1.2.2
       bn.js: ^5.2.1
-      events: ^3.3.0
       poco-contract: 'workspace: *'
       poco-net: 'workspace: *'
+      poco-util: 'workspace: *'
       web3: ^1.8.0
       web3-core: ^1.8.0
       web3-eth-contract: ^1.8.0
@@ -116,9 +118,9 @@ importers:
       '@metamask/detect-provider': 1.2.0
       '@truffle/contract': 4.6.2
       bn.js: 5.2.1
-      events: 3.3.0
       poco-contract: link:../poco-contract
       poco-net: link:../poco-net
+      poco-util: link:../poco-util
       web3: 1.8.0
       web3-core: 1.8.0
       web3-eth-contract: 1.8.0
@@ -177,8 +179,10 @@ importers:
   packages/poco-net:
     specifiers:
       '@types/webrtc': ^0.0.32
+      poco-util: 'workspace: *'
       socket.io-client: ^4.5.2
     dependencies:
+      poco-util: link:../poco-util
       socket.io-client: 4.5.2
     devDependencies:
       '@types/webrtc': 0.0.32

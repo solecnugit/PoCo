@@ -6,8 +6,8 @@ import { EventDispatcher } from "../src/index"
 const { expect } = chai.use(chaiAsPromised);
 
 type Events = {
-    "hello": (this: ThisType<EventDispatcher>, message: string) => void,
-    "say": (this: ThisType<EventDispatcher>, message: string, to: string) => void;
+    "hello": (this: ThisType<EventDispatcher<Events>>, message: string) => void,
+    "say": (this: ThisType<EventDispatcher<Events>>, message: string, to: string) => void;
 }
 
 describe("dispatcher", () => {
@@ -26,7 +26,7 @@ describe("dispatcher", () => {
                 expect(d2).to.be.equal(message)
             })
 
-            dispatcher.emit("say", [message, message])
+            dispatcher.emit("say", message, message)
         })
 
         it("#on() #off()", async () => {
@@ -39,7 +39,7 @@ describe("dispatcher", () => {
 
         it("#once() #emit()", async () => {
             setImmediate(() => {
-                dispatcher.emit("hello", [message])
+                dispatcher.emit("hello", message)
             })
 
             const [d1] = await dispatcher.once("hello");
@@ -47,9 +47,20 @@ describe("dispatcher", () => {
             expect(d1).equal(message)
         })
 
+        it("#once() #emit()", async () => {
+            setImmediate(() => {
+                dispatcher.emit("say", message, "world")
+            })
+
+            const [d1, d2] = await dispatcher.once("say");
+
+            expect(d1).equal(message)
+            expect(d2).equal("world")
+        })
+
         it("#once() #emit() timeout", async () => {
             setTimeout(() => {
-                dispatcher.emit("say", [message, message])
+                dispatcher.emit("say", message, message)
             }, 50)
 
             expect(dispatcher.once("say", { timeout: 10 }))
@@ -69,7 +80,7 @@ describe("dispatcher", () => {
 
         it("#once() #emit() abort instead of timeout", async () => {
             setTimeout(() => {
-                dispatcher.emit("say", [message, message])
+                dispatcher.emit("say", message, message)
             }, 50)
 
             const controller = new AbortController();
@@ -112,7 +123,7 @@ describe("dispatcher", () => {
                 index++;
             })
 
-            dispatcher.emit("hello", ["world"])
+            dispatcher.emit("hello", "world")
         })
     })
 })

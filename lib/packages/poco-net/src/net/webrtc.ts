@@ -1,23 +1,29 @@
-import { PocoConnectionEvents, PocoPeerConnection } from "./connection";
+import { PocoPeerConnection } from "./connection";
 import { Address, ChannelId, PocoPeerWebRTCConnectionOptions } from "./types";
 import { PocoMediaConnection } from "./media";
 import _ from "lodash";
 import { PocoConnectionClosedError } from "./error";
-import { deserializePocoObject, PocoObject, serializePocoObject } from "../protocol";
-import { DefaultEventsMap, EventNames, EventParameter, EventParameters, EventsMap } from "./event";
+import { deserializeMessagePayload, serializePocoMessagePayload } from "../protocol";
+import { DefaultEventsMap, EventsMap, ReservedOrUserEventNames, ReservedOrUserEventParameters } from "poco-util";
+import { PocoPeerSocketIOConnectionEvents } from "./socketIO";
 
 export type PocoPeerWebRTCInternalChannel = "message" | "event";
 
-export interface PocoPeerWebRTCConnectionEvents {
-    "webrtc offer": (this: PocoPeerWebRTCConnection, args: { offer: RTCSessionDescriptionInit }) => void;
-    "webrtc answer": (this: PocoPeerWebRTCConnection, args: { answer: RTCSessionDescriptionInit }) => void;
-    "webrtc candidate": (this: PocoPeerWebRTCConnection, args: { candidate: RTCIceCandidateInit }) => void;
-    "webrtc destroy": (this: PocoPeerWebRTCConnection, args: {}) => void;
+export type PocoPeerWebRTCConnectionEvents = {
+    "webrtc offer": (this: ThisType<PocoPeerWebRTCConnection>, offer: RTCSessionDescriptionInit) => void;
+    "webrtc answer": (this: ThisType<PocoPeerWebRTCConnection>, answer: RTCSessionDescriptionInit) => void;
+    "webrtc candidate": (this: ThisType<PocoPeerWebRTCConnection>, candidate: RTCIceCandidateInit) => void;
+    "webrtc destroy": (this: ThisType<PocoPeerWebRTCConnection>) => void;
+}
+
+export type PocoPeerWebRTCConnectionInternalEvents = {
+    "channel open": (this: ThisType<PocoPeerWebRTCConnection>, channel: RTCDataChannel) => void;
+    "channel close": (this: ThisType<PocoPeerWebRTCConnection>, channel: RTCDataChannel) => void;
+    "channel error": (this: ThisType<PocoPeerWebRTCConnection>, channel: RTCDataChannel) => void;
 }
 
 export class PocoPeerWebRTCConnection<Events extends EventsMap = DefaultEventsMap>
-    extends PocoPeerConnection<Events>
-
+    extends PocoPeerConnection<Events, PocoPeerWebRTCConnectionInternalEvents>
     implements PocoMediaConnection {
 
     protected rtcConnection: RTCPeerConnection;
@@ -26,10 +32,12 @@ export class PocoPeerWebRTCConnection<Events extends EventsMap = DefaultEventsMa
     protected options: Partial<PocoPeerWebRTCConnectionOptions>;
     protected channels: Map<ChannelId, RTCDataChannel>;
 
-    constructor(localAddress: Address,
+    constructor(
+        localAddress: Address,
         remoteAddress: Address,
         peerConnection: PocoPeerConnection<PocoPeerWebRTCConnectionEvents>,
-        opts?: Partial<PocoPeerWebRTCConnectionOptions>) {
+        opts?: Partial<PocoPeerWebRTCConnectionOptions>
+    ) {
 
         super("webrtc", localAddress, remoteAddress)
 
@@ -48,7 +56,7 @@ export class PocoPeerWebRTCConnection<Events extends EventsMap = DefaultEventsMa
         this.rtcConnection = new RTCPeerConnection(this.options.rtcConfiguration);
         this.rtcConnection.addEventListener("icecandidate", ({ candidate }) => {
             if (candidate && this.rtcConnection.remoteDescription) {
-                this.peerConnection.emit("webrtc candidate", { candidate })
+                this.peerConnection.send("webrtc candidate", candidate)
             }
         })
 
@@ -85,28 +93,26 @@ export class PocoPeerWebRTCConnection<Events extends EventsMap = DefaultEventsMa
 
             this.channels.set(channelId, channel)
 
-            if (channelId === "message") {
-                this.setupMessageChannel();
-            } else if (channelId === "event") {
-                this.setupEventChannel();
+            if (channelId === "poco") {
+                this.setupInternalChannel();
             }
         })
 
         this.peerConnection = peerConnection;
 
-        this.peerConnection.once("webrtc answer", async ({ answer }) => {
+        this.peerConnection.on("webrtc answer", async (answer) => {
             const description = new RTCSessionDescription(answer);
 
             await this.rtcConnection.setRemoteDescription(description);
         })
 
-        this.peerConnection.on("webrtc candidate", async ({ candidate }) => {
+        this.peerConnection.on("webrtc candidate", async (candidate) => {
             const iceCandidate = new RTCIceCandidate(candidate);
 
             await this.rtcConnection.addIceCandidate(iceCandidate)
         })
 
-        this.peerConnection.once("webrtc destroy", async () => {
+        this.peerConnection.on("webrtc destroy", () => {
             this.cleanup();
         })
     }
@@ -123,14 +129,15 @@ export class PocoPeerWebRTCConnection<Events extends EventsMap = DefaultEventsMa
         if (this.options.offer) {
             this.setupOffer(this.options.offer)
         } else {
-            this.setupInternalChannels();
+            this.setupInternalChannel();
 
             const offer = await this.rtcConnection.createOffer(this.options?.rtcOfferOptions);
 
             await this.rtcConnection.setLocalDescription(offer);
-            await this.peerConnection.emit("webrtc offer", {
-                offer: this.rtcConnection.localDescription!
-            });
+
+            this.peerConnection.send("webrtc offer",
+                this.rtcConnection.localDescription!
+            );
         }
     }
 
@@ -146,7 +153,7 @@ export class PocoPeerWebRTCConnection<Events extends EventsMap = DefaultEventsMa
     }
 
     async disconnect(): Promise<void> {
-        this.peerConnection.emit("webrtc destroy", {});
+        this.peerConnection.send("webrtc destroy");
 
         this.cleanup();
     }
@@ -160,9 +167,9 @@ export class PocoPeerWebRTCConnection<Events extends EventsMap = DefaultEventsMa
 
         await this.rtcConnection.setLocalDescription(answer);
 
-        await this.peerConnection.emit("webrtc answer", {
-            answer: this.rtcConnection.localDescription!
-        });
+        this.peerConnection.send("webrtc answer",
+            this.rtcConnection.localDescription!
+        );
     }
 
     getRTCConnection(): RTCPeerConnection {
@@ -193,65 +200,49 @@ export class PocoPeerWebRTCConnection<Events extends EventsMap = DefaultEventsMa
         return channel;
     }
 
-    protected setupInternalChannel(channel: RTCDataChannel) {
+    protected setupInternalChannel() {
+        const channel = this.getChannel("poco");
+
         channel.addEventListener("open", () => {
-            this.triggerEvent("channel open", { channel: channel })
+            this.triggerEvent("channel open", channel)
         })
 
         channel.addEventListener("close", () => {
-            this.triggerEvent("channel close", { channel: channel })
+            this.triggerEvent("channel close", channel)
         })
 
-        channel.addEventListener("error", (event) => {
-            this.triggerEvent("channel error", { channel: channel, event })
+        channel.addEventListener("error", () => {
+            this.triggerEvent("channel error", channel)
         })
-    }
 
-    protected setupMessageChannel() {
-        const messageChannel = this.getChannel("message");
+        channel.addEventListener("message", ({ data }) => {
+            const [event, ...payload] = deserializeMessagePayload(data);
 
-        this.setupInternalChannel(messageChannel);
-
-        messageChannel.addEventListener("message", ({ data }) => {
-            const message = deserializePocoObject(data);
-
-            this.onMessage(message);
+            this.triggerEvent(event, ...payload);
         })
     }
 
-    protected setupEventChannel(): void {
-        const eventChannel = this.getChannel("event");
+    send<Event extends ReservedOrUserEventNames<PocoPeerWebRTCConnectionInternalEvents, Events>>(type: Event, ...payload: ReservedOrUserEventParameters<PocoPeerSocketIOConnectionEvents, Events, Event>): void | Promise<void> {
+        const channel = this.getChannel("poco");
 
-        this.setupInternalChannel(eventChannel);
-
-        eventChannel.addEventListener("message", ({ data }) => {
-            const { event: eventName, payload } = deserializePocoObject(data) as {
-                event: EventNames<Events>,
-                payload: EventParameters<Events>
-            };
-
-            this.triggerEvent(eventName, payload);
-        })
+        channel.send(serializePocoMessagePayload([
+            type,
+            ...payload
+        ]))
     }
 
-    protected setupInternalChannels(): void {
-        this.setupEventChannel();
-        this.setupMessageChannel();
-    }
+    // send(payload: PocoMessagePayload): void | Promise<void> {
+    //     const channel = this.getChannel("message");
 
-    send(payload: PocoObject): void | Promise<void> {
-        const channel = this.getChannel("message");
+    //     channel.send(serializePocoMessagePayload(payload));
+    // }
 
-        channel.send(serializePocoObject(payload));
-    }
+    // override emit<Event extends EventNames<Events & PocoConnectionEvents>, Payload extends Parameters<OmitThisParameter<(Events & PocoConnectionEvents)[EventNames<Events & PocoConnectionEvents>]>> = Parameters<OmitThisParameter<(Events & PocoConnectionEvents)[Event]>>>(event: Event, payload: Payload): void {
+    //     const channel = this.getChannel("event");
 
-    emit<Event extends EventNames<Events & PocoConnectionEvents>, Payload extends EventParameter<Events & PocoConnectionEvents, Event> = EventParameter<Events & PocoConnectionEvents, Event>>
-        (event: Event, payload: Payload): void | Promise<void> {
-        const channel = this.getChannel("event");
-
-        channel.send(serializePocoObject({
-            event: event as string,
-            payload: payload as any
-        }))
-    }
+    //     channel.send(serializePocoMessagePayload([
+    //         event,
+    //         ...payload
+    //     ]))
+    // }
 }

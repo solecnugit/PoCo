@@ -11070,10 +11070,150 @@
       "links": {},
       "address": "0x65A5FCb41DD8238a247Afc9D4970A47863710ef5",
       "transactionHash": "0x54a0e0a8c9058e58ed6f2411e950b53a727b44b33e8c056742fb14381ddbfc8f"
+    },
+    "1664760780123": {
+      "events": {
+        "0x7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb3847402498": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "uint8",
+              "name": "version",
+              "type": "uint8"
+            }
+          ],
+          "name": "Initialized",
+          "type": "event"
+        },
+        "0x20309915d5388e7ffbdf90aebe947775baed9026a9752d6ab873db9dac5f243d": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "enum ServiceRegistry.Role",
+              "name": "role",
+              "type": "uint8"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "user",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "string",
+              "name": "endpoint",
+              "type": "string"
+            }
+          ],
+          "name": "NewService",
+          "type": "event"
+        },
+        "0x733a86b4159ceed337ac7cf47e99320d72e0e635c05e825aecff4e919037eccb": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "enum ServiceRegistry.Role",
+              "name": "role",
+              "type": "uint8"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "user",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "string",
+              "name": "endpoint",
+              "type": "string"
+            }
+          ],
+          "name": "ServiceUpdate",
+          "type": "event"
+        }
+      },
+      "links": {},
+      "address": "0x437A718Cd351C413dea35Bcc524cf9617726b4ab",
+      "transactionHash": "0xc7b6e2fd061c7a804546775125c19d6e4881fef36fd7ff063b4bd0d505e50947"
+    },
+    "1664788623004": {
+      "events": {
+        "0x7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb3847402498": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "uint8",
+              "name": "version",
+              "type": "uint8"
+            }
+          ],
+          "name": "Initialized",
+          "type": "event"
+        },
+        "0x20309915d5388e7ffbdf90aebe947775baed9026a9752d6ab873db9dac5f243d": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "enum ServiceRegistry.Role",
+              "name": "role",
+              "type": "uint8"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "user",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "string",
+              "name": "endpoint",
+              "type": "string"
+            }
+          ],
+          "name": "NewService",
+          "type": "event"
+        },
+        "0x733a86b4159ceed337ac7cf47e99320d72e0e635c05e825aecff4e919037eccb": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "enum ServiceRegistry.Role",
+              "name": "role",
+              "type": "uint8"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "user",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "string",
+              "name": "endpoint",
+              "type": "string"
+            }
+          ],
+          "name": "ServiceUpdate",
+          "type": "event"
+        }
+      },
+      "links": {},
+      "address": "0x414fdA0a2E9EDFcdFacf799558cc0B8Ca7363be6",
+      "transactionHash": "0x957203e2e38cfcf11f660fe7995ed6b475fb8628ac06fa1322449fe1e5feab6b"
     }
   },
   "schemaVersion": "3.4.10",
-  "updatedAt": "2022-10-02T07:40:08.235Z",
+  "updatedAt": "2022-10-03T09:17:53.871Z",
   "networkType": "ethereum",
   "devdoc": {
     "kind": "dev",

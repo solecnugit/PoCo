@@ -1,22 +1,19 @@
 import _ from "lodash";
+import { EventsMap, DefaultEventsMap, EventNames, ReservedOrUserEventNames, ReservedOrUserEventParameters, EventParameters } from "poco-util";
 import { Socket, ManagerOptions, SocketOptions, io } from "socket.io-client";
-import { deserializePocoObject, PocoObject, serializePocoObject } from "../protocol";
+import { deserializeMessagePayload, serializePocoMessagePayload } from "../protocol";
 import { PocoConnection, PocoConnectionEvents, PocoPeerConnection } from "./connection";
 import { PocoConnectionError } from "./error";
-import { EventsMap, DefaultEventsMap, EventNames, EventParameter } from "./event";
 import { Address, PocoPeerSocketIOConnectionOptions } from "./types";
-
-export interface PocoSocketIOConnectionEvents extends PocoConnectionEvents { };
 
 export class PocoSocketIOConnection
     <
-        ListenEvents extends EventsMap = DefaultEventsMap,
-        EmitEvents extends EventsMap = ListenEvents,
+        Events extends EventsMap = DefaultEventsMap,
     >
     extends PocoConnection
     <
-        PocoSocketIOConnectionEvents & ListenEvents,
-        PocoSocketIOConnectionEvents & EmitEvents
+        Events,
+        PocoConnectionEvents
     > {
 
     private socket: Socket;
@@ -80,22 +77,23 @@ export class PocoSocketIOConnection
         })
 
         this.socket.on("message", (buffer: ArrayBuffer) => {
-            const payload = deserializePocoObject(buffer);
+            const payload = deserializeMessagePayload(buffer);
 
-            this.onMessage(payload)
+            this.triggerEvent("message", payload)
         })
 
         this.socket.onAny((event, ...args) => {
-            this.triggerEvent(event, deserializePocoObject(args[0] as any))
+            this.triggerEvent(event, ...deserializeMessagePayload(args[0]))
         })
 
-        this.on("error", ({ error }: { error: string }) => {
+        // @ts-ignore
+        this.on("error", (error: string) => {
             this.setStatus("failed");
             this.socket.close();
 
             console.error("connection error:", error)
 
-            throw new PocoConnectionError(this as any, error);
+            throw new PocoConnectionError(this, error);
         })
 
     }
@@ -115,19 +113,23 @@ export class PocoSocketIOConnection
         this.socket.disconnect();
     }
 
-    send(payload: PocoObject): void {
-        const buffer = serializePocoObject(payload);
+    send<Event extends ReservedOrUserEventNames<PocoConnectionEvents, Events>>(type: Event, ...payload: ReservedOrUserEventParameters<PocoConnectionEvents, Events, Event>): void | Promise<void> {
+        const buffer = serializePocoMessagePayload(payload);
 
-        this.socket.send(buffer);
+        this.socket.emit(type as string, buffer);
     }
 
-    emit<Event extends EventNames<PocoSocketIOConnectionEvents & EmitEvents & PocoConnectionEvents>,
-        Payload extends EventParameter<PocoSocketIOConnectionEvents & EmitEvents & PocoConnectionEvents, Event> = EventParameter<PocoSocketIOConnectionEvents & EmitEvents & PocoConnectionEvents, Event>>
-        (event: Event, payload: Payload): void | Promise<void> {
-        const buffer = serializePocoObject(payload as PocoObject);
+    // send(payload: PocoMessagePayload): void {
+    //     const buffer = serializePocoMessagePayload(payload);
 
-        this.socket.emit(event as string, buffer)
-    }
+    //     this.socket.send(buffer);
+    // }
+
+    // override emit<Event extends ReservedOrUserEventNames<PocoConnectionEvents, Events>>(event: Event, ...payload: Parameters<[Event extends "connected" | "disconnected" | "status" | "message" | "error" ? OmitThisParameter<PocoConnectionEvents[Event]> : Event extends EventNames<Events> ? OmitThisParameter<Events[Event]> : never] extends [never] ? (...args: any[]) => void | Promise<void> : Event extends "connected" | "disconnected" | "status" | "message" | "error" ? OmitThisParameter<PocoConnectionEvents[Event]> : Event extends EventNames<Events> ? OmitThisParameter<Events[Event]> : never>): void {
+    //     const buffer = serializePocoMessagePayload(payload);
+
+    //     this.socket.emit(event as string, buffer)
+    // }
 }
 
 export type PocoPeerAddressPayload = { from: Address, to: Address };
@@ -135,25 +137,23 @@ export type PocoPeerAddressPayload = { from: Address, to: Address };
 export interface PocoPeerSocketIOConnectionEvents
     <Events extends EventsMap = DefaultEventsMap>
     extends PocoConnectionEvents {
-    "peer message": (this: PocoPeerSocketIOConnection<any>, args: PocoPeerAddressPayload & { message: PocoObject }) => void;
-    "peer event": <Event extends EventNames<Events>>(this: PocoPeerSocketIOConnection<any>, args: PocoPeerAddressPayload & { event: Event, payload: EventParameter<Events, Event> }) => void;
-    "peer disconnected": (this: PocoPeerSocketIOConnection<any>, args: PocoPeerAddressPayload) => void;
-    "peer connected": (this: PocoPeerSocketIOConnection<any>, args: PocoPeerAddressPayload) => void;
-    "peer setup": (this: PocoPeerSocketIOConnection<any>, args: PocoPeerAddressPayload) => void;
-    "peer destroy": (this: PocoPeerSocketIOConnection<any>, args: PocoPeerAddressPayload) => void;
+    "peer event": <Event extends EventNames<Events>>(this: ThisType<PocoPeerSocketIOConnection<Events>>, from: Address, to: Address, event: Event, payload: EventParameters<Events, Event>) => void;
+    "peer disconnected": (this: ThisType<PocoPeerSocketIOConnection<Events>>, from: Address, to: Address) => void;
+    "peer connected": (this: ThisType<PocoPeerSocketIOConnection<Events>>, from: Address, to: Address,) => void;
+    "peer setup": (this: ThisType<PocoPeerSocketIOConnection<Events>>, from: Address, to: Address) => void;
+    "peer destroy": (this: ThisType<PocoPeerSocketIOConnection<Events>>, from: Address, to: Address) => void;
 };
 
 export class PocoPeerSocketIOConnection<
     Events extends EventsMap = DefaultEventsMap
 > extends PocoPeerConnection<Events> {
-
-    private connection: PocoConnection<PocoPeerSocketIOConnectionEvents<Events>>;
+    private connection: PocoSocketIOConnection<PocoPeerSocketIOConnectionEvents<Events>>;
     private options: PocoPeerSocketIOConnectionOptions | undefined;
 
     constructor(
         localAddress: Address,
         remoteAddress: Address,
-        connection: PocoConnection<PocoPeerSocketIOConnectionEvents<Events>>,
+        connection: PocoSocketIOConnection<PocoPeerSocketIOConnectionEvents<Events>>,
         opts?: PocoPeerSocketIOConnectionOptions
     ) {
 
@@ -162,23 +162,24 @@ export class PocoPeerSocketIOConnection<
         this.connection = connection;
         this.options = opts;
 
-        this.connection.on("peer message", ({ from, to, message }) => {
+        // this.connection.on("peer message", (from, to, message) => {
+        //     if (from !== this.remoteAddress || to !== this.localAddress) {
+        //         return;
+        //     }
+
+        //     this.triggerEvent("message", message)
+        // })
+
+        this.connection.on("peer event", (from, to, event, payload) => {
             if (from !== this.remoteAddress || to !== this.localAddress) {
                 return;
             }
 
-            this.onMessage(message)
+            // @ts-ignore
+            this.triggerEvent(event, ...payload)
         })
 
-        this.connection.on("peer event", ({ from, to, event, payload }) => {
-            if (from !== this.remoteAddress || to !== this.localAddress) {
-                return;
-            }
-
-            this.triggerEvent(event, payload)
-        })
-
-        this.connection.once("peer disconnected", () => {
+        this.connection.on("peer disconnected", () => {
             this.setStatus("closed")
         })
 
@@ -196,25 +197,19 @@ export class PocoPeerSocketIOConnection<
             await this.connection.connect();
         }
 
-        const status = await Promise.race([
-            new Promise<string>(resolve => setTimeout(() => {
-                resolve("timeout")
-            }, this.options?.timeout || 5000)),
-            new Promise<string>(resolve => {
-                this.connection.once("peer connected", () => resolve("connected"));
+        this.setStatus("connecting")
+        this.connection.send("peer setup", this.localAddress, this.remoteAddress)
 
-                this.setStatus("connecting")
-                this.connection.emit("peer setup", { from: this.localAddress, to: this.remoteAddress })
-            })
-        ])
+        try {
+            await this.connection.once("peer connected", { timeout: this.options?.timeout || 5000 })
 
-        if (status === "connected") {
             this.setStatus("connected");
-        } else {
+        } catch (error: any) {
             this.setStatus("failed");
 
-            throw new PocoConnectionError(this, status);
+            throw new PocoConnectionError(this, error);
         }
+
     }
 
     async disconnect(): Promise<void> {
@@ -222,24 +217,28 @@ export class PocoPeerSocketIOConnection<
             return;
         }
 
-        this.connection.emit("peer destroy", { from: this.localAddress, to: this.remoteAddress })
+        this.connection.emit("peer destroy", this.localAddress, this.remoteAddress)
         this.setStatus("closed")
     }
 
-    send(payload: PocoObject): void | Promise<void> {
-        this.connection.emit("peer message", {
-            from: this.localAddress,
-            to: this.remoteAddress,
-            message: payload
-        });
+    send<Event extends ReservedOrUserEventNames<PocoConnectionEvents, Events>>(type: Event, ...payload: ReservedOrUserEventParameters<PocoPeerSocketIOConnectionEvents, Events, Event>): void | Promise<void> {
+        this.connection.send("peer event", this.localAddress, this.remoteAddress, type, payload as any)
     }
 
-    emit<Event extends EventNames<Events>, Payload extends EventParameter<Events, Event> = EventParameter<Events, Event>>(event: Event, payload: Payload): void | Promise<void> {
-        this.connection.emit("peer event", {
-            from: this.localAddress,
-            to: this.remoteAddress,
-            event: event as any,
-            payload: payload
-        })
-    }
+    // send(payload: PocoObject): void | Promise<void> {
+    //     this.connection.emit("peer message",
+    //         this.localAddress,
+    //         this.remoteAddress,
+    //         payload
+    //     );
+    // }
+
+    // override emit<Event extends EventNames<Events & PocoConnectionEvents>>(event: Event, ...payload: Parameters<OmitThisParameter<(Events & PocoConnectionEvents)[Event]>>): void {
+    //     this.connection.emit("peer event",
+    //         this.localAddress,
+    //         this.remoteAddress,
+    //         event,
+    //         payload as any
+    //     )
+    // }
 }

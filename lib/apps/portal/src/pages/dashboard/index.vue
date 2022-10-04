@@ -1,6 +1,5 @@
 <script lang="ts" setup>
-import { createPocoClient, PocoClient, PocoServiceRole } from 'poco-client';
-import { PocoServiceEntry } from 'poco-client/dist/client/type';
+import { createPocoClient, PocoClient, PocoJob, PocoServiceEntry, PocoServiceRole } from 'poco-client';
 import { onMounted, onUnmounted, toRef } from 'vue';
 import { useRoute } from 'vue-router';
 import { $, $computed, $ref } from 'vue/macros';

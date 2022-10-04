@@ -12,9 +12,9 @@ import detectEthereumProvider from '@metamask/detect-provider'
 import { PocoLocalStorage, PocoStorage } from "../storage";
 import BN from "bn.js";
 import { PocoSocketIOConnection, PocoPeerWebRTCConnection, createPocoSocketIOConnection } from "poco-net";
-import { EventEmitter } from "events";
+import { EventDispatcher } from "poco-util";
 
-export class PocoClient extends EventEmitter {
+export class PocoClient extends EventDispatcher {
     public localAddress: Address;
     private provider: AbstractProvider;
     private network: Networks;
@@ -30,12 +30,11 @@ export class PocoClient extends EventEmitter {
 
     /* Connections */
     private connections: Map<Address, PocoSocketIOConnection>;
+    // @ts-ignore
     private rtcConnections: Map<Address, PocoPeerWebRTCConnection>;
 
     constructor(provider: AbstractProvider, localAddress: Address, network?: Networks, storage?: PocoStorage) {
-        super({
-            captureRejections: true
-        })
+        super();
 
         this.provider = provider;
         this.localAddress = localAddress;
@@ -98,7 +97,8 @@ export class PocoClient extends EventEmitter {
                 this.jobs.set(jobId.toString(), {
                     jobId,
                     messenger,
-                    owner
+                    owner,
+                    status: "pending"
                 })
             } else if (eventName === "SubmitJob") {
                 const { jobId } = (eventData as any).args as JobCenterContract.SubmitJob["args"];

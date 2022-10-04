@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@truffle/contract": "^4.6.2",
+    "events": "^3.3.0",
     "flowbite": "^1.5.3",
     "poco-client": "worksapce: *",
     "poco-net": "workspace:*",

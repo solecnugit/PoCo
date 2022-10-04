@@ -3,8 +3,10 @@ export interface EventsMap {
 }
 
 export interface DefaultEventsMap {
-    [event: string]: (this: ThisType<any>, ...args: any[]) => void;
+    [event: string]: Callback;
 }
+
+export type Callback = (this: ThisType<any>, ...args: any[]) => void | Promise<void>;
 
 export type EventNames<T extends EventsMap>
     = keyof T & (string | symbol)
@@ -12,11 +14,32 @@ export type EventNames<T extends EventsMap>
 export type EventHandler<T extends EventsMap, R extends EventNames<T>>
     = OmitThisParameter<T[R]>
 
-export type EventHandlers<T extends EventsMap>
-    = OmitThisParameter<T[EventNames<T>]>
+export type EventParameters<T extends EventsMap, R extends EventNames<T>>
+    = Parameters<OmitThisParameter<T[R]>>
 
-export type EventParameters<T extends EventsMap>
-    = Parameters<EventHandlers<T>>
+export type ReservedOrUserEventNames<
+    ReservedEventsMap extends EventsMap,
+    UserEvents extends EventsMap
+> = EventNames<ReservedEventsMap> | EventNames<UserEvents>;
 
-export type EventParameter<T extends EventsMap, R extends EventNames<T>>
-    = Parameters<EventHandler<T, R>>
+export type ReservedOrUserHandler<
+    ReservedEvents extends EventsMap,
+    UserEvents extends EventsMap,
+    Ev extends ReservedOrUserEventNames<ReservedEvents, UserEvents>
+> = FallbackToUntypedHandler<
+    Ev extends EventNames<ReservedEvents>
+    ? OmitThisParameter<ReservedEvents[Ev]>
+    : Ev extends EventNames<UserEvents>
+    ? OmitThisParameter<UserEvents[Ev]>
+    : never
+>;
+
+export type ReservedOrUserEventParameters<
+    ReservedEvents extends EventsMap,
+    UserEvents extends EventsMap,
+    Ev extends ReservedOrUserEventNames<ReservedEvents, UserEvents>
+> = Parameters<ReservedOrUserHandler<ReservedEvents, UserEvents, Ev>>
+
+type FallbackToUntypedHandler<T> = [T] extends [never]
+    ? (...args: any[]) => void | Promise<void>
+    : T;

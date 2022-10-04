@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "rootDir": "./",
+    "rootDir": "./src",
     "lib": []
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts", "test/**/*.spec.ts"],

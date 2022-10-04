@@ -6,7 +6,7 @@
       "script": "build",
       "group": "build",
       "problemMatcher": [],
-      "label": "pnpm: build",
+      "label": "pnpm:build",
       "detail": "rollup --config rollup.config.ts"
     }
   ]

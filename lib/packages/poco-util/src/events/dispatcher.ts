@@ -1,5 +1,5 @@
 import { deepEquals } from "../utils";
-import { DefaultEventsMap, EventHandler, EventHandlers, EventNames, EventParameter, EventParameters, EventsMap } from "./types";
+import { Callback, EventParameters, EventsMap, ReservedOrUserEventNames, ReservedOrUserEventParameters, ReservedOrUserHandler } from "./types";
 
 export type ListenerOptions = {
     async: boolean
@@ -10,15 +10,15 @@ export type OnceListenerOptions = ListenerOptions & {
     timeout: number | undefined
 }
 
-export class EventDispatcher<Events extends EventsMap = DefaultEventsMap> {
+export class EventDispatcher<Events extends EventsMap, ReservedEvents extends EventsMap = {}> {
     protected _listenerCount: number;
 
-    protected _listeners: Map<EventNames<Events>, {
-        callback: EventHandlers<Events>,
+    protected _listeners: Map<ReservedOrUserEventNames<ReservedEvents, Events>, {
+        callback: Callback,
         option: ListenerOptions
     }[]>;
 
-    protected _onceCallbacks: Map<EventNames<Events>, {
+    protected _onceCallbacks: Map<ReservedOrUserEventNames<ReservedEvents, Events>, {
         resolveCallback: (...args: any) => void,
         rejectCallback: (reason?: "abort" | "timeout") => void,
         option: OnceListenerOptions
@@ -31,9 +31,8 @@ export class EventDispatcher<Events extends EventsMap = DefaultEventsMap> {
     }
 
     protected addListener
-        <Event extends EventNames<Events>,
-            Callback extends EventHandlers<Events> = EventHandler<Events, Event>>
-        (event: Event, callback: Callback, opt?: Partial<ListenerOptions>): boolean {
+        <Event extends ReservedOrUserEventNames<ReservedEvents, Events>>
+        (event: Event, callback: ReservedOrUserHandler<ReservedEvents, Events, Event>, opt?: Partial<ListenerOptions>): boolean {
 
         const option = { async: opt?.async || false };
         const listeners = this._listeners.get(event);
@@ -60,10 +59,10 @@ export class EventDispatcher<Events extends EventsMap = DefaultEventsMap> {
         return true;
     }
 
-    protected addOnceCallback<Event extends EventNames<Events>>
+    protected addOnceCallback<Event extends ReservedOrUserEventNames<ReservedEvents, Events>>
         (
             event: Event,
-            resolveCallback: (...args: EventParameter<Events, Event>) => void,
+            resolveCallback: ReservedOrUserHandler<ReservedEvents, Events, Event>,
             rejectCallback: (reason?: any) => void,
             option: OnceListenerOptions
         ) {
@@ -90,9 +89,8 @@ export class EventDispatcher<Events extends EventsMap = DefaultEventsMap> {
     }
 
     protected removeListener
-        <Event extends EventNames<Events>,
-            Callback extends EventHandlers<Events> = EventHandler<Events, Event>>
-        (event: Event, callback: Callback, opt?: Partial<ListenerOptions>): boolean {
+        <Event extends ReservedOrUserEventNames<ReservedEvents, Events>>
+        (event: Event, callback: ReservedOrUserHandler<ReservedEvents, Events, Event>, opt?: Partial<ListenerOptions>): boolean {
 
         // @ts-ignore
         const option = { async: opt?.async || false };
@@ -119,10 +117,8 @@ export class EventDispatcher<Events extends EventsMap = DefaultEventsMap> {
     }
 
     protected triggerEvent
-        <Event extends EventNames<Events>,
-            Parameters extends EventParameters<Events> = EventParameter<Events, Event>>
-        (event: Event, args: Parameters) {
-
+        <Event extends ReservedOrUserEventNames<ReservedEvents, Events>>
+        (event: Event, ...payload: ReservedOrUserEventParameters<ReservedEvents, Events, Event>) {
         {
             const listeners = this._listeners.get(event)?.slice();
 
@@ -130,10 +126,10 @@ export class EventDispatcher<Events extends EventsMap = DefaultEventsMap> {
                 for (const { callback, option: { async } } of listeners) {
                     if (async) {
                         setImmediate(() => {
-                            callback.apply(this, args)
+                            callback.apply(this, payload)
                         })
                     } else {
-                        callback.apply(this, args)
+                        callback.apply(this, payload)
                     }
                 }
             }
@@ -151,14 +147,14 @@ export class EventDispatcher<Events extends EventsMap = DefaultEventsMap> {
                             })
                         } else {
                             setImmediate(() => {
-                                resolveCallback.apply(this, [args])
+                                resolveCallback.call(this, payload)
                             })
                         }
                     } else {
                         if (signal && signal.aborted) {
                             rejectCallback.apply(this, ["abort"])
                         } else {
-                            resolveCallback.apply(this, [args])
+                            resolveCallback.call(this, payload)
                         }
                     }
                 }
@@ -168,7 +164,7 @@ export class EventDispatcher<Events extends EventsMap = DefaultEventsMap> {
         }
     }
 
-    protected removeAllListeners<Event extends EventNames<Events>>(event?: Event) {
+    protected removeAllListeners<Event extends ReservedOrUserEventNames<ReservedEvents, Events>>(event?: Event) {
         if (!event) {
             this._listeners.clear();
             return;
@@ -178,17 +174,16 @@ export class EventDispatcher<Events extends EventsMap = DefaultEventsMap> {
     }
 
     on
-        <Event extends EventNames<Events>,
-            Callback extends EventHandlers<Events> = EventHandler<Events, Event>>
-        (event: Event, callback: Callback, opt?: Partial<ListenerOptions>): boolean {
+        <Event extends ReservedOrUserEventNames<ReservedEvents, Events>>
+        (event: Event, callback: ReservedOrUserHandler<ReservedEvents, Events, Event>, opt?: Partial<ListenerOptions>): boolean {
         return this.addListener(event, callback, opt)
     }
 
     once
-        <Event extends EventNames<Events>>
-        (event: Event, opt?: Partial<Pick<OnceListenerOptions, "async" | "signal" | "timeout">>): Promise<EventParameter<Events, Event>> {
+        <Event extends ReservedOrUserEventNames<ReservedEvents, Events>>
+        (event: Event, opt?: Partial<Pick<OnceListenerOptions, "async" | "signal" | "timeout">>): Promise<EventParameters<ReservedEvents & Events, Event>> {
 
-        const promise = new Promise<EventParameter<Events, Event>>((resolve, reject) => {
+        const promise = new Promise<EventParameters<ReservedEvents & Events, Event>>((resolve, reject) => {
             this.addOnceCallback(event, resolve as any, reject, {
                 async: opt?.async || false,
                 signal: opt?.signal,
@@ -200,7 +195,7 @@ export class EventDispatcher<Events extends EventsMap = DefaultEventsMap> {
             const timeout = opt.timeout;
 
             return Promise.race([
-                new Promise<EventParameter<Events, Event>>((_, reject) => setTimeout(() => {
+                new Promise<EventParameters<ReservedEvents & Events, Event>>((_, reject) => setTimeout(() => {
                     if (opt && opt.signal && opt.signal.aborted) {
                         reject("abort")
                     } else {
@@ -215,33 +210,31 @@ export class EventDispatcher<Events extends EventsMap = DefaultEventsMap> {
     }
 
     off
-        <Event extends EventNames<Events>,
-            Callback extends EventHandlers<Events> = EventHandler<Events, Event>>
-        (event: Event, callback: Callback, opt?: Partial<ListenerOptions>): boolean {
+        <Event extends ReservedOrUserEventNames<ReservedEvents, Events>>
+        (event: Event, callback: ReservedOrUserHandler<ReservedEvents, Events, Event>, opt?: Partial<ListenerOptions>): boolean {
         return this.removeListener(event, callback, opt)
     }
 
     emit
-        <Event extends EventNames<Events>,
-            Parameters extends EventParameters<Events> = EventParameter<Events, Event>>
-        (event: Event, args: Parameters) {
-        this.triggerEvent(event, args);
+        <Event extends ReservedOrUserEventNames<ReservedEvents, Events>>
+        (event: Event, ...payload: ReservedOrUserEventParameters<ReservedEvents, Events, Event>) {
+        this.triggerEvent(event, ...payload);
     }
 
     clear
-        <Event extends EventNames<Events>>(event?: Event) {
+        <Event extends ReservedOrUserEventNames<ReservedEvents, Events>>(event?: Event) {
         this.removeAllListeners(event);
     }
 
-    listenerCount<Event extends EventNames<Events>>(event?: Event): number {
+    listenerCount<Event extends ReservedOrUserEventNames<ReservedEvents, Events>>(event?: Event): number {
         if (!event)
             return this._listenerCount;
 
         return this._listeners.get(event)?.length || 0;
     }
 
-    listeners<Event extends EventNames<Events>>(event?: Event): {
-        callback: EventHandlers<Events>,
+    listeners<Event extends ReservedOrUserEventNames<ReservedEvents, Events>>(event?: Event): {
+        callback: Callback,
         option: ListenerOptions
     }[] {
         if (!event) {
@@ -251,7 +244,7 @@ export class EventDispatcher<Events extends EventsMap = DefaultEventsMap> {
         return this._listeners.get(event) || []
     }
 
-    eventNames(): EventNames<Events>[] {
+    eventNames(): ReservedOrUserEventNames<ReservedEvents, Events>[] {
         return Array.from(this._listeners.keys())
     }
 }
