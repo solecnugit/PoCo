@@ -1,9 +1,13 @@
 import { describe, it } from "mocha";
-import { expect } from "chai";
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
 import { EventDispatcher } from "../src/index"
 
+const { expect } = chai.use(chaiAsPromised);
+
 type Events = {
-    "hello": (this: ThisType<EventDispatcher>, message: string) => void
+    "hello": (this: ThisType<EventDispatcher>, message: string) => void,
+    "say": (this: ThisType<EventDispatcher>, message: string, to: string) => void;
 }
 
 describe("dispatcher", () => {
@@ -13,33 +17,102 @@ describe("dispatcher", () => {
         dispatcher = new EventDispatcher();
     })
 
-    it("#on() #emit()", async () => {
-        let value = "world";
+    describe("basic cases", () => {
+        let message = Math.random().toString()
 
-        dispatcher.on("hello", (data) => {
-            expect(data).equal(value)
+        it("#on() #emit()", async () => {
+            dispatcher.on("say", (d1, d2) => {
+                expect(d1).to.be.equal(message)
+                expect(d2).to.be.equal(message)
+            })
+
+            dispatcher.emit("say", [message, message])
         })
 
-        dispatcher.emit("hello", [value])
-    })
+        it("#on() #off()", async () => {
+            const callback = () => { };
 
-    it("#on() #off()", async () => {
-        const callback = () => { };
-
-        expect(dispatcher.on("hello", callback)).to.be.true;
-        expect(dispatcher.off("hello", callback)).to.be.true;
-        expect(dispatcher.listeners("hello").length).equal(0)
-    })
-
-    it("#once()", async () => {
-        const value = "world";
-
-        setImmediate(() => {
-            dispatcher.emit("hello", [value])
+            expect(dispatcher.on("hello", callback)).to.be.true;
+            expect(dispatcher.off("hello", callback)).to.be.true;
+            expect(dispatcher.listeners("hello").length).to.be.equal(0)
         })
 
-        const [args] = await dispatcher.once("hello");
+        it("#once() #emit()", async () => {
+            setImmediate(() => {
+                dispatcher.emit("hello", [message])
+            })
 
-        expect(args).equal(value)
+            const [d1] = await dispatcher.once("hello");
+
+            expect(d1).equal(message)
+        })
+
+        it("#once() #emit() timeout", async () => {
+            setTimeout(() => {
+                dispatcher.emit("say", [message, message])
+            }, 50)
+
+            expect(dispatcher.once("say", { timeout: 10 }))
+                .to.be.eventually.rejectedWith("timeout")
+        })
+
+        it("#once() #emit() abort", async () => {
+            const controller = new AbortController();
+
+            setImmediate(() => {
+                controller.abort()
+            })
+
+            expect(dispatcher.once("say", { signal: controller.signal }))
+                .to.be.eventually.rejectedWith("abort")
+        })
+
+        it("#once() #emit() abort instead of timeout", async () => {
+            setTimeout(() => {
+                dispatcher.emit("say", [message, message])
+            }, 50)
+
+            const controller = new AbortController();
+
+            setImmediate(() => {
+                controller.abort()
+            })
+
+            expect(dispatcher.once("say", { signal: controller.signal }))
+                .to.be.eventually.rejectedWith("abort")
+        })
+    })
+
+
+    describe("trigger order", () => {
+        it("async after sync", async () => {
+            let index = 0;
+
+            dispatcher.on("hello", () => {
+                expect(index).to.be.equal(0);
+
+                index++;
+            })
+
+            dispatcher.on("hello", () => {
+                expect(index).to.be.equal(1);
+
+                index++;
+            })
+
+            dispatcher.on("hello", () => {
+                expect(index).to.be.equal(3);
+
+                index++;
+            }, { async: true })
+
+            dispatcher.on("hello", () => {
+                expect(index).to.be.equal(2);
+
+                index++;
+            })
+
+            dispatcher.emit("hello", ["world"])
+        })
     })
 })

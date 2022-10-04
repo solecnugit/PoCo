@@ -1,5 +1,5 @@
+import { deepEquals } from "../utils";
 import { DefaultEventsMap, EventHandler, EventHandlers, EventNames, EventParameter, EventParameters, EventsMap } from "./types";
-import deepEquals from "fast-deep-equal/es6"
 
 export type ListenerOptions = {
     async: boolean
@@ -7,6 +7,7 @@ export type ListenerOptions = {
 
 export type OnceListenerOptions = ListenerOptions & {
     signal: AbortSignal | undefined
+    timeout: number | undefined
 }
 
 export class EventDispatcher<Events extends EventsMap = DefaultEventsMap> {
@@ -17,16 +18,16 @@ export class EventDispatcher<Events extends EventsMap = DefaultEventsMap> {
         option: ListenerOptions
     }[]>;
 
-    protected _onceListeners: Map<EventNames<Events>, {
+    protected _onceCallbacks: Map<EventNames<Events>, {
         resolveCallback: (...args: any) => void,
-        rejectCallback: (reason?: any) => void,
+        rejectCallback: (reason?: "abort" | "timeout") => void,
         option: OnceListenerOptions
     }[]>;
 
     constructor() {
         this._listenerCount = 0;
         this._listeners = new Map();
-        this._onceListeners = new Map();
+        this._onceCallbacks = new Map();
     }
 
     protected addListener
@@ -59,7 +60,7 @@ export class EventDispatcher<Events extends EventsMap = DefaultEventsMap> {
         return true;
     }
 
-    protected addOnceListener<Event extends EventNames<Events>>
+    protected addOnceCallback<Event extends EventNames<Events>>
         (
             event: Event,
             resolveCallback: (...args: EventParameter<Events, Event>) => void,
@@ -67,10 +68,10 @@ export class EventDispatcher<Events extends EventsMap = DefaultEventsMap> {
             option: OnceListenerOptions
         ) {
 
-        const listeners = this._onceListeners.get(event);
+        const listeners = this._onceCallbacks.get(event);
 
         if (!listeners) {
-            this._onceListeners.set(event, [{
+            this._onceCallbacks.set(event, [{
                 resolveCallback,
                 rejectCallback,
                 option
@@ -122,44 +123,48 @@ export class EventDispatcher<Events extends EventsMap = DefaultEventsMap> {
             Parameters extends EventParameters<Events> = EventParameter<Events, Event>>
         (event: Event, args: Parameters) {
 
-        let listeners = this._listeners.get(event)?.slice();
+        {
+            const listeners = this._listeners.get(event)?.slice();
 
-        if (listeners) {
-            for (const { callback, option: { async } } of listeners) {
-                if (async) {
-                    setImmediate(() => {
+            if (listeners) {
+                for (const { callback, option: { async } } of listeners) {
+                    if (async) {
+                        setImmediate(() => {
+                            callback.apply(this, args)
+                        })
+                    } else {
                         callback.apply(this, args)
-                    })
-                } else {
-                    callback.apply(this, args)
+                    }
                 }
             }
         }
 
-        let onceListeners = this._onceListeners.get(event)?.slice();
+        {
+            const listeners = this._onceCallbacks.get(event)?.slice();
 
-        if (onceListeners) {
-            for (const { resolveCallback, rejectCallback, option: { async, signal } } of onceListeners) {
-                if (async) {
-                    if (signal && signal.aborted) {
-                        setImmediate(() => {
+            if (listeners) {
+                for (const { resolveCallback, rejectCallback, option: { async, signal } } of listeners) {
+                    if (async) {
+                        if (signal && signal.aborted) {
+                            setImmediate(() => {
+                                rejectCallback.apply(this, ["abort"])
+                            })
+                        } else {
+                            setImmediate(() => {
+                                resolveCallback.apply(this, [args])
+                            })
+                        }
+                    } else {
+                        if (signal && signal.aborted) {
                             rejectCallback.apply(this, ["abort"])
-                        })
-                    } else {
-                        setImmediate(() => {
+                        } else {
                             resolveCallback.apply(this, [args])
-                        })
-                    }
-                } else {
-                    if (signal && signal.aborted) {
-                        rejectCallback.apply(this, ["abort"])
-                    } else {
-                        resolveCallback.apply(this, [args])
+                        }
                     }
                 }
-            }
 
-            this._onceListeners.delete(event)
+                this._onceCallbacks.delete(event)
+            }
         }
     }
 
@@ -181,14 +186,32 @@ export class EventDispatcher<Events extends EventsMap = DefaultEventsMap> {
 
     once
         <Event extends EventNames<Events>>
-        (event: Event, opt?: Partial<Pick<OnceListenerOptions, "async" | "signal">>): Promise<EventParameter<Events, Event>> {
+        (event: Event, opt?: Partial<Pick<OnceListenerOptions, "async" | "signal" | "timeout">>): Promise<EventParameter<Events, Event>> {
 
-        return new Promise((resolve, reject) => {
-            this.addOnceListener(event, resolve as any, reject, {
+        const promise = new Promise<EventParameter<Events, Event>>((resolve, reject) => {
+            this.addOnceCallback(event, resolve as any, reject, {
                 async: opt?.async || false,
                 signal: opt?.signal,
+                timeout: undefined
             })
         })
+
+        if (opt && opt.timeout) {
+            const timeout = opt.timeout;
+
+            return Promise.race([
+                new Promise<EventParameter<Events, Event>>((_, reject) => setTimeout(() => {
+                    if (opt && opt.signal && opt.signal.aborted) {
+                        reject("abort")
+                    } else {
+                        reject("timeout")
+                    }
+                }, timeout)),
+                promise
+            ])
+        } else {
+            return promise;
+        }
     }
 
     off
