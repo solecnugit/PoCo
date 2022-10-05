@@ -119,17 +119,6 @@ export class PocoSocketIOConnection
         this.socket.emit(type as string, buffer);
     }
 
-    // send(payload: PocoMessagePayload): void {
-    //     const buffer = serializePocoMessagePayload(payload);
-
-    //     this.socket.send(buffer);
-    // }
-
-    // override emit<Event extends ReservedOrUserEventNames<PocoConnectionEvents, Events>>(event: Event, ...payload: Parameters<[Event extends "connected" | "disconnected" | "status" | "message" | "error" ? OmitThisParameter<PocoConnectionEvents[Event]> : Event extends EventNames<Events> ? OmitThisParameter<Events[Event]> : never] extends [never] ? (...args: any[]) => void | Promise<void> : Event extends "connected" | "disconnected" | "status" | "message" | "error" ? OmitThisParameter<PocoConnectionEvents[Event]> : Event extends EventNames<Events> ? OmitThisParameter<Events[Event]> : never>): void {
-    //     const buffer = serializePocoMessagePayload(payload);
-
-    //     this.socket.emit(event as string, buffer)
-    // }
 }
 
 export type PocoPeerAddressPayload = { from: Address, to: Address };
@@ -161,14 +150,6 @@ export class PocoPeerSocketIOConnection<
 
         this.connection = connection;
         this.options = opts;
-
-        // this.connection.on("peer message", (from, to, message) => {
-        //     if (from !== this.remoteAddress || to !== this.localAddress) {
-        //         return;
-        //     }
-
-        //     this.triggerEvent("message", message)
-        // })
 
         this.connection.on("peer event", (from, to, event, payload) => {
             if (from !== this.remoteAddress || to !== this.localAddress) {
@@ -224,21 +205,4 @@ export class PocoPeerSocketIOConnection<
     send<Event extends ReservedOrUserEventNames<PocoConnectionEvents, Events>>(type: Event, ...payload: ReservedOrUserEventParameters<PocoPeerSocketIOConnectionEvents, Events, Event>): void | Promise<void> {
         this.connection.send("peer event", this.localAddress, this.remoteAddress, type, payload as any)
     }
-
-    // send(payload: PocoObject): void | Promise<void> {
-    //     this.connection.emit("peer message",
-    //         this.localAddress,
-    //         this.remoteAddress,
-    //         payload
-    //     );
-    // }
-
-    // override emit<Event extends EventNames<Events & PocoConnectionEvents>>(event: Event, ...payload: Parameters<OmitThisParameter<(Events & PocoConnectionEvents)[Event]>>): void {
-    //     this.connection.emit("peer event",
-    //         this.localAddress,
-    //         this.remoteAddress,
-    //         event,
-    //         payload as any
-    //     )
-    // }
 }

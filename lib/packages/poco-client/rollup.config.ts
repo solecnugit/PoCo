@@ -10,8 +10,7 @@ import babel from "@rollup/plugin-babel";
 import * as pkg from "./package.json";
 
 const globals = {
-    "@truffle/contract": "contract",
-    "web3": "web3"
+
 }
 
 export default defineConfig({
@@ -36,8 +35,7 @@ export default defineConfig({
         }
     ],
     external: [
-        "@truffle/contract",
-        "web3"
+
     ],
     plugins: [
         json(),

@@ -19,10 +19,14 @@ contract ServiceRegistry is Initializable {
     using EnumerableSet for EnumerableSet.AddressSet;
     EnumerableSet.AddressSet users;
 
-    event NewService(Role indexed role, address indexed user, string endpoint);
+    event NewService(
+        Role indexed role,
+        address indexed provider,
+        string endpoint
+    );
     event ServiceUpdate(
         Role indexed role,
-        address indexed user,
+        address indexed provider,
         string endpoint
     );
 

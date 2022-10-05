@@ -4,7 +4,7 @@ import { $computed, $ } from 'vue/macros';
 
 const props = withDefaults(defineProps<{
     size?: "small" | "default" | "medium" | "large",
-    status?: "online" | "offline" | "busy" | "unknown"
+    status?: "online" | "offline" | "busy" | "unknown" | "pending" | "submitted" | "done" | "running"
 }>(), {
     size: "default",
     status: "unknown"
@@ -15,12 +15,14 @@ const { size, status } = $(toRefs(props))
 const klass = $computed(() => {
     let bgClass = "bg-gray-300";
 
-    if (status === "online")
+    if (status === "online" || status === "running")
         bgClass = "bg-green-400"
     else if (status === "offline")
         bgClass = "bg-red-500"
     else if (status === "busy")
         bgClass = "bg-yellow-300"
+    else if (status === "pending")
+        bgClass = "bg-violet-300"
 
     let sizeClass = "w-[8px] h-[8px]"
 

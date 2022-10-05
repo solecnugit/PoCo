@@ -13,6 +13,7 @@ const globals = {
     "socket.io-client": "socket_ioClient",
     "lodash": "_",
     "bson": "bson",
+    "buffer": "buffer"
 }
 
 export default defineConfig({
@@ -36,9 +37,15 @@ export default defineConfig({
             sourcemap: true
         }
     ],
+    external: [
+        "buffer"
+    ],
     plugins: [
         json(),
-        resolve(),
+        resolve({
+            browser: true,
+            preferBuiltins: false
+        }),
         commonjs({
             sourceMap: true
         }),

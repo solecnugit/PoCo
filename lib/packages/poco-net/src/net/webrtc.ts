@@ -1,4 +1,4 @@
-import { PocoPeerConnection } from "./connection";
+import { PocoConnectionEvents, PocoPeerConnection } from "./connection";
 import { Address, ChannelId, PocoPeerWebRTCConnectionOptions } from "./types";
 import { PocoMediaConnection } from "./media";
 import _ from "lodash";
@@ -19,8 +19,8 @@ export type PocoPeerWebRTCConnectionEvents = {
 export type PocoPeerWebRTCConnectionInternalEvents = {
     "channel open": (this: ThisType<PocoPeerWebRTCConnection>, channel: RTCDataChannel) => void;
     "channel close": (this: ThisType<PocoPeerWebRTCConnection>, channel: RTCDataChannel) => void;
-    "channel error": (this: ThisType<PocoPeerWebRTCConnection>, channel: RTCDataChannel) => void;
-}
+    "channel error": (this: ThisType<PocoPeerWebRTCConnection>, channel: RTCDataChannel, event: RTCErrorEvent) => void;
+} & PocoConnectionEvents;
 
 export class PocoPeerWebRTCConnection<Events extends EventsMap = DefaultEventsMap>
     extends PocoPeerConnection<Events, PocoPeerWebRTCConnectionInternalEvents>
@@ -139,6 +139,8 @@ export class PocoPeerWebRTCConnection<Events extends EventsMap = DefaultEventsMa
                 this.rtcConnection.localDescription!
             );
         }
+
+        await this.once("connected");
     }
 
     cleanup() {
@@ -205,14 +207,16 @@ export class PocoPeerWebRTCConnection<Events extends EventsMap = DefaultEventsMa
 
         channel.addEventListener("open", () => {
             this.triggerEvent("channel open", channel)
+
+            this.triggerEvent("connected");
         })
 
         channel.addEventListener("close", () => {
             this.triggerEvent("channel close", channel)
         })
 
-        channel.addEventListener("error", () => {
-            this.triggerEvent("channel error", channel)
+        channel.addEventListener("error", (error) => {
+            this.triggerEvent("channel error", channel, error as RTCErrorEvent)
         })
 
         channel.addEventListener("message", ({ data }) => {
@@ -230,19 +234,4 @@ export class PocoPeerWebRTCConnection<Events extends EventsMap = DefaultEventsMa
             ...payload
         ]))
     }
-
-    // send(payload: PocoMessagePayload): void | Promise<void> {
-    //     const channel = this.getChannel("message");
-
-    //     channel.send(serializePocoMessagePayload(payload));
-    // }
-
-    // override emit<Event extends EventNames<Events & PocoConnectionEvents>, Payload extends Parameters<OmitThisParameter<(Events & PocoConnectionEvents)[EventNames<Events & PocoConnectionEvents>]>> = Parameters<OmitThisParameter<(Events & PocoConnectionEvents)[Event]>>>(event: Event, payload: Payload): void {
-    //     const channel = this.getChannel("event");
-
-    //     channel.send(serializePocoMessagePayload([
-    //         event,
-    //         ...payload
-    //     ]))
-    // }
 }

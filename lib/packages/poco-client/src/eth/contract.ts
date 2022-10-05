@@ -1,36 +1,32 @@
-import contract from "@truffle/contract";
+import { BaseContract, providers } from "ethers";
 import * as ContractAddress from "poco-contract/contracts.json";
 import { EitherOr } from "../utils";
-import { provider } from "web3-core";
+import { JobCenter__factory, ServiceRegistry__factory } from "poco-contract";
 
 export type Networks = "development";
 export type ContractNames = "JobCenter" | "ServiceRegistry"
 export type ContractOptions = EitherOr<{ network: Networks, address: string }, "network", "address">
 
-export type PocoContractInstance<Contract extends Truffle.ContractInstance> = Contract & {
 
-}
+export async function getContract<Contract extends BaseContract>(
+    provider: providers.Web3Provider,
+    name: ContractNames,
+    { network, address }: ContractOptions)
+    : Promise<Contract> {
+    const contractAddress = address || ContractAddress[network!][name];
+    const signer = provider.getSigner();
 
-export async function getContractInstance
-    <Contract extends Truffle.ContractInstance>(
-        provider: provider,
-        abi: object,
-        name: ContractNames,
-        { network, address }: ContractOptions)
-    : Promise<PocoContractInstance<Contract>> {
-    const func: any = (typeof TruffleContract !== undefined) ? TruffleContract : contract;
+    let instance: Contract;
 
-    const instance = func(abi);
-
-    instance.setProvider(provider);
-
-    if (address) {
-        return instance.at(address)
+    if (name === "JobCenter") {
+        // @ts-ignore
+        instance = JobCenter__factory.connect(contractAddress, signer);
+    } else if (name === "ServiceRegistry") {
+        // @ts-ignore
+        instance = ServiceRegistry__factory.connect(contractAddress, signer);
+    } else {
+        throw Error("unreachable")
     }
 
-    if (network) {
-        return instance.at(ContractAddress[network][name])
-    }
-
-    throw new Error("unreachable")
+    return instance;
 }

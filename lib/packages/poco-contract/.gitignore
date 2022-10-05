@@ -134,6 +134,8 @@ dist
 
 # build
 build/
+.rollup.cache
 
 #types
 types/truffle-contracts
+types/ethers-contracts

@@ -23,6 +23,12 @@ const port = 8080;
 const onlineUsers = new Map<string, Socket<Events, Events>>();
 const pendingPeerConnections = new Set<string>();
 
+function prefix() {
+    const now = new Date();
+
+    return chalk.green(`[${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}]`)
+}
+
 function hackSocket<X extends EventsMap, Y extends EventsMap, Z extends EventsMap, D>(socket: Socket<X, Y, Z, D>): Socket<X, Y, Z, D> {
     const oldEmit = socket.emit;
 
@@ -45,7 +51,7 @@ function hackSocket<X extends EventsMap, Y extends EventsMap, Z extends EventsMa
     })
 
     socket.onAnyOutgoing((args) => {
-        console.log(chalk.bgMagenta("Outgoing"), args)
+        console.log(prefix(), chalk.bgMagenta("Outgoing"), args)
     })
 
     return socket;
@@ -83,12 +89,12 @@ io.on("connection", (_socket) => {
         return
     }
 
-    console.log("User", chalk.green(address), "with protocol", chalk.yellow(protocol), "connected.")
+    console.log(prefix(), "User", chalk.green(address), "with protocol", chalk.yellow(protocol), "connected.")
 
     onlineUsers.set(address, socket);
 
     socket.on("disconnect", () => {
-        console.log("User", chalk.green(address), "disconnected.")
+        console.log(prefix(), "User", chalk.green(address), "disconnected.")
 
         onlineUsers.delete(address)
     })
@@ -123,17 +129,17 @@ io.on("connection", (_socket) => {
         }
 
         if (!onlineUsers.has(from)) {
-            console.warn("missing sender in online users", chalk.red(from));
+            console.warn(prefix(), "missing sender in online users", chalk.red(from));
             return;
         }
 
         if (!onlineUsers.has(to)) {
-            console.warn("missing receiver in online users", chalk.red(to));
+            console.warn(prefix(), "missing receiver in online users", chalk.red(to));
             return;
         }
 
-        console.log(chalk.cyanBright("Event"), chalk.cyan(event), "from", chalk.green(from), "to", chalk.yellow(to));
-        console.log(chalk.yellow(JSON.stringify(payload)));
+        console.log(prefix(), chalk.cyanBright("Event"), chalk.cyan(event), "from", chalk.green(from), "to", chalk.yellow(to));
+        console.log(prefix(), chalk.yellow(JSON.stringify(payload)));
 
         const receiverSocket = onlineUsers.get(to)!;
 
@@ -146,19 +152,19 @@ io.on("connection", (_socket) => {
         }
 
         if (!onlineUsers.has(from)) {
-            console.warn("missing sender in online users", chalk.red(from));
+            console.warn(prefix(), "missing sender in online users", chalk.red(from));
             return;
         }
 
         if (!onlineUsers.has(to)) {
-            console.warn("missing receiver in online users", chalk.red(to));
+            console.warn(prefix(), "missing receiver in online users", chalk.red(to));
             return;
         }
 
         const requestId = `${to}-${from}`;
 
         if (pendingPeerConnections.has(requestId)) {
-            console.log("User", chalk.green(from), "connected to", chalk.green(to), "successfully.")
+            console.log(prefix(), "User", chalk.green(from), "connected to", chalk.green(to), "successfully.")
 
             pendingPeerConnections.delete(requestId);
 
@@ -167,7 +173,7 @@ io.on("connection", (_socket) => {
             socket.emit("peer connected", from, to);
             receiverSocket.emit("peer connected", from, to);
         } else {
-            console.log("User", chalk.green(from), "wants to connect user", chalk.green(to), ".")
+            console.log(prefix(), "User", chalk.green(from), "wants to connect user", chalk.green(to), ".")
 
             pendingPeerConnections.add(`${from}-${to}`)
 
@@ -183,12 +189,12 @@ io.on("connection", (_socket) => {
         }
 
         if (!onlineUsers.has(from)) {
-            console.warn("missing sender in online users", chalk.red(from));
+            console.warn(prefix(), "missing sender in online users", chalk.red(from));
             return;
         }
 
         if (!onlineUsers.has(to)) {
-            console.warn("missing receiver in online users", chalk.red(to));
+            console.warn(prefix(), "missing receiver in online users", chalk.red(to));
             return;
         }
 
@@ -199,5 +205,5 @@ io.on("connection", (_socket) => {
 })
 
 server.listen(port, () => {
-    console.log("server is running at port", chalk.green(port.toString()))
+    console.log(prefix(), "server is running at port", chalk.green(port.toString()))
 })

@@ -22,7 +22,6 @@ export default defineConfig({
   resolve: {
     alias: {
       "@truffle/contract": path.resolve(__dirname, "./node_modules/@truffle/contract/browser-dist/truffle-contract.js"),
-      web3: path.resolve(__dirname, "./node_modules/web3/dist/web3.min.js")
     }
   }
 })
