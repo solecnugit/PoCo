@@ -8,10 +8,10 @@
       "type": "node",
       "request": "launch",
       "name": "Launch Program",
-      "runtimeExecutable": "ts-node-esm",
+      "preLaunchTask": "pnpm:build",
       "skipFiles": ["<node_internals>/**"],
-      "preLaunchTask": "pnpm: build",
-      "program": "${workspaceFolder}/src/index.ts"
+      "program": "${workspaceFolder}/dist/index.esm.js",
+      "outFiles": ["${workspaceFolder}/**/*.js"]
     }
   ]
 }

@@ -1,3 +1,30 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body::-webkit-scrollbar {
+    display: none;
+  }
+
+  ::-webkit-scrollbar {
+    @apply w-[12px];
+    @apply h-[12px];
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+    @apply rounded-md;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-100/80;
+    @apply rounded-[12px];
+    @apply backdrop-blur-md;
+    @apply border-[4px];
+    @apply border-transparent;
+    @apply border-solid;
+    background-clip: content-box;
+  }
+}

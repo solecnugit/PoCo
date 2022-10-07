@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { $ref } from "vue/macros"
-import { PocoSocketIOConnection, PocoPeerSocketIOConnectionEvents, PocoPeerSocketIOConnection, PocoPeerWebRTCConnection, createPocoSocketIOConnection, createPocoPeerSocketIOConnection, createPocoPeerWebRTCConnection, ExpandRecursively, PocoObject, Expand } from "poco-net";
+import { PocoSocketIOConnection, PocoPeerSocketIOConnection, PocoPeerWebRTCConnection, createPocoSocketIOConnection, createPocoPeerSocketIOConnection, createPocoPeerWebRTCConnection } from "poco-net";
 
 let localAddress = $ref("")
 let remoteAddress = $ref("")
@@ -13,9 +13,7 @@ let remoteVideo = $ref<HTMLVideoElement>();
 let localStream: MediaStream;
 let remoteStream: MediaStream;
 
-type c = Expand<PocoSocketIOConnection<PocoObject, PocoPeerSocketIOConnectionEvents>>["on"];
-
-let socket: PocoSocketIOConnection<PocoObject, PocoPeerSocketIOConnectionEvents>;
+let socket: PocoSocketIOConnection;
 let peer: PocoPeerSocketIOConnection;
 let rtc: PocoPeerWebRTCConnection;
 
@@ -24,7 +22,7 @@ const setupPeerConnection = async () => {
         history += `SocketIO: ${JSON.stringify(message)}\n`;
     })
 
-    peer.on("webrtc offer", async ({ offer }) => {
+    peer.on("webrtc offer", async (offer) => {
         rtc = new PocoPeerWebRTCConnection(peer.remoteAddress, peer.localAddress, peer as any, {
             offer: offer
         });
@@ -64,7 +62,7 @@ const createConnection = async () => {
         localAddress,
     });
 
-    socket.on("peer setup", async ({ from, to }) => {
+    socket.on("peer setup", async (from, to) => {
         history += `peer connection request from ${from}\n`
 
         if (to != localAddress) {
@@ -114,7 +112,7 @@ const sendMessageBySocketIO = async () => {
 
     if (messageToSend.length === 0) return;
 
-    peer.send({ message: messageToSend });
+    peer.send("message", { messege: messageToSend });
 }
 
 const sendMessageByWebRTC = async () => {
@@ -124,7 +122,7 @@ const sendMessageByWebRTC = async () => {
 
     if (messageToSend.length === 0) return;
 
-    rtc.send({ message: messageToSend });
+    rtc.send("message", { message: messageToSend });
 }
 
 const createWebRTCPeerConnection = async () => {
@@ -136,7 +134,7 @@ const createWebRTCPeerConnection = async () => {
         type: "webrtc",
         localAddress,
         remoteAddress,
-        connection: peer as any
+        connection: peer
     })
 
     // localStream.getTracks().forEach(track => {
@@ -156,7 +154,7 @@ const createWebRTCPeerConnection = async () => {
         history += `WebRTC status: ${JSON.stringify(status)}\n`
     })
 
-    rtc.on("message", (message) => {
+    rtc.on("message", message => {
         history += `WebRTC message: ${JSON.stringify(message)}\n`
     })
 

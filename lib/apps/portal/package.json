@@ -9,15 +9,24 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@truffle/contract": "^4.6.2",
+    "ethers": "^5.7.1",
+    "events": "^3.3.0",
+    "flowbite": "^1.5.3",
+    "pinia": "^2.0.22",
+    "poco-client": "worksapce: *",
     "poco-net": "workspace:*",
-    "vue": "^3.2.37"
+    "vue": "^3.2.37",
+    "vue-router": "4"
   },
   "devDependencies": {
+    "@types/wicg-file-system-access": "^2020.9.5",
     "@vitejs/plugin-vue": "^3.1.0",
     "autoprefixer": "^10.4.12",
     "postcss": "^8.4.16",
     "tailwindcss": "^3.1.8",
     "vite": "^3.1.0",
+    "vite-svg-loader": "^3.6.0",
     "vue-tsc": "^0.40.4"
   }
 }

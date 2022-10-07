@@ -1,10 +1,10 @@
+import { EventsMap } from "poco-util";
 import { PocoConnection } from "./connection";
-import { EventsMap, DefaultEventsMap } from "./event";
 
 export class PocoConnectionError
     <
-        T extends EventsMap = DefaultEventsMap,
-        R extends EventsMap = T
+        T extends EventsMap,
+        R extends EventsMap
     >
     extends Error {
 
@@ -17,11 +17,11 @@ export class PocoConnectionError
     }
 }
 
-export class PocoConnectionUnknownTypeError extends PocoConnectionError {
+export class PocoConnectionUnknownTypeError extends Error {
     public type: string;
 
     constructor(type: string) {
-        super(null as any, `unknown connection type ${type}`);
+        super(`unknown connection type ${type}`);
 
         this.type = type;
     }
@@ -29,8 +29,8 @@ export class PocoConnectionUnknownTypeError extends PocoConnectionError {
 
 export class PocoConnectionClosedError
     <
-        T extends EventsMap = DefaultEventsMap,
-        R extends EventsMap = T
+        T extends EventsMap,
+        R extends EventsMap
     >
     extends PocoConnectionError<T, R> {
 
@@ -41,8 +41,8 @@ export class PocoConnectionClosedError
 
 export class PocoConnectionTimeoutError
     <
-        T extends EventsMap = DefaultEventsMap,
-        R extends EventsMap = T
+        T extends EventsMap,
+        R extends EventsMap
     >
     extends PocoConnectionError<T, R> {
 

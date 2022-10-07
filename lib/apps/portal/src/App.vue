@@ -1,11 +1,20 @@
 <script setup lang="ts">
-import DevPage from "./pages/dev/index.vue"
+import { onMounted } from 'vue';
+import { usePoco } from './store';
+import Dev from './pages/dev/index.vue';
+
+const poco = usePoco();
+
+onMounted(async () => {
+  await poco.setup("development");
+})
 </script>
 
 <template>
-  <Suspense>
-    <DevPage />
-  </Suspense>
+  <RouterView></RouterView>
+  <!-- <Suspense>
+    <Dev></Dev>
+  </Suspense> -->
 </template>
 
 <style scoped>

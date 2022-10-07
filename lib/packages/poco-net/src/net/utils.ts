@@ -1,4 +1,5 @@
-import { EventsMap, DefaultEventsMap } from "./event";
+// import { EventsMap, DefaultEventsMap } from "./event";
+import { EventsMap, DefaultEventsMap } from "poco-util";
 import { PocoSocketIOConnection, PocoPeerSocketIOConnection } from "./socketIO";
 import { PocoPeerSocketIOConnectionOptions, PocoPeerWebRTCConnectionOptions, PocoSocketIOConnectionOptions } from "./types";
 import { PocoPeerWebRTCConnection } from "./webrtc";
