@@ -3,9 +3,10 @@ import { Address, ChannelId, PocoPeerWebRTCConnectionOptions } from "./types";
 import { PocoMediaConnection } from "./media";
 import _ from "lodash";
 import { PocoConnectionClosedError } from "./error";
-import { deserializeMessagePayload, serializePocoMessagePayload } from "../protocol";
+import { deserializeMessagePayload, PACKET_WEB_RTC_CONNECTION_MTU, PocoProtocolPacket, serializePocoMessagePayload, toPackets } from "../protocol";
 import { DefaultEventsMap, EventsMap, ReservedOrUserEventNames, ReservedOrUserEventParameters } from "poco-util";
 import { PocoPeerSocketIOConnectionEvents } from "./socketIO";
+import ByteBuffer from "bytebuffer";
 
 export type PocoPeerWebRTCInternalChannel = "message" | "event";
 
@@ -22,6 +23,10 @@ export type PocoPeerWebRTCConnectionInternalEvents = {
     "channel error": (this: ThisType<PocoPeerWebRTCConnection>, channel: RTCDataChannel, event: RTCErrorEvent) => void;
 } & PocoConnectionEvents;
 
+export interface BufferedRTCDataChannel extends RTCDataChannel {
+    buffer: ByteBuffer
+}
+
 export class PocoPeerWebRTCConnection<Events extends EventsMap = DefaultEventsMap>
     extends PocoPeerConnection<Events, PocoPeerWebRTCConnectionInternalEvents>
     implements PocoMediaConnection {
@@ -30,7 +35,7 @@ export class PocoPeerWebRTCConnection<Events extends EventsMap = DefaultEventsMa
     protected peerConnection: PocoPeerConnection<PocoPeerWebRTCConnectionEvents>;
 
     protected options: Partial<PocoPeerWebRTCConnectionOptions>;
-    protected channels: Map<ChannelId, RTCDataChannel>;
+    protected channels: Map<ChannelId, BufferedRTCDataChannel>;
 
     constructor(
         localAddress: Address,
@@ -91,11 +96,11 @@ export class PocoPeerWebRTCConnection<Events extends EventsMap = DefaultEventsMa
         this.rtcConnection.addEventListener("datachannel", ({ channel }) => {
             const channelId = channel.label;
 
-            this.channels.set(channelId, channel)
+            this.channels.set(channelId, this.setupChannel(channel))
 
-            if (channelId === "poco") {
-                this.setupInternalChannel();
-            }
+            // if (channelId === "poco") {
+            //     this.setupChannelListeners(channel);
+            // }
         })
 
         this.peerConnection = peerConnection;
@@ -129,7 +134,8 @@ export class PocoPeerWebRTCConnection<Events extends EventsMap = DefaultEventsMa
         if (this.options.offer) {
             this.setupOffer(this.options.offer)
         } else {
-            this.setupInternalChannel();
+            // Trigger negotiation
+            this.getChannel("poco");
 
             const offer = await this.rtcConnection.createOffer(this.options?.rtcOfferOptions);
 
@@ -190,11 +196,16 @@ export class PocoPeerWebRTCConnection<Events extends EventsMap = DefaultEventsMa
         this.rtcConnection.addTransceiver(trackOrKind, init)
     }
 
-    getChannel(id: ChannelId, opts?: RTCDataChannelInit): RTCDataChannel {
+    getChannel(id: ChannelId, opts?: RTCDataChannelInit): BufferedRTCDataChannel {
         let channel = this.channels.get(id);
 
         if (!channel) {
-            channel = this.rtcConnection.createDataChannel(id, opts);
+            if (opts && opts.ordered && !opts.ordered) {
+                throw new Error("data channel must be ordered to support segmentation.")
+            }
+
+            channel = this.rtcConnection.createDataChannel(id, opts) as BufferedRTCDataChannel;
+            channel = this.setupChannel(channel)
 
             this.channels.set(id, channel)
         }
@@ -202,8 +213,12 @@ export class PocoPeerWebRTCConnection<Events extends EventsMap = DefaultEventsMa
         return channel;
     }
 
-    protected setupInternalChannel() {
-        const channel = this.getChannel("poco");
+    protected setupChannel(_channel: RTCDataChannel): BufferedRTCDataChannel {
+        // const channel = this.getChannel("poco");
+
+        const channel = _channel as BufferedRTCDataChannel;
+
+        channel.buffer = new ByteBuffer;
 
         channel.addEventListener("open", () => {
             this.triggerEvent("channel open", channel)
@@ -220,18 +235,37 @@ export class PocoPeerWebRTCConnection<Events extends EventsMap = DefaultEventsMa
         })
 
         channel.addEventListener("message", ({ data }) => {
-            const [event, ...payload] = deserializeMessagePayload(data);
+            const packet = new PocoProtocolPacket(data);
 
-            this.triggerEvent(event, ...payload);
+            channel.buffer.append(packet.rawBody());
+
+            if (!packet.header().hasMoreSegmentFlag() || packet.header().hasNoSegmentFlag()) {
+
+                channel.buffer.flip()
+
+                const buffer = new Uint8Array(channel.buffer.buffer, channel.buffer.offset, channel.buffer.limit);
+                const [event, ...payload] = deserializeMessagePayload(buffer);
+
+                this.triggerEvent(event, ...payload);
+
+                channel.buffer.clear();
+            }
         })
+
+        return channel;
     }
 
-    send<Event extends ReservedOrUserEventNames<PocoPeerWebRTCConnectionInternalEvents, Events>>(type: Event, ...payload: ReservedOrUserEventParameters<PocoPeerSocketIOConnectionEvents, Events, Event>): void | Promise<void> {
+    send<Event extends ReservedOrUserEventNames<PocoPeerWebRTCConnectionInternalEvents, Events>>(event: Event, ...payload: ReservedOrUserEventParameters<PocoPeerSocketIOConnectionEvents, Events, Event>): void | Promise<void> {
         const channel = this.getChannel("poco");
-
-        channel.send(serializePocoMessagePayload([
-            type,
+        const buffer = serializePocoMessagePayload([
+            event,
             ...payload
-        ]))
+        ]);
+
+        const packets = toPackets(buffer, PACKET_WEB_RTC_CONNECTION_MTU);
+
+        for (const packet of packets) {
+            channel.send(packet.toUint8Array())
+        }
     }
 }

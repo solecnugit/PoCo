@@ -3,7 +3,7 @@ import http from "http";
 import chalk from "chalk";
 import { Server as SocketIOServer, Socket, } from "socket.io";
 import _ from "lodash";
-import { deserializeMessagePayload, deserializePocoObject, PocoConnectionEvents, PocoPeerSocketIOConnectionEvents, serializePocoMessagePayload, serializePocoObject } from "poco-net";
+import { PocoConnectionEvents, PocoPeerSocketIOConnectionEvents, PocoProtocolPacket, serializePocoMessagePayload, toPackets } from "poco-net";
 import { EventsMap } from "socket.io/dist/typed-events";
 
 type Events = PocoConnectionEvents
@@ -11,7 +11,7 @@ type Events = PocoConnectionEvents
 
 const app = express();
 const server = http.createServer(app);
-const io = new SocketIOServer<Events, Events, Events>
+const io = new SocketIOServer
     (server, {
         cors: {
             origin: "*",
@@ -20,7 +20,7 @@ const io = new SocketIOServer<Events, Events, Events>
     });
 const port = 8080;
 
-const onlineUsers = new Map<string, Socket<Events, Events>>();
+const onlineUsers = new Map<string, Socket>();
 const pendingPeerConnections = new Set<string>();
 
 function prefix() {
@@ -34,9 +34,24 @@ function hackSocket<X extends EventsMap, Y extends EventsMap, Z extends EventsMa
 
     function emit<Ev extends string>(event: Ev, ...args: any[]): boolean {
         const buffer = serializePocoMessagePayload(args);
+        const packet = new PocoProtocolPacket();
+
+        packet.setBody(buffer);
+        packet.header().setNoSegmentFlag();
+        packet.header().setNoMoreSegmentFlag();
+        packet.build();
 
         // @ts-ignore
-        return oldEmit.apply(socket, [event, buffer])
+        oldEmit.apply(socket, [event, packet.toUint8Array()])
+
+        // const packets = toPackets(buffer);
+
+        // for (const packet of packets) {
+        //     // @ts-ignore
+        //     oldEmit.apply(socket, [event, packet.toUint8Array()])
+        // }
+
+        return true;
     }
 
     // @ts-ignore
@@ -44,15 +59,15 @@ function hackSocket<X extends EventsMap, Y extends EventsMap, Z extends EventsMa
 
     socket.use((event, next) => {
         if (event[1] && _.isBuffer(event[1])) {
-            event[1] = deserializeMessagePayload(event[1])
+            event[1] = new PocoProtocolPacket(event[1])
         }
 
         next();
     })
 
-    socket.onAnyOutgoing((args) => {
-        console.log(prefix(), chalk.bgMagenta("Outgoing"), args)
-    })
+    // socket.onAnyOutgoing((args) => {
+    //     console.log(prefix(), chalk.bgMagenta("Outgoing"), args)
+    // })
 
     return socket;
 }
@@ -62,6 +77,7 @@ io.on("connection", (_socket) => {
     const protocol = (_socket.conn.transport as any).socket.protocol as string | undefined;
 
     const socket = hackSocket(_socket);
+    // const socket = _socket;
 
     if (!address) {
         socket.emit("error", "missing address")
@@ -99,31 +115,9 @@ io.on("connection", (_socket) => {
         onlineUsers.delete(address)
     })
 
-    // socket.on("peer message", ([from, to, message]) => {
-    //     debugger
+    socket.on("peer event", (packet: PocoProtocolPacket) => {
+        const [from, to, event, payload] = packet.body();
 
-    //     if (from != address)
-    //         return;
-
-    //     if (!onlineUsers.has(from)) {
-    //         console.warn("missing sender in online users", chalk.red(from));
-    //         return;
-    //     }
-
-    //     if (!onlineUsers.has(to)) {
-    //         console.warn("missing receiver in online users", chalk.red(to));
-    //         return;
-    //     }
-
-    //     console.log("Message from", chalk.green(from), "to", chalk.green(to));
-    //     console.log(chalk.yellow(JSON.stringify(message)));
-
-    //     const receiverSocket = onlineUsers.get(to)!;
-
-    //     receiverSocket.emit("peer message", from, to, message);
-    // })
-
-    socket.on("peer event", ([from, to, event, payload]) => {
         if (from != address) {
             return;
         }
@@ -139,14 +133,16 @@ io.on("connection", (_socket) => {
         }
 
         console.log(prefix(), chalk.cyanBright("Event"), chalk.cyan(event), "from", chalk.green(from), "to", chalk.yellow(to));
-        console.log(prefix(), chalk.yellow(JSON.stringify(payload)));
+        // console.log(prefix(), chalk.yellow(JSON.stringify(payload)));
 
         const receiverSocket = onlineUsers.get(to)!;
 
         receiverSocket.emit("peer event", from, to, event, payload as any);
     })
 
-    socket.on("peer setup", ([from, to]) => {
+    socket.on("peer setup", (packet: PocoProtocolPacket) => {
+        const [from, to] = packet.body();
+
         if (from != address) {
             return;
         }
@@ -183,7 +179,9 @@ io.on("connection", (_socket) => {
         }
     })
 
-    socket.on("peer destroy", (from, to) => {
+    socket.on("peer destroy", (packet) => {
+        const [from, to] = packet.body();
+
         if (from != address) {
             return;
         }

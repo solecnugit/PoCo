@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { EventsMap, DefaultEventsMap, EventNames, ReservedOrUserEventNames, ReservedOrUserEventParameters, EventParameters } from "poco-util";
 import { Socket, ManagerOptions, SocketOptions, io } from "socket.io-client";
-import { deserializeMessagePayload, serializePocoMessagePayload } from "../protocol";
+import { PocoProtocolPacket, serializePocoMessagePayload } from "../protocol";
 import { PocoConnection, PocoConnectionEvents, PocoPeerConnection } from "./connection";
 import { PocoConnectionError } from "./error";
 import { Address, PocoPeerSocketIOConnectionOptions } from "./types";
@@ -76,17 +76,18 @@ export class PocoSocketIOConnection
             }
         })
 
-        this.socket.on("message", (buffer: ArrayBuffer) => {
-            const payload = deserializeMessagePayload(buffer);
+        // this.socket.on("message", (buffer: ArrayBuffer) => {
+        //     const payload = deserializeMessagePayload(buffer);
 
-            this.triggerEvent("message", payload)
-        })
+        //     this.triggerEvent("message", payload)
+        // })
 
         this.socket.onAny((event, ...args) => {
-            this.triggerEvent(event, ...deserializeMessagePayload(args[0]))
+            const packet = new PocoProtocolPacket(args[0]);
+
+            this.triggerEvent(event, ...packet.body());
         })
 
-        // @ts-ignore
         this.on("error", (error: string) => {
             this.setStatus("failed");
             this.socket.close();
@@ -115,10 +116,22 @@ export class PocoSocketIOConnection
 
     send<Event extends ReservedOrUserEventNames<PocoConnectionEvents, Events>>(type: Event, ...payload: ReservedOrUserEventParameters<PocoConnectionEvents, Events, Event>): void | Promise<void> {
         const buffer = serializePocoMessagePayload(payload);
+        const packet = new PocoProtocolPacket();
 
-        this.socket.emit(type as string, buffer);
+        packet.header().setNoSegmentFlag();
+        packet.header().setNoMoreSegmentFlag();
+        packet.setBody(buffer);
+
+        packet.build();
+
+        this.socket.emit(type as string, packet.toUint8Array());
+
+        // const packets = toPackets(buffer);
+
+        // for (const packet of packets) {
+        //     this.socket.emit(type as string, packet.toUint8Array())
+        // }
     }
-
 }
 
 export type PocoPeerAddressPayload = { from: Address, to: Address };
@@ -202,7 +215,7 @@ export class PocoPeerSocketIOConnection<
         this.setStatus("closed")
     }
 
-    send<Event extends ReservedOrUserEventNames<PocoConnectionEvents, Events>>(type: Event, ...payload: ReservedOrUserEventParameters<PocoPeerSocketIOConnectionEvents, Events, Event>): void | Promise<void> {
-        this.connection.send("peer event", this.localAddress, this.remoteAddress, type, payload as any)
+    send<Event extends ReservedOrUserEventNames<PocoConnectionEvents, Events>>(event: Event, ...payload: ReservedOrUserEventParameters<PocoPeerSocketIOConnectionEvents, Events, Event>): void | Promise<void> {
+        this.connection.send("peer event", this.localAddress, this.remoteAddress, event, payload as any)
     }
 }

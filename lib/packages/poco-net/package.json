@@ -16,10 +16,12 @@
   "license": "MIT",
   "dependencies": {
     "buffer": "^6.0.3",
+    "bytebuffer": "^5.0.1",
     "poco-util": "workspace: *",
     "socket.io-client": "^4.5.2"
   },
   "devDependencies": {
+    "@types/bytebuffer": "^5.0.44",
     "@types/webrtc": "^0.0.32"
   }
 }

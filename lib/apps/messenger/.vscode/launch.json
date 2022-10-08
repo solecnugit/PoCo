@@ -8,6 +8,7 @@
       "type": "node",
       "request": "launch",
       "name": "Launch Program",
+      "cwd": "${workspaceFolder}",
       "preLaunchTask": "pnpm:build",
       "skipFiles": ["<node_internals>/**"],
       "program": "${workspaceFolder}/dist/index.esm.js",

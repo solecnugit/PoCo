@@ -42,7 +42,6 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
 
     /* Connections */
     private connections: Map<Address, PocoSocketIOConnection<PocoClientSocketIOConnectionEvents>>;
-    // @ts-ignore
     private rtcConnections: Map<Address, PocoPeerWebRTCConnection<PocoClientWebRTCEvents>>;
 
     /* Files */

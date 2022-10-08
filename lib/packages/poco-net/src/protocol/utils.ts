@@ -2,6 +2,7 @@ import { serialize, deserialize } from "bson"
 import _ from "lodash"
 import { PocoMessagePayload, PocoObject } from "./types"
 import { Buffer } from "buffer";
+import { PACKET_HEADER_LENGTH_IN_BYTES, PocoProtocolPacket } from "./packet";
 
 export function serializePocoObject(object: PocoObject): ArrayBuffer {
     return serialize(object)
@@ -30,7 +31,9 @@ export function isBinary2Type(obj: any): boolean {
 }
 
 export function deserializeMessagePayload(buffer: ArrayBuffer): PocoMessagePayload {
-    const payload = Object.values(deserialize(buffer));
+    const payload = Object.values(deserialize(buffer, {
+        allowObjectSmallerThanBufferSize: true
+    }));
 
     for (let i = 0; i < payload.length; i++) {
         if (isBinary2Type(payload[i])) {
@@ -39,4 +42,48 @@ export function deserializeMessagePayload(buffer: ArrayBuffer): PocoMessagePaylo
     }
 
     return payload;
+}
+
+export function toPackets(buffer: ArrayBuffer, size: number): PocoProtocolPacket[] {
+    const bodySize = size - PACKET_HEADER_LENGTH_IN_BYTES;
+
+    if (buffer.byteLength <= bodySize) {
+        const packet = new PocoProtocolPacket();
+
+        packet.header().setNoMoreSegmentFlag();
+        packet.header().setNoSegmentFlag();
+        packet.setBody(buffer);
+
+        packet.build();
+
+        return [packet]
+    }
+
+    const packets = [];
+
+    for (let begin = 0, end = bodySize; ; begin = end, end = end + bodySize) {
+        const flag = end < buffer.byteLength;
+        const packet = new PocoProtocolPacket();
+
+        packet.setBody(buffer.slice(
+            begin,
+            Math.min(end, buffer.byteLength)
+        ));
+
+        if (flag) {
+            packet.header().setMoreSegmentFlag();
+        } else {
+            packet.header().setNoMoreSegmentFlag();
+        }
+
+        packet.build()
+
+        packets.push(packet);
+
+        if (!flag) {
+            break;
+        }
+    }
+
+    return packets;
 }

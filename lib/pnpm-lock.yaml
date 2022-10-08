@@ -181,15 +181,19 @@ importers:
 
   packages/poco-net:
     specifiers:
+      '@types/bytebuffer': ^5.0.44
       '@types/webrtc': ^0.0.32
       buffer: ^6.0.3
+      bytebuffer: ^5.0.1
       poco-util: 'workspace: *'
       socket.io-client: ^4.5.2
     dependencies:
       buffer: 6.0.3
+      bytebuffer: 5.0.1
       poco-util: link:../poco-util
       socket.io-client: 4.5.2
     devDependencies:
+      '@types/bytebuffer': 5.0.44
       '@types/webrtc': 0.0.32
 
   packages/poco-util:
@@ -2682,6 +2686,13 @@ packages:
       '@types/node': 18.7.18
     dev: true
 
+  /@types/bytebuffer/5.0.44:
+    resolution: {integrity: sha512-k1qonHga/SfQT02NF633i+7tIfKd+cfC/8pjnedcfuXJNMWooss/FkCgRMSnLf2WorLjbuH4bfgAZEbtyHBDoQ==}
+    dependencies:
+      '@types/long': 3.0.32
+      '@types/node': 18.7.18
+    dev: true
+
   /@types/cacheable-request/6.0.2:
     resolution: {integrity: sha512-B3xVo+dlKM6nnKTcmm5ZtY/OL8bOAOd2Olee9M1zft65ox50OzjEHW91sDiU9j6cvW8Ejg1/Qkf4xd2kugApUA==}
     dependencies:
@@ -2772,6 +2783,10 @@ packages:
 
   /@types/lodash/4.14.185:
     resolution: {integrity: sha512-evMDG1bC4rgQg4ku9tKpuMh5iBNEwNa3tf9zRHdP1qlv+1WUg44xat4IxCE14gIpZRGUUWAx2VhItCZc25NfMA==}
+    dev: true
+
+  /@types/long/3.0.32:
+    resolution: {integrity: sha512-ZXyOOm83p7X8p3s0IYM3VeueNmHpkk/yMlP8CLeOnEcu6hIwPH7YjZBvhQkR0ZFS2DqZAxKtJ/M5fcuv3OU5BA==}
     dev: true
 
   /@types/long/4.0.2:
@@ -3700,6 +3715,13 @@ packages:
     resolution: {integrity: sha512-zhaCDicdLuWN5UbN5IMnFqNMhNfo919sH85y2/ea+5Yg9TsTkeZxpL+JLbp6cgYFS4sRLp3YV4S6yDuqVWHYOw==}
     engines: {node: '>=6'}
     dev: true
+
+  /bytebuffer/5.0.1:
+    resolution: {integrity: sha512-IuzSdmADppkZ6DlpycMkm8l9zeEq16fWtLvunEwFiYciR/BHo4E8/xs5piFquG+Za8OWmMqHF8zuRviz2LHvRQ==}
+    engines: {node: '>=0.8'}
+    dependencies:
+      long: 3.2.0
+    dev: false
 
   /bytes/3.1.2:
     resolution: {integrity: sha512-/Nf7TyzTx6S3yRJObOAV7956r8cr2+Oj8AC5dt8wSP3BQAoeX58NoHyCU8P8zGkNXStjTSi6fzO6F0pBdcYbEg==}
@@ -6418,6 +6440,11 @@ packages:
     engines: {node: '>= 0.6.0'}
     dev: true
     optional: true
+
+  /long/3.2.0:
+    resolution: {integrity: sha512-ZYvPPOMqUwPoDsbJaR10iQJYnMuZhRTvHYl62ErLIEX7RgFlziSBUUvrt3OVfc47QlHHpzPZYP17g3Fv7oeJkg==}
+    engines: {node: '>=0.6'}
+    dev: false
 
   /long/4.0.0:
     resolution: {integrity: sha512-XsP+KhQif4bjX1kbuSiySJFNAehNxgLb6hPRGJ9QsUr8ajHkuXGdrHmFUTUUXhDwVX2R5bY4JNZEwbUiMhV+MA==}
