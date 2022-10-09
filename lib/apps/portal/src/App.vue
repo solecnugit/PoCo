@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
-import { usePoco } from './store';
-import Dev from './pages/dev/index.vue';
+import { onMounted } from "vue";
+import { usePoco } from "./store";
+import Dev from "./pages/dev/index.vue";
 
 const poco = usePoco();
 
 onMounted(async () => {
   await poco.setup("development");
-})
+});
 </script>
 
 <template>
@@ -17,6 +17,4 @@ onMounted(async () => {
   </Suspense> -->
 </template>
 
-<style scoped>
-
-</style>
+<style scoped></style>

@@ -9,7 +9,11 @@ import { logContractAddress } from "./util";
 
 const ServiceRegistry = artifacts.require("ServiceRegistry");
 
-module.exports = async function (deployer: Truffle.Deployer & Deployer, network: string, accounts: string[]) {
+module.exports = async function (
+  deployer: Truffle.Deployer & Deployer,
+  network: string,
+  accounts: string[]
+) {
   const instance = (await deployProxy(
     ServiceRegistry as unknown as ContractClass,
     [],
@@ -25,17 +29,20 @@ module.exports = async function (deployer: Truffle.Deployer & Deployer, network:
     "deployed to network",
     chalk.magenta(network),
     "at",
-    chalk.bgGreen(instance.address),
+    chalk.bgGreen(instance.address)
   );
 
   if (network === "development") {
-    console.log(chalk.bgMagenta("WARN"), "register mock messenger service")
+    console.log(chalk.bgMagenta("WARN"), "register mock messenger service");
 
-    await instance.setRecord({
-      endpoint: "http://localhost:8080",
-      role: "0"
-    }, { from: accounts[accounts.length - 1] })
+    await instance.setRecord(
+      {
+        endpoint: "http://localhost:8080",
+        role: "0",
+      },
+      { from: accounts[accounts.length - 1] }
+    );
   }
 
-  await logContractAddress(network, "ServiceRegistry", instance.address)
+  await logContractAddress(network, "ServiceRegistry", instance.address);
 };

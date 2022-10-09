@@ -1,5 +1,5 @@
 export type PocoObject = {
-    [key: string]: any
-}
+  [key: string]: any;
+};
 
-export type PocoMessagePayload = any[]
+export type PocoMessagePayload = any[];

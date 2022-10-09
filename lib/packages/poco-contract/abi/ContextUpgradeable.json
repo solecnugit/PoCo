@@ -28,15 +28,9 @@
   "ast": {
     "absolutePath": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol",
     "exportedSymbols": {
-      "AddressUpgradeable": [
-        525
-      ],
-      "ContextUpgradeable": [
-        567
-      ],
-      "Initializable": [
-        282
-      ]
+      "AddressUpgradeable": [525],
+      "ContextUpgradeable": [567],
+      "Initializable": [282]
     },
     "id": 568,
     "license": "MIT",
@@ -44,12 +38,7 @@
     "nodes": [
       {
         "id": 527,
-        "literals": [
-          "solidity",
-          "^",
-          "0.8",
-          ".0"
-        ],
+        "literals": ["solidity", "^", "0.8", ".0"],
         "nodeType": "PragmaDirective",
         "src": "86:23:3"
       },
@@ -72,9 +61,7 @@
             "baseName": {
               "id": 530,
               "name": "Initializable",
-              "nameLocations": [
-                "691:13:3"
-              ],
+              "nameLocations": ["691:13:3"],
               "nodeType": "IdentifierPath",
               "referencedDeclaration": 282,
               "src": "691:13:3"
@@ -95,10 +82,7 @@
         },
         "fullyImplemented": true,
         "id": 567,
-        "linearizedBaseContracts": [
-          567,
-          282
-        ],
+        "linearizedBaseContracts": [567, 282],
         "name": "ContextUpgradeable",
         "nameLocation": "669:18:3",
         "nodeType": "ContractDefinition",
@@ -120,9 +104,7 @@
                 "modifierName": {
                   "id": 533,
                   "name": "onlyInitializing",
-                  "nameLocations": [
-                    "746:16:3"
-                  ],
+                  "nameLocations": ["746:16:3"],
                   "nodeType": "IdentifierPath",
                   "referencedDeclaration": 245,
                   "src": "746:16:3"
@@ -169,9 +151,7 @@
                 "modifierName": {
                   "id": 539,
                   "name": "onlyInitializing",
-                  "nameLocations": [
-                    "821:16:3"
-                  ],
+                  "nameLocations": ["821:16:3"],
                   "nodeType": "IdentifierPath",
                   "referencedDeclaration": 245,
                   "src": "821:16:3"

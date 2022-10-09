@@ -1,2 +1,2 @@
-export * from "./crypto"
-export * from "./type"
+export * from "./crypto";
+export * from "./type";

@@ -80,18 +80,10 @@
   "ast": {
     "absolutePath": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol",
     "exportedSymbols": {
-      "AddressUpgradeable": [
-        525
-      ],
-      "ContextUpgradeable": [
-        567
-      ],
-      "Initializable": [
-        282
-      ],
-      "OwnableUpgradeable": [
-        131
-      ]
+      "AddressUpgradeable": [525],
+      "ContextUpgradeable": [567],
+      "Initializable": [282],
+      "OwnableUpgradeable": [131]
     },
     "id": 132,
     "license": "MIT",
@@ -99,12 +91,7 @@
     "nodes": [
       {
         "id": 1,
-        "literals": [
-          "solidity",
-          "^",
-          "0.8",
-          ".0"
-        ],
+        "literals": ["solidity", "^", "0.8", ".0"],
         "nodeType": "PragmaDirective",
         "src": "102:23:0"
       },
@@ -139,9 +126,7 @@
             "baseName": {
               "id": 5,
               "name": "Initializable",
-              "nameLocations": [
-                "748:13:0"
-              ],
+              "nameLocations": ["748:13:0"],
               "nodeType": "IdentifierPath",
               "referencedDeclaration": 282,
               "src": "748:13:0"
@@ -154,9 +139,7 @@
             "baseName": {
               "id": 7,
               "name": "ContextUpgradeable",
-              "nameLocations": [
-                "763:18:0"
-              ],
+              "nameLocations": ["763:18:0"],
               "nodeType": "IdentifierPath",
               "referencedDeclaration": 567,
               "src": "763:18:0"
@@ -177,11 +160,7 @@
         },
         "fullyImplemented": true,
         "id": 131,
-        "linearizedBaseContracts": [
-          131,
-          567,
-          282
-        ],
+        "linearizedBaseContracts": [131, 567, 282],
         "name": "OwnableUpgradeable",
         "nameLocation": "726:18:0",
         "nodeType": "ContractDefinition",
@@ -348,9 +327,7 @@
                 "modifierName": {
                   "id": 19,
                   "name": "onlyInitializing",
-                  "nameLocations": [
-                    "1038:16:0"
-                  ],
+                  "nameLocations": ["1038:16:0"],
                   "nodeType": "IdentifierPath",
                   "referencedDeclaration": 245,
                   "src": "1038:16:0"
@@ -471,9 +448,7 @@
                 "modifierName": {
                   "id": 28,
                   "name": "onlyInitializing",
-                  "nameLocations": [
-                    "1149:16:0"
-                  ],
+                  "nameLocations": ["1149:16:0"],
                   "nodeType": "IdentifierPath",
                   "referencedDeclaration": 245,
                   "src": "1149:16:0"
@@ -779,10 +754,7 @@
                       "id": 58,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [
-                        4294967278,
-                        4294967278
-                      ],
+                      "overloadedDeclarations": [4294967278, 4294967278],
                       "referencedDeclaration": 4294967278,
                       "src": "1654:7:0",
                       "typeDescriptions": {
@@ -971,9 +943,7 @@
                 "modifierName": {
                   "id": 71,
                   "name": "onlyOwner",
-                  "nameLocations": [
-                    "2115:9:0"
-                  ],
+                  "nameLocations": ["2115:9:0"],
                   "nodeType": "IdentifierPath",
                   "referencedDeclaration": 45,
                   "src": "2115:9:0"
@@ -1134,10 +1104,7 @@
                       "id": 90,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [
-                        4294967278,
-                        4294967278
-                      ],
+                      "overloadedDeclarations": [4294967278, 4294967278],
                       "referencedDeclaration": 4294967278,
                       "src": "2401:7:0",
                       "typeDescriptions": {
@@ -1238,9 +1205,7 @@
                 "modifierName": {
                   "id": 87,
                   "name": "onlyOwner",
-                  "nameLocations": [
-                    "2381:9:0"
-                  ],
+                  "nameLocations": ["2381:9:0"],
                   "nodeType": "IdentifierPath",
                   "referencedDeclaration": 45,
                   "src": "2381:9:0"
@@ -1306,9 +1271,7 @@
               "src": "2736:124:0",
               "statements": [
                 {
-                  "assignments": [
-                    112
-                  ],
+                  "assignments": [112],
                   "declarations": [
                     {
                       "constant": false,

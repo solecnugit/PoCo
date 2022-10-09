@@ -9485,18 +9485,10 @@
   "ast": {
     "absolutePath": "project:/contracts/ServiceRegistry.sol",
     "exportedSymbols": {
-      "AddressUpgradeable": [
-        525
-      ],
-      "EnumerableSet": [
-        1166
-      ],
-      "Initializable": [
-        282
-      ],
-      "ServiceRegistry": [
-        1550
-      ]
+      "AddressUpgradeable": [525],
+      "EnumerableSet": [1166],
+      "Initializable": [282],
+      "ServiceRegistry": [1550]
     },
     "id": 1551,
     "license": "MIT",
@@ -9504,15 +9496,7 @@
     "nodes": [
       {
         "id": 1418,
-        "literals": [
-          "solidity",
-          ">=",
-          "0.4",
-          ".22",
-          "<",
-          "0.9",
-          ".0"
-        ],
+        "literals": ["solidity", ">=", "0.4", ".22", "<", "0.9", ".0"],
         "nodeType": "PragmaDirective",
         "src": "32:32:7"
       },
@@ -9547,9 +9531,7 @@
             "baseName": {
               "id": 1421,
               "name": "Initializable",
-              "nameLocations": [
-                "237:13:7"
-              ],
+              "nameLocations": ["237:13:7"],
               "nodeType": "IdentifierPath",
               "referencedDeclaration": 282,
               "src": "237:13:7"
@@ -9564,10 +9546,7 @@
         "contractKind": "contract",
         "fullyImplemented": true,
         "id": 1550,
-        "linearizedBaseContracts": [
-          1550,
-          282
-        ],
+        "linearizedBaseContracts": [1550, 282],
         "name": "ServiceRegistry",
         "nameLocation": "218:15:7",
         "nodeType": "ContractDefinition",
@@ -9641,9 +9620,7 @@
                   "pathNode": {
                     "id": 1427,
                     "name": "Role",
-                    "nameLocations": [
-                      "347:4:7"
-                    ],
+                    "nameLocations": ["347:4:7"],
                     "nodeType": "IdentifierPath",
                     "referencedDeclaration": 1424,
                     "src": "347:4:7"
@@ -9704,9 +9681,7 @@
                 "pathNode": {
                   "id": 1432,
                   "name": "Record",
-                  "nameLocations": [
-                    "388:6:7"
-                  ],
+                  "nameLocations": ["388:6:7"],
                   "nodeType": "IdentifierPath",
                   "referencedDeclaration": 1430,
                   "src": "388:6:7"
@@ -9727,9 +9702,7 @@
             "libraryName": {
               "id": 1436,
               "name": "EnumerableSet",
-              "nameLocations": [
-                "416:13:7"
-              ],
+              "nameLocations": ["416:13:7"],
               "nodeType": "IdentifierPath",
               "referencedDeclaration": 1166,
               "src": "416:13:7"
@@ -9742,10 +9715,7 @@
               "pathNode": {
                 "id": 1437,
                 "name": "EnumerableSet.AddressSet",
-                "nameLocations": [
-                  "434:13:7",
-                  "448:10:7"
-                ],
+                "nameLocations": ["434:13:7", "448:10:7"],
                 "nodeType": "IdentifierPath",
                 "referencedDeclaration": 879,
                 "src": "434:24:7"
@@ -9779,10 +9749,7 @@
               "pathNode": {
                 "id": 1440,
                 "name": "EnumerableSet.AddressSet",
-                "nameLocations": [
-                  "464:13:7",
-                  "478:10:7"
-                ],
+                "nameLocations": ["464:13:7", "478:10:7"],
                 "nodeType": "IdentifierPath",
                 "referencedDeclaration": 879,
                 "src": "464:24:7"
@@ -9829,9 +9796,7 @@
                     "pathNode": {
                       "id": 1443,
                       "name": "Role",
-                      "nameLocations": [
-                        "527:4:7"
-                      ],
+                      "nameLocations": ["527:4:7"],
                       "nodeType": "IdentifierPath",
                       "referencedDeclaration": 1424,
                       "src": "527:4:7"
@@ -9940,9 +9905,7 @@
                     "pathNode": {
                       "id": 1452,
                       "name": "Role",
-                      "nameLocations": [
-                        "644:4:7"
-                      ],
+                      "nameLocations": ["644:4:7"],
                       "nodeType": "IdentifierPath",
                       "referencedDeclaration": 1424,
                       "src": "644:4:7"
@@ -10073,9 +10036,7 @@
                 "modifierName": {
                   "id": 1462,
                   "name": "initializer",
-                  "nameLocations": [
-                    "762:11:7"
-                  ],
+                  "nameLocations": ["762:11:7"],
                   "nodeType": "IdentifierPath",
                   "referencedDeclaration": 202,
                   "src": "762:11:7"
@@ -10159,9 +10120,7 @@
                 "modifierName": {
                   "id": 1471,
                   "name": "onlyInitializing",
-                  "nameLocations": [
-                    "868:16:7"
-                  ],
+                  "nameLocations": ["868:16:7"],
                   "nodeType": "IdentifierPath",
                   "referencedDeclaration": 245,
                   "src": "868:16:7"
@@ -10208,9 +10167,7 @@
                 "modifierName": {
                   "id": 1480,
                   "name": "onlyInitializing",
-                  "nameLocations": [
-                    "989:16:7"
-                  ],
+                  "nameLocations": ["989:16:7"],
                   "nodeType": "IdentifierPath",
                   "referencedDeclaration": 245,
                   "src": "989:16:7"
@@ -10744,9 +10701,7 @@
                     "pathNode": {
                       "id": 1485,
                       "name": "Record",
-                      "nameLocations": [
-                        "1033:6:7"
-                      ],
+                      "nameLocations": ["1033:6:7"],
                       "nodeType": "IdentifierPath",
                       "referencedDeclaration": 1430,
                       "src": "1033:6:7"
@@ -10894,9 +10849,7 @@
                     "pathNode": {
                       "id": 1529,
                       "name": "Record",
-                      "nameLocations": [
-                        "1383:6:7"
-                      ],
+                      "nameLocations": ["1383:6:7"],
                       "nodeType": "IdentifierPath",
                       "referencedDeclaration": 1430,
                       "src": "1383:6:7"

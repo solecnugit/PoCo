@@ -7948,24 +7948,12 @@
   "ast": {
     "absolutePath": "project:/contracts/JobCenter.sol",
     "exportedSymbols": {
-      "AddressUpgradeable": [
-        525
-      ],
-      "ContextUpgradeable": [
-        567
-      ],
-      "EnumerableSet": [
-        1166
-      ],
-      "Initializable": [
-        282
-      ],
-      "JobCenter": [
-        1376
-      ],
-      "OwnableUpgradeable": [
-        131
-      ]
+      "AddressUpgradeable": [525],
+      "ContextUpgradeable": [567],
+      "EnumerableSet": [1166],
+      "Initializable": [282],
+      "JobCenter": [1376],
+      "OwnableUpgradeable": [131]
     },
     "id": 1377,
     "license": "MIT",
@@ -7973,15 +7961,7 @@
     "nodes": [
       {
         "id": 1168,
-        "literals": [
-          "solidity",
-          ">=",
-          "0.4",
-          ".22",
-          "<",
-          "0.9",
-          ".0"
-        ],
+        "literals": ["solidity", ">=", "0.4", ".22", "<", "0.9", ".0"],
         "nodeType": "PragmaDirective",
         "src": "32:32:5"
       },
@@ -8016,9 +7996,7 @@
             "baseName": {
               "id": 1171,
               "name": "OwnableUpgradeable",
-              "nameLocations": [
-                "231:18:5"
-              ],
+              "nameLocations": ["231:18:5"],
               "nodeType": "IdentifierPath",
               "referencedDeclaration": 131,
               "src": "231:18:5"
@@ -8033,12 +8011,7 @@
         "contractKind": "contract",
         "fullyImplemented": true,
         "id": 1376,
-        "linearizedBaseContracts": [
-          1376,
-          131,
-          567,
-          282
-        ],
+        "linearizedBaseContracts": [1376, 131, 567, 282],
         "name": "JobCenter",
         "nameLocation": "218:9:5",
         "nodeType": "ContractDefinition",
@@ -8049,9 +8022,7 @@
             "libraryName": {
               "id": 1173,
               "name": "EnumerableSet",
-              "nameLocations": [
-                "262:13:5"
-              ],
+              "nameLocations": ["262:13:5"],
               "nodeType": "IdentifierPath",
               "referencedDeclaration": 1166,
               "src": "262:13:5"
@@ -8064,10 +8035,7 @@
               "pathNode": {
                 "id": 1174,
                 "name": "EnumerableSet.UintSet",
-                "nameLocations": [
-                  "280:13:5",
-                  "294:7:5"
-                ],
+                "nameLocations": ["280:13:5", "294:7:5"],
                 "nodeType": "IdentifierPath",
                 "referencedDeclaration": 1036,
                 "src": "280:21:5"
@@ -8242,9 +8210,7 @@
                 "pathNode": {
                   "id": 1187,
                   "name": "Job",
-                  "nameLocations": [
-                    "452:3:5"
-                  ],
+                  "nameLocations": ["452:3:5"],
                   "nodeType": "IdentifierPath",
                   "referencedDeclaration": 1185,
                   "src": "452:3:5"
@@ -8280,10 +8246,7 @@
               "pathNode": {
                 "id": 1191,
                 "name": "EnumerableSet.UintSet",
-                "nameLocations": [
-                  "467:13:5",
-                  "481:7:5"
-                ],
+                "nameLocations": ["467:13:5", "481:7:5"],
                 "nodeType": "IdentifierPath",
                 "referencedDeclaration": 1036,
                 "src": "467:21:5"
@@ -8554,9 +8517,7 @@
                 "modifierName": {
                   "id": 1211,
                   "name": "initializer",
-                  "nameLocations": [
-                    "696:11:5"
-                  ],
+                  "nameLocations": ["696:11:5"],
                   "nodeType": "IdentifierPath",
                   "referencedDeclaration": 202,
                   "src": "696:11:5"
@@ -8640,9 +8601,7 @@
                 "modifierName": {
                   "id": 1220,
                   "name": "onlyInitializing",
-                  "nameLocations": [
-                    "796:16:5"
-                  ],
+                  "nameLocations": ["796:16:5"],
                   "nodeType": "IdentifierPath",
                   "referencedDeclaration": 245,
                   "src": "796:16:5"
@@ -8773,9 +8732,7 @@
                 "modifierName": {
                   "id": 1229,
                   "name": "onlyInitializing",
-                  "nameLocations": [
-                    "911:16:5"
-                  ],
+                  "nameLocations": ["911:16:5"],
                   "nodeType": "IdentifierPath",
                   "referencedDeclaration": 245,
                   "src": "911:16:5"
@@ -9474,10 +9431,7 @@
                       "id": 1290,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [
-                        4294967278,
-                        4294967278
-                      ],
+                      "overloadedDeclarations": [4294967278, 4294967278],
                       "referencedDeclaration": 4294967278,
                       "src": "1366:7:5",
                       "typeDescriptions": {
@@ -9671,10 +9625,7 @@
                       "id": 1298,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [
-                        4294967278,
-                        4294967278
-                      ],
+                      "overloadedDeclarations": [4294967278, 4294967278],
                       "referencedDeclaration": 4294967278,
                       "src": "1433:7:5",
                       "typeDescriptions": {
@@ -9856,10 +9807,7 @@
                       "id": 1311,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [
-                        4294967278,
-                        4294967278
-                      ],
+                      "overloadedDeclarations": [4294967278, 4294967278],
                       "referencedDeclaration": 4294967278,
                       "src": "1512:7:5",
                       "typeDescriptions": {

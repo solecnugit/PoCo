@@ -9,7 +9,10 @@ import { logContractAddress } from "./util";
 
 const JobCenter = artifacts.require("JobCenter");
 
-module.exports = async function (deployer: Truffle.Deployer & Deployer, network: string) {
+module.exports = async function (
+  deployer: Truffle.Deployer & Deployer,
+  network: string
+) {
   const instance = (await deployProxy(
     JobCenter as unknown as ContractClass,
     [],
@@ -25,8 +28,8 @@ module.exports = async function (deployer: Truffle.Deployer & Deployer, network:
     "deployed to network",
     chalk.magenta(network),
     "at",
-    chalk.bgGreen(instance.address),
+    chalk.bgGreen(instance.address)
   );
 
-  await logContractAddress(network, "JobCenter", instance.address)
+  await logContractAddress(network, "JobCenter", instance.address);
 };

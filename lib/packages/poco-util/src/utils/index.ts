@@ -1,3 +1,3 @@
-import deepEquals from "fast-deep-equal/es6"
+import deepEquals from "fast-deep-equal/es6";
 
-export { deepEquals }
+export { deepEquals };
