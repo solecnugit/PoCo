@@ -1,5 +1,5 @@
 {
-  "name": "poco-util",
+  "name": "@poco/util",
   "version": "0.0.1",
   "description": "",
   "main": "./dist/index.umd.js",
@@ -7,7 +7,7 @@
   "types": "./dist/index.d.ts",
   "type": "module",
   "scripts": {
-    "dev": "rollup --config rollup.config.ts --watch",
+    "watch": "rollup --config rollup.config.ts --watch",
     "build": "rollup --config rollup.config.ts",
     "test": "pnpm exec ts-mocha --type-check",
     "postinstall": "pnpm run build"

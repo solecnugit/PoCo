@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { EventsMap, DefaultEventsMap, EventNames, ReservedOrUserEventNames, ReservedOrUserEventParameters, EventParameters } from "poco-util";
+import { EventsMap, DefaultEventsMap, EventNames, ReservedOrUserEventNames, ReservedOrUserEventParameters, EventParameters } from "@poco/util";
 import { Socket, ManagerOptions, SocketOptions, io } from "socket.io-client";
 import { PocoProtocolPacket, serializePocoMessagePayload } from "../protocol";
 import { PocoConnection, PocoConnectionEvents, PocoPeerConnection } from "./connection";

@@ -1,22 +1,22 @@
 {
-  "name": "poco-contract",
+  "name": "@poco/contract",
   "version": "0.0.1",
   "description": "",
   "main": "./dist/index.umd.js",
   "module": "./dist/index.esm.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "compile": "pnpm exec truffle compile && pnpm run types && pnpm run setup && pnpm run build",
+    "compile": "rollup --config rollup.config.ts",
     "setup": "./setup.sh",
     "types": "pnpm exec typechain --target=truffle-v5 'build/contracts/*.json' && pnpm exec typechain --target=ethers-v5 'build/contracts/*.json'",
     "migrate": "pnpm exec truffle migrate",
     "remigrate": "pnpm exec truffle migrate --reset",
-    "repl": "pnpm execpx truffle console",
+    "repl": "pnpm exec truffle console",
     "clean": "rm -rf build types",
     "test": "pnpm exec truffle test",
-    "localchain": "pnpm exec ganache",
-    "build": "rollup --config rollup.config.ts",
-    "postinstall": "pnpm run compile"
+    "ganache": "pnpm exec ganache",
+    "build": "pnpm exec truffle compile && pnpm run types && pnpm run setup && pnpm run compile",
+    "postinstall": "pnpm run build"
   },
   "devDependencies": {
     "@openzeppelin/contracts": "^4.7.3",

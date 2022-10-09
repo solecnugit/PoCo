@@ -2,12 +2,12 @@
 
 ## 项目目录结构
 
-* `contract/`：项目的智能合约
-* `web/`：项目的前端（包括：用户访问的页面，与协议进行交互的客户端，进行音视频编码和分发的客户端等库的相关实现）
+- `lib/`：项目的各部分组件
+- `doc/`：项目的文档
 
 ## 项目 Commit 格式
 
-**请使用 `pnpm run cz` 进行递交**
+**请在项目根本目下使用 `pnpm run cz` 进行递交**
 
 每次提交的 Commit message 都包括三个部分：`Header`，`Body` 和 `Footer`。
 
@@ -27,29 +27,29 @@
 
 1. `type`
 
-    `type` 用于说明 commit 的类别，只允许使用下面 7 个标识。
+   `type` 用于说明 commit 的类别，只允许使用下面 7 个标识。
 
-    * `feat`：新功能
-    * `fix`：修补 bug
-    * `perf`：性能优化相关
-    * `docs`：文档
-    * `style`： 格式化
-    * `refactor`：重构
-    * `test`：增加测试
-    * `chore`：构建过程或辅助工具的变动
-    * `merge`：合并分支
-    * `build`：构建相关
-    * `ci`: 持续集成相关
-    * `revert`：撤回 commit
-    * `sync`：用以临时同步，不应存在于最后发布的分支
+   - `feat`：新功能
+   - `fix`：修补 bug
+   - `perf`：性能优化相关
+   - `docs`：文档
+   - `style`： 格式化
+   - `refactor`：重构
+   - `test`：增加测试
+   - `chore`：构建过程或辅助工具的变动
+   - `merge`：合并分支
+   - `build`：构建相关
+   - `ci`: 持续集成相关
+   - `revert`：撤回 commit
+   - `sync`：用以临时同步，不应存在于最后发布的分支
 
 2. `scope`
 
-    `scope` 用于说明 commit 影响的范围。
+   `scope` 用于说明 commit 影响的范围。
 
 3. `subject`
 
-    `subject` 是 commit 目的的简短描述。
+   `subject` 是 commit 目的的简短描述。
 
 ### Body
 
@@ -61,11 +61,11 @@
 
 1. 不兼容变动
 
-    如果当前代码与上一个版本不兼容，则 `Footer` 部分以 **BREAKING CHANGE** 开头，后面是对变动的描述、以及变动理由和迁移方法。
+   如果当前代码与上一个版本不兼容，则 `Footer` 部分以 **BREAKING CHANGE** 开头，后面是对变动的描述、以及变动理由和迁移方法。
 
 2. 关闭 Issue
 
-    如果当前 commit 针对某个 issue，那么可以在 Footer 部分关闭这个 issue 。
+   如果当前 commit 针对某个 issue，那么可以在 Footer 部分关闭这个 issue 。
 
 ### Revert
 

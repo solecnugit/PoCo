@@ -1,5 +1,5 @@
 {
-  "name": "poco-client",
+  "name": "@poco/client",
   "version": "0.0.1",
   "description": "",
   "main": "./dist/index.umd.js",
@@ -7,7 +7,7 @@
   "types": "./dist/index.d.ts",
   "type": "module",
   "scripts": {
-    "dev": "rollup --config rollup.config.ts --watch",
+    "watch": "rollup --config rollup.config.ts --watch",
     "build": "rollup --config rollup.config.ts",
     "postinstall": "pnpm run build"
   },
@@ -17,9 +17,9 @@
   "dependencies": {
     "@metamask/detect-provider": "^1.2.0",
     "ethers": "^5.7.1",
-    "poco-contract": "workspace: *",
-    "poco-net": "workspace: *",
-    "poco-util": "workspace: *"
+    "@poco/contract": "workspace: *",
+    "@poco/net": "workspace: *",
+    "@poco/util": "workspace: *"
   },
   "devDependencies": {
     "@types/events": "^3.0.0"

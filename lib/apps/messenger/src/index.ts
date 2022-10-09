@@ -3,11 +3,11 @@ import http from "http";
 import chalk from "chalk";
 import { Server as SocketIOServer, Socket, } from "socket.io";
 import _ from "lodash";
-import { PocoConnectionEvents, PocoPeerSocketIOConnectionEvents, PocoProtocolPacket, serializePocoMessagePayload, toPackets } from "poco-net";
+import { PocoConnectionEvents, PocoPeerSocketIOConnectionEvents, PocoProtocolPacket, serializePocoMessagePayload, toPackets } from "@poco/net";
 import { EventsMap } from "socket.io/dist/typed-events";
 
-type Events = PocoConnectionEvents
-    & PocoPeerSocketIOConnectionEvents<any>;
+// type Events = PocoConnectionEvents
+//     & PocoPeerSocketIOConnectionEvents<any>;
 
 const app = express();
 const server = http.createServer(app);

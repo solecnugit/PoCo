@@ -1,7 +1,7 @@
 import { BaseContract, providers } from "ethers";
-import * as ContractAddress from "poco-contract/contracts.json";
+import * as ContractAddress from "@poco/contract/contracts.json";
 import { EitherOr } from "../utils";
-import { JobCenter__factory, ServiceRegistry__factory } from "poco-contract";
+import { JobCenter__factory, ServiceRegistry__factory } from "@poco/contract";
 
 export type Networks = "development";
 export type ContractNames = "JobCenter" | "ServiceRegistry"

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { $ref } from "vue/macros"
-import { PocoSocketIOConnection, PocoPeerSocketIOConnection, PocoPeerWebRTCConnection, createPocoSocketIOConnection, createPocoPeerSocketIOConnection, createPocoPeerWebRTCConnection } from "poco-net";
+import { PocoSocketIOConnection, PocoPeerSocketIOConnection, PocoPeerWebRTCConnection, createPocoSocketIOConnection, createPocoPeerSocketIOConnection, createPocoPeerWebRTCConnection } from "@poco/net";
 
 let localAddress = $ref("")
 let remoteAddress = $ref("")

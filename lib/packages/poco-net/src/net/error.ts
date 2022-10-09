@@ -1,4 +1,4 @@
-import { EventsMap } from "poco-util";
+import { EventsMap } from "@poco/util";
 import { PocoConnection } from "./connection";
 
 export class PocoConnectionError

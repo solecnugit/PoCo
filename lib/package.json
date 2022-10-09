@@ -2,7 +2,11 @@
   "name": "poco",
   "version": "0.0.1",
   "description": "",
-  "scripts": {},
+  "scripts": {
+    "build": "pnpm run -r build",
+    "clean": "rm -rf node_modules/ && rm -rf ./**/node_modules/",
+    "dev": "./dev.sh"
+  },
   "devDependencies": {
     "@babel/core": "^7.19.3",
     "@babel/preset-env": "^7.19.3",

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { onMounted } from 'vue';
 import { $ref } from "vue/macros";
-import { createPocoClient, PocoClient } from "poco-client";
+import { createPocoClient, PocoClient } from "@poco/client";
 
 let account = $ref("")
 let client: PocoClient

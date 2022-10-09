@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { DefaultEventsMap, EventDispatcher, EventsMap, ReservedOrUserEventNames } from "poco-util";
+import { DefaultEventsMap, EventDispatcher, EventsMap, ReservedOrUserEventNames } from "@poco/util";
 import { PocoMessagePayload } from "../protocol";
 import { PocoConnectionType, Address, PocoConnectionStatus } from "./types";
 

@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { createPocoClient, Networks, PocoClient, PocoServiceRole, PocoClientLog, PocoClientLogLevel, PocoClientLogCategory, PocoClientJob, PocoClientServiceInfo } from "poco-client";
+import { createPocoClient, Networks, PocoClient, PocoServiceRole, PocoClientLog, PocoClientLogLevel, PocoClientLogCategory, PocoClientJob, PocoClientServiceInfo } from "@poco/client";
 import { BigNumber, ethers } from "ethers";
 
 interface UserInfo {

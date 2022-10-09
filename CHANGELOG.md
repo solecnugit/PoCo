@@ -1,3 +1,5 @@
+# PoCo
+
 ## 0.0.3 (2022-10-07)
 
 ### Bug Fixes
@@ -20,8 +22,6 @@
 ### BREAKING CHANGES
 
 - **PROJECT:** 将 web 目录重命名为 lib，将 contract 合并到 lib 的 workspace 中
-
-# PoCo
 
 ## 0.0.2 (2022-10-01)
 

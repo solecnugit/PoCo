@@ -4,7 +4,7 @@ import { PocoMediaConnection } from "./media";
 import _ from "lodash";
 import { PocoConnectionClosedError } from "./error";
 import { deserializeMessagePayload, PACKET_WEB_RTC_CONNECTION_MTU, PocoProtocolPacket, serializePocoMessagePayload, toPackets } from "../protocol";
-import { DefaultEventsMap, EventsMap, ReservedOrUserEventNames, ReservedOrUserEventParameters } from "poco-util";
+import { DefaultEventsMap, EventsMap, ReservedOrUserEventNames, ReservedOrUserEventParameters } from "@poco/util";
 import { PocoPeerSocketIOConnectionEvents } from "./socketIO";
 import ByteBuffer from "bytebuffer";
 

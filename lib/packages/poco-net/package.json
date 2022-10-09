@@ -1,5 +1,5 @@
 {
-  "name": "poco-net",
+  "name": "@poco/net",
   "version": "0.0.1",
   "description": "",
   "main": "./dist/index.umd.js",
@@ -7,7 +7,7 @@
   "types": "./dist/index.d.ts",
   "type": "module",
   "scripts": {
-    "dev": "rollup --config rollup.config.ts --watch",
+    "watch": "rollup --config rollup.config.ts --watch",
     "build": "rollup --config rollup.config.ts",
     "postinstall": "pnpm run build"
   },
@@ -17,7 +17,7 @@
   "dependencies": {
     "buffer": "^6.0.3",
     "bytebuffer": "^5.0.1",
-    "poco-util": "workspace: *",
+    "@poco/util": "workspace: *",
     "socket.io-client": "^4.5.2"
   },
   "devDependencies": {

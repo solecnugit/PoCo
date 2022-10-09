@@ -2,13 +2,13 @@ import { Address, getContract, Networks, PocoServiceRole } from "../eth";
 import { PocoClientNotReadyError } from "./error";
 import { PocoClientJob, PocoClientLogCategory, PocoClientLogLevel, PocoClientPostJobOptions, PocoClientServiceInfo, PocoClientRegisterServiceOptions, PocoSubmitJobOptions, Optional, PocoTakeJobOptions, PocoClientSocketIOConnectionEvents, PocoClientPeerSocketIOEvents, PocoJobStatus } from "./type";
 import { PocoLocalStorage, PocoStorage } from "../storage";
-import { PocoSocketIOConnection, PocoPeerWebRTCConnection, createPocoSocketIOConnection, createPocoPeerSocketIOConnection, PocoPeerSocketIOConnection, createPocoPeerWebRTCConnection } from "poco-net";
-import { EventDispatcher } from "poco-util";
-import { sha256Digest } from "./utils";
+import { PocoSocketIOConnection, PocoPeerWebRTCConnection, createPocoSocketIOConnection, createPocoPeerSocketIOConnection, PocoPeerSocketIOConnection, createPocoPeerWebRTCConnection } from "@poco/net";
+import { EventDispatcher } from "@poco/util";
 import { BigNumber, ethers, providers } from "ethers";
-import { JobCenter, ServiceRegistry } from "poco-contract";
-import { NewJobEvent, SubmitJobEvent } from "poco-contract/dist/JobCenter";
-import { NewServiceEvent, ServiceUpdateEvent } from "poco-contract/dist/ServiceRegistry";
+import { JobCenter, ServiceRegistry } from "@poco/contract";
+import { NewJobEvent, SubmitJobEvent } from "@poco/contract/dist/JobCenter";
+import { NewServiceEvent, ServiceUpdateEvent } from "@poco/contract/dist/ServiceRegistry";
+import { sha256Digest } from "../utils/crypto";
 
 export interface PocoClientEvents {
     "Log": (this: ThisType<PocoClient>, level: PocoClientLogLevel, category: PocoClientLogCategory, time: Date, message: string) => void;
