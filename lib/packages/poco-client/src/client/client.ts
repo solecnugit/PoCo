@@ -162,7 +162,7 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
   }
 
   private async recover() {
-    this.log("info", "client", "Recover from blockchain history events.");
+    this.log("info", "client", "Recover services from blockchain.");
 
     // ServiceRegistry
     let events = (
@@ -195,6 +195,8 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
         });
       }
     }
+
+    this.log("info", "client", "Recover jobs from blockchain.");
 
     // JobCenter
     events = await this.jobCenter!.queryFilter("*" as any, 0);

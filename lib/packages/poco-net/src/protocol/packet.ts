@@ -1,4 +1,5 @@
 import ByteBuffer from "bytebuffer";
+import _ from "lodash";
 import { PocoMessagePayload } from "./types";
 import { deserializeMessagePayload } from "./utils";
 
@@ -113,10 +114,12 @@ export class PocoProtocolPacket {
       throw new Error("invalid state");
     }
 
-    return new Uint8Array(
-      this.buffer.buffer,
-      this.buffer.offset + PACKET_HEADER_LENGTH_IN_BYTES
-    );
+    const offset = this.buffer.offset + PACKET_HEADER_LENGTH_IN_BYTES;
+    const buffer = this.buffer.buffer;
+
+    const body = new Uint8Array(_.isBuffer(buffer) ? buffer.buffer : buffer, offset);
+
+    return body;
   }
 
   body(): PocoMessagePayload {

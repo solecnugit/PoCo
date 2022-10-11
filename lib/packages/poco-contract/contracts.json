@@ -1,6 +1,6 @@
 {
-  "development": {
-    "JobCenter": "0x0680d14386dDE0fC983dEE516fd05925fAD2A418",
-    "ServiceRegistry": "0xF45148D4514E1079e6dfE3AbD6758477cb6CaC8B"
-  }
+    "development": {
+        "JobCenter": "0xCFcd610b2B896f696578366B397E1d403f110088",
+        "ServiceRegistry": "0xba6ADb617639DFcdcB59ed6AE56b611916D79666"
+    }
 }

@@ -4,11 +4,8 @@ import chalk from "chalk";
 import { Server as SocketIOServer, Socket } from "socket.io";
 import _ from "lodash";
 import {
-  PocoConnectionEvents,
-  PocoPeerSocketIOConnectionEvents,
   PocoProtocolPacket,
   serializePocoMessagePayload,
-  toPackets,
 } from "@poco/net";
 import { EventsMap } from "socket.io/dist/typed-events";
 
@@ -58,13 +55,6 @@ function hackSocket<
 
     // @ts-ignore
     oldEmit.apply(socket, [event, packet.toUint8Array()]);
-
-    // const packets = toPackets(buffer);
-
-    // for (const packet of packets) {
-    //     // @ts-ignore
-    //     oldEmit.apply(socket, [event, packet.toUint8Array()])
-    // }
 
     return true;
   }
@@ -147,12 +137,12 @@ io.on("connection", (_socket) => {
     }
 
     if (!onlineUsers.has(from)) {
-      console.warn(prefix(), "missing sender in online users", chalk.red(from));
+      console.warn(prefix(), "Missing sender in online users", chalk.red(from));
       return;
     }
 
     if (!onlineUsers.has(to)) {
-      console.warn(prefix(), "missing receiver in online users", chalk.red(to));
+      console.warn(prefix(), "Missing receiver in online users", chalk.red(to));
       return;
     }
 
@@ -180,12 +170,12 @@ io.on("connection", (_socket) => {
     }
 
     if (!onlineUsers.has(from)) {
-      console.warn(prefix(), "missing sender in online users", chalk.red(from));
+      console.warn(prefix(), "Missing sender in online users", chalk.red(from));
       return;
     }
 
     if (!onlineUsers.has(to)) {
-      console.warn(prefix(), "missing receiver in online users", chalk.red(to));
+      console.warn(prefix(), "Missing receiver in online users", chalk.red(to));
       return;
     }
 
@@ -233,12 +223,12 @@ io.on("connection", (_socket) => {
     }
 
     if (!onlineUsers.has(from)) {
-      console.warn(prefix(), "missing sender in online users", chalk.red(from));
+      console.warn(prefix(), "Missing sender in online users", chalk.red(from));
       return;
     }
 
     if (!onlineUsers.has(to)) {
-      console.warn(prefix(), "missing receiver in online users", chalk.red(to));
+      console.warn(prefix(), "Missing receiver in online users", chalk.red(to));
       return;
     }
 
@@ -251,7 +241,7 @@ io.on("connection", (_socket) => {
 server.listen(port, () => {
   console.log(
     prefix(),
-    "server is running at port",
+    "Server is running at port",
     chalk.green(port.toString())
   );
 });
