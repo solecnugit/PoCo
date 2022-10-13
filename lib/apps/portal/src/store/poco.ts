@@ -11,6 +11,7 @@ import {
   PocoClientServiceInfo,
 } from "@poco/client";
 import { BigNumber, ethers } from "ethers";
+import { useState } from "./state";
 
 interface UserInfo {
   account: string;
@@ -20,6 +21,7 @@ interface UserInfo {
 interface NetworkInfo {
   networkName: Networks;
   blockNum: number;
+  chainId: string;
 }
 
 declare global {
@@ -39,6 +41,7 @@ export const usePoco = defineStore("poco", {
       networkInfo: {
         networkName: "development" as Networks,
         blockNum: 0,
+        chainId: "",
       } as NetworkInfo,
       services: {
         messenger: [] as PocoClientServiceInfo[],
@@ -57,8 +60,10 @@ export const usePoco = defineStore("poco", {
 
       window.pocoClientInstance = await createPocoClient(network);
 
-      window.pocoClientInstance.on("Log", this.log.bind(this));
-      window.pocoClientInstance.on("NewJob", (jobId, owner, messenger) => {
+      const instance = window.pocoClientInstance;
+
+      instance.on("Log", this.log.bind(this));
+      instance.on("NewJob", (jobId, owner, messenger) => {
         this.jobs.push({
           jobId,
           owner,
@@ -71,7 +76,7 @@ export const usePoco = defineStore("poco", {
         });
       });
 
-      window.pocoClientInstance.on("JobProcessUpdate", (jobId, info) => {
+      instance.on("JobProcessUpdate", (jobId, info) => {
         const job = this.jobs.find((e) => e.jobId.eq(jobId));
 
         if (!job) {
@@ -87,7 +92,7 @@ export const usePoco = defineStore("poco", {
         job.progressInfo = info;
       });
 
-      window.pocoClientInstance.on("JobStatusUpdate", (jobId, status) => {
+      instance.on("JobStatusUpdate", (jobId, status) => {
         const job = this.jobs.find((e) => e.jobId.eq(jobId));
 
         if (!job) {
@@ -103,7 +108,7 @@ export const usePoco = defineStore("poco", {
         job.status = status;
       });
 
-      window.pocoClientInstance.on("JobResultAvailable", (jobId, buffer) => {
+      instance.on("JobResultAvailable", (jobId, buffer) => {
         const job = this.jobs.find((e) => e.jobId.eq(jobId));
 
         if (!job) {
@@ -119,23 +124,42 @@ export const usePoco = defineStore("poco", {
         job.buffer = buffer;
       });
 
-      await window.pocoClientInstance.setup();
+      instance.on("AccountChanged", (account) => {
+        this.userInfo.account = account;
+      })
+
+      instance.on("AccountDisconnected", () => {
+        const state = useState();
+
+        state.setGlobalCoveringMessage("Account discconnected.")
+        state.setGlobalCoveringStatus("error")
+        state.showGlobalCovering()
+
+        this.userInfo.account = ""
+      })
+
+      instance.on("ChainIdChanged", (_) => {
+        window.location.reload()
+      })
+
+      await instance.setup();
 
       this.userInfo = {
-        account: window.pocoClientInstance.localAddress,
-        balanceInWei: await window.pocoClientInstance.getBalance(),
+        account: instance.localAddress,
+        balanceInWei: await instance.getBalance(),
       };
 
       this.networkInfo = {
         networkName: network,
-        blockNum: await window.pocoClientInstance.getBlockNumber(),
+        chainId: instance.chainId,
+        blockNum: await instance.getBlockNumber(),
       };
 
       this.services.messenger = Array.from(
-        window.pocoClientInstance.getServices(PocoServiceRole.MESSENGER)
+        instance.getServices(PocoServiceRole.MESSENGER)
       );
 
-      this.jobs = Array.from(window.pocoClientInstance.getAllJobs()).map(
+      this.jobs = Array.from(instance.getAllJobs()).map(
         (e) => {
           return {
             ...e,
@@ -190,6 +214,7 @@ export const usePoco = defineStore("poco", {
     userAccount: (state) => state.userInfo.account,
     networkName: (state) => state.networkInfo.networkName,
     networkBlockNum: (state) => state.networkInfo.blockNum.toString(),
-    clientInstance: (state) => window.pocoClientInstance,
+    networkChainId: (state) => state.networkInfo.chainId,
+    clientInstance: (_) => window.pocoClientInstance,
   },
 });

@@ -62,6 +62,17 @@ export interface PocoClientEvents {
     owner: Address,
     messenger: Address
   ) => void;
+  ChainIdChanged: (
+    this: ThisType<PocoClient>,
+    chainId: string
+  ) => void,
+  AccountChanged: (
+    this: ThisType<PocoClient>,
+    account: Address,
+  ) => void
+  AccountDisconnected: (
+    this: ThisType<PocoClient>,
+  ) => void
 }
 
 export interface PocoClientWebRTCEvents {
@@ -95,6 +106,8 @@ export interface PocoClientWebRTCEvents {
 
 export class PocoClient extends EventDispatcher<PocoClientEvents> {
   public localAddress: Address;
+  public chainId: string;
+
   private provider: providers.Web3Provider;
   private network: Networks;
   private storage: PocoStorage;
@@ -123,6 +136,7 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
   constructor(
     provider: providers.Web3Provider,
     localAddress: Address,
+    chainId: string,
     network?: Networks,
     storage?: PocoStorage
   ) {
@@ -130,6 +144,7 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
 
     this.provider = provider;
     this.localAddress = localAddress;
+    this.chainId = chainId;
     this.network = network || "development";
     this.storage = storage || new PocoLocalStorage();
 
@@ -412,7 +427,31 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
     });
   }
 
+  protected setupMetaMaskListenrs() {
+    const ethereum = (window as any).ethereum;
+
+    if (typeof ethereum == "undefined") {
+      throw new Error("ethereum is undefined, havn't installed MetaMask? uh.")
+    }
+
+    ethereum.on("chainChanged", (_chainId: string) => {
+      this.emit("ChainIdChanged", _chainId)
+    })
+
+    ethereum.on("accountsChanged", (accounts: Address[]) => {
+      if (accounts.length === 0) {
+        this.localAddress = "THIS_IS_AN_ILLEGAL_ADDRESS_ONLY_WHEN_ACCOUNT_DISCONNECTED";
+        this.emit("AccountDisconnected")
+      } else if (accounts[0] != this.localAddress) {
+        this.localAddress = accounts[0];
+        this.emit("AccountChanged", this.localAddress)
+      }
+    })
+  }
+
   async setup(force?: boolean) {
+    this.setupMetaMaskListenrs();
+
     this.jobCenter = await getContract<JobCenter>(this.provider, "JobCenter", {
       network: this.network,
     });

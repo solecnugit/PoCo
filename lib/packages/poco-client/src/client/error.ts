@@ -10,6 +10,18 @@ export class PocoClientError extends Error {
   }
 }
 
+export class PocoClientUserRejectRequestError extends Error {
+  constructor() {
+    super("User reject to connect account.")
+  }
+}
+
+export class PocoClientUserRequestAlreadyPendingError extends Error {
+  constructor() {
+    super("Pending request.")
+  }
+}
+
 export class PocoClientNotReadyError extends PocoClientError {
   constructor(client: PocoClient) {
     super(client, "PocoClient not ready yet. Have you called setup() before?");

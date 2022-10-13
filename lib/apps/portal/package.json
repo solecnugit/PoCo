@@ -9,13 +9,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@kyvg/vue3-notification": "^2.4.1",
+    "@poco/client": "worksapce: *",
+    "@poco/net": "workspace:*",
     "@truffle/contract": "^4.6.2",
     "ethers": "^5.7.1",
     "events": "^3.3.0",
     "flowbite": "^1.5.3",
     "pinia": "^2.0.22",
-    "@poco/client": "worksapce: *",
-    "@poco/net": "workspace:*",
     "vue": "^3.2.37",
     "vue-router": "4"
   },

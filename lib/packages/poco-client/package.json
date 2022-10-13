@@ -15,7 +15,6 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@metamask/detect-provider": "^1.2.0",
     "ethers": "^5.7.1",
     "@poco/contract": "workspace: *",
     "@poco/net": "workspace: *",
