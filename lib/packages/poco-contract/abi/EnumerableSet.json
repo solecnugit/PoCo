@@ -14,7 +14,9 @@
   "ast": {
     "absolutePath": "@openzeppelin/contracts/utils/structs/EnumerableSet.sol",
     "exportedSymbols": {
-      "EnumerableSet": [1166]
+      "EnumerableSet": [
+        1166
+      ]
     },
     "id": 1167,
     "license": "MIT",
@@ -22,7 +24,12 @@
     "nodes": [
       {
         "id": 569,
-        "literals": ["solidity", "^", "0.8", ".0"],
+        "literals": [
+          "solidity",
+          "^",
+          "0.8",
+          ".0"
+        ],
         "nodeType": "PragmaDirective",
         "src": "115:23:4"
       },
@@ -40,7 +47,9 @@
         },
         "fullyImplemented": true,
         "id": 1166,
-        "linearizedBaseContracts": [1166],
+        "linearizedBaseContracts": [
+          1166
+        ],
         "name": "EnumerableSet",
         "nameLocation": "1236:13:4",
         "nodeType": "ContractDefinition",
@@ -528,7 +537,9 @@
                     "pathNode": {
                       "id": 580,
                       "name": "Set",
-                      "nameLocations": ["2127:3:4"],
+                      "nameLocations": [
+                        "2127:3:4"
+                      ],
                       "nodeType": "IdentifierPath",
                       "referencedDeclaration": 578,
                       "src": "2127:3:4"
@@ -619,7 +630,9 @@
               "src": "2757:1316:4",
               "statements": [
                 {
-                  "assignments": [632],
+                  "assignments": [
+                    632
+                  ],
                   "declarations": [
                     {
                       "constant": false,
@@ -791,7 +804,9 @@
                     "src": "2939:1085:4",
                     "statements": [
                       {
-                        "assignments": [642],
+                        "assignments": [
+                          642
+                        ],
                         "declarations": [
                           {
                             "constant": false,
@@ -872,7 +887,9 @@
                         "src": "3291:38:4"
                       },
                       {
-                        "assignments": [648],
+                        "assignments": [
+                          648
+                        ],
                         "declarations": [
                           {
                             "constant": false,
@@ -1035,7 +1052,9 @@
                           "src": "3432:366:4",
                           "statements": [
                             {
-                              "assignments": [659],
+                              "assignments": [
+                                659
+                              ],
                               "declarations": [
                                 {
                                   "constant": false,
@@ -1498,7 +1517,9 @@
                     "pathNode": {
                       "id": 622,
                       "name": "Set",
-                      "nameLocations": ["2702:3:4"],
+                      "nameLocations": [
+                        "2702:3:4"
+                      ],
                       "nodeType": "IdentifierPath",
                       "referencedDeclaration": 578,
                       "src": "2702:3:4"
@@ -1721,7 +1742,9 @@
                     "pathNode": {
                       "id": 706,
                       "name": "Set",
-                      "nameLocations": ["4173:3:4"],
+                      "nameLocations": [
+                        "4173:3:4"
+                      ],
                       "nodeType": "IdentifierPath",
                       "referencedDeclaration": 578,
                       "src": "4173:3:4"
@@ -1900,7 +1923,9 @@
                     "pathNode": {
                       "id": 725,
                       "name": "Set",
-                      "nameLocations": ["4379:3:4"],
+                      "nameLocations": [
+                        "4379:3:4"
+                      ],
                       "nodeType": "IdentifierPath",
                       "referencedDeclaration": 578,
                       "src": "4379:3:4"
@@ -2062,7 +2087,9 @@
                     "pathNode": {
                       "id": 739,
                       "name": "Set",
-                      "nameLocations": ["4824:3:4"],
+                      "nameLocations": [
+                        "4824:3:4"
+                      ],
                       "nodeType": "IdentifierPath",
                       "referencedDeclaration": 578,
                       "src": "4824:3:4"
@@ -2226,7 +2253,9 @@
                     "pathNode": {
                       "id": 756,
                       "name": "Set",
-                      "nameLocations": ["5486:3:4"],
+                      "nameLocations": [
+                        "5486:3:4"
+                      ],
                       "nodeType": "IdentifierPath",
                       "referencedDeclaration": 578,
                       "src": "5486:3:4"
@@ -2317,7 +2346,9 @@
                   "pathNode": {
                     "id": 769,
                     "name": "Set",
-                    "nameLocations": ["5631:3:4"],
+                    "nameLocations": [
+                      "5631:3:4"
+                    ],
                     "nodeType": "IdentifierPath",
                     "referencedDeclaration": 578,
                     "src": "5631:3:4"
@@ -2472,7 +2503,9 @@
                     "pathNode": {
                       "id": 774,
                       "name": "Bytes32Set",
-                      "nameLocations": ["5831:10:4"],
+                      "nameLocations": [
+                        "5831:10:4"
+                      ],
                       "nodeType": "IdentifierPath",
                       "referencedDeclaration": 772,
                       "src": "5831:10:4"
@@ -2689,7 +2722,9 @@
                     "pathNode": {
                       "id": 792,
                       "name": "Bytes32Set",
-                      "nameLocations": ["6125:10:4"],
+                      "nameLocations": [
+                        "6125:10:4"
+                      ],
                       "nodeType": "IdentifierPath",
                       "referencedDeclaration": 772,
                       "src": "6125:10:4"
@@ -2906,7 +2941,9 @@
                     "pathNode": {
                       "id": 810,
                       "name": "Bytes32Set",
-                      "nameLocations": ["6337:10:4"],
+                      "nameLocations": [
+                        "6337:10:4"
+                      ],
                       "nodeType": "IdentifierPath",
                       "referencedDeclaration": 772,
                       "src": "6337:10:4"
@@ -3107,7 +3144,9 @@
                     "pathNode": {
                       "id": 828,
                       "name": "Bytes32Set",
-                      "nameLocations": ["6554:10:4"],
+                      "nameLocations": [
+                        "6554:10:4"
+                      ],
                       "nodeType": "IdentifierPath",
                       "referencedDeclaration": 772,
                       "src": "6554:10:4"
@@ -3297,7 +3336,9 @@
                     "pathNode": {
                       "id": 843,
                       "name": "Bytes32Set",
-                      "nameLocations": ["7007:10:4"],
+                      "nameLocations": [
+                        "7007:10:4"
+                      ],
                       "nodeType": "IdentifierPath",
                       "referencedDeclaration": 772,
                       "src": "7007:10:4"
@@ -3498,7 +3539,9 @@
                     "pathNode": {
                       "id": 861,
                       "name": "Bytes32Set",
-                      "nameLocations": ["7680:10:4"],
+                      "nameLocations": [
+                        "7680:10:4"
+                      ],
                       "nodeType": "IdentifierPath",
                       "referencedDeclaration": 772,
                       "src": "7680:10:4"
@@ -3589,7 +3632,9 @@
                   "pathNode": {
                     "id": 876,
                     "name": "Set",
-                    "nameLocations": ["7841:3:4"],
+                    "nameLocations": [
+                      "7841:3:4"
+                    ],
                     "nodeType": "IdentifierPath",
                     "referencedDeclaration": 578,
                     "src": "7841:3:4"
@@ -3879,7 +3924,9 @@
                     "pathNode": {
                       "id": 881,
                       "name": "AddressSet",
-                      "nameLocations": ["8041:10:4"],
+                      "nameLocations": [
+                        "8041:10:4"
+                      ],
                       "nodeType": "IdentifierPath",
                       "referencedDeclaration": 879,
                       "src": "8041:10:4"
@@ -4232,7 +4279,9 @@
                     "pathNode": {
                       "id": 908,
                       "name": "AddressSet",
-                      "nameLocations": ["8362:10:4"],
+                      "nameLocations": [
+                        "8362:10:4"
+                      ],
                       "nodeType": "IdentifierPath",
                       "referencedDeclaration": 879,
                       "src": "8362:10:4"
@@ -4585,7 +4634,9 @@
                     "pathNode": {
                       "id": 935,
                       "name": "AddressSet",
-                      "nameLocations": ["8601:10:4"],
+                      "nameLocations": [
+                        "8601:10:4"
+                      ],
                       "nodeType": "IdentifierPath",
                       "referencedDeclaration": 879,
                       "src": "8601:10:4"
@@ -4787,7 +4838,9 @@
                     "pathNode": {
                       "id": 962,
                       "name": "AddressSet",
-                      "nameLocations": ["8845:10:4"],
+                      "nameLocations": [
+                        "8845:10:4"
+                      ],
                       "nodeType": "IdentifierPath",
                       "referencedDeclaration": 879,
                       "src": "8845:10:4"
@@ -5112,7 +5165,9 @@
                     "pathNode": {
                       "id": 977,
                       "name": "AddressSet",
-                      "nameLocations": ["9298:10:4"],
+                      "nameLocations": [
+                        "9298:10:4"
+                      ],
                       "nodeType": "IdentifierPath",
                       "referencedDeclaration": 879,
                       "src": "9298:10:4"
@@ -5204,7 +5259,9 @@
               "src": "10063:219:4",
               "statements": [
                 {
-                  "assignments": [1016],
+                  "assignments": [
+                    1016
+                  ],
                   "declarations": [
                     {
                       "constant": false,
@@ -5313,7 +5370,9 @@
                   "src": "10073:44:4"
                 },
                 {
-                  "assignments": [1026],
+                  "assignments": [
+                    1026
+                  ],
                   "declarations": [
                     {
                       "constant": false,
@@ -5459,7 +5518,9 @@
                     "pathNode": {
                       "id": 1004,
                       "name": "AddressSet",
-                      "nameLocations": ["9998:10:4"],
+                      "nameLocations": [
+                        "9998:10:4"
+                      ],
                       "nodeType": "IdentifierPath",
                       "referencedDeclaration": 879,
                       "src": "9998:10:4"
@@ -5551,7 +5612,9 @@
                   "pathNode": {
                     "id": 1033,
                     "name": "Set",
-                    "nameLocations": ["10329:3:4"],
+                    "nameLocations": [
+                      "10329:3:4"
+                    ],
                     "nodeType": "IdentifierPath",
                     "referencedDeclaration": 578,
                     "src": "10329:3:4"
@@ -5751,7 +5814,9 @@
                     "pathNode": {
                       "id": 1038,
                       "name": "UintSet",
-                      "nameLocations": ["10529:7:4"],
+                      "nameLocations": [
+                        "10529:7:4"
+                      ],
                       "nodeType": "IdentifierPath",
                       "referencedDeclaration": 1036,
                       "src": "10529:7:4"
@@ -6013,7 +6078,9 @@
                     "pathNode": {
                       "id": 1059,
                       "name": "UintSet",
-                      "nameLocations": ["10829:7:4"],
+                      "nameLocations": [
+                        "10829:7:4"
+                      ],
                       "nodeType": "IdentifierPath",
                       "referencedDeclaration": 1036,
                       "src": "10829:7:4"
@@ -6275,7 +6342,9 @@
                     "pathNode": {
                       "id": 1080,
                       "name": "UintSet",
-                      "nameLocations": ["11047:7:4"],
+                      "nameLocations": [
+                        "11047:7:4"
+                      ],
                       "nodeType": "IdentifierPath",
                       "referencedDeclaration": 1036,
                       "src": "11047:7:4"
@@ -6476,7 +6545,9 @@
                     "pathNode": {
                       "id": 1101,
                       "name": "UintSet",
-                      "nameLocations": ["11270:7:4"],
+                      "nameLocations": [
+                        "11270:7:4"
+                      ],
                       "nodeType": "IdentifierPath",
                       "referencedDeclaration": 1036,
                       "src": "11270:7:4"
@@ -6711,7 +6782,9 @@
                     "pathNode": {
                       "id": 1116,
                       "name": "UintSet",
-                      "nameLocations": ["11720:7:4"],
+                      "nameLocations": [
+                        "11720:7:4"
+                      ],
                       "nodeType": "IdentifierPath",
                       "referencedDeclaration": 1036,
                       "src": "11720:7:4"
@@ -6802,7 +6875,9 @@
               "src": "12461:219:4",
               "statements": [
                 {
-                  "assignments": [1149],
+                  "assignments": [
+                    1149
+                  ],
                   "declarations": [
                     {
                       "constant": false,
@@ -6911,7 +6986,9 @@
                   "src": "12471:44:4"
                 },
                 {
-                  "assignments": [1159],
+                  "assignments": [
+                    1159
+                  ],
                   "declarations": [
                     {
                       "constant": false,
@@ -7057,7 +7134,9 @@
                     "pathNode": {
                       "id": 1137,
                       "name": "UintSet",
-                      "nameLocations": ["12399:7:4"],
+                      "nameLocations": [
+                        "12399:7:4"
+                      ],
                       "nodeType": "IdentifierPath",
                       "referencedDeclaration": 1036,
                       "src": "12399:7:4"
@@ -7137,7 +7216,7 @@
   },
   "networks": {},
   "schemaVersion": "3.4.10",
-  "updatedAt": "2022-10-09T04:41:00.805Z",
+  "updatedAt": "2022-10-13T06:00:35.710Z",
   "devdoc": {
     "details": "Library for managing https://en.wikipedia.org/wiki/Set_(abstract_data_type)[sets] of primitive types. Sets have the following properties: - Elements are added, removed, and checked for existence in constant time (O(1)). - Elements are enumerated in O(n). No guarantees are made on the ordering. ``` contract Example {     // Add the library methods     using EnumerableSet for EnumerableSet.AddressSet;     // Declare a set state variable     EnumerableSet.AddressSet private mySet; } ``` As of v3.3.0, sets of type `bytes32` (`Bytes32Set`), `address` (`AddressSet`) and `uint256` (`UintSet`) are supported. [WARNING] ====  Trying to delete such a structure from storage will likely result in data corruption, rendering the structure unusable.  See https://github.com/ethereum/solidity/pull/11843[ethereum/solidity#11843] for more info.  In order to clean an EnumerableSet, you can either remove all elements one by one or create a fresh instance using an array of EnumerableSet. ====",
     "kind": "dev",

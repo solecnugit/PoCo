@@ -16,7 +16,7 @@ export function serializePocoMessagePayload(
   payload: PocoMessagePayload
 ): ArrayBuffer {
   for (let i = 0; i < payload.length; i++) {
-    if (_.isArrayBuffer(payload[i])) {
+    if (_.isArrayBuffer(payload[i]) || _.isTypedArray(payload[i])) {
       payload[i] = Buffer.from(payload[i]);
     }
   }

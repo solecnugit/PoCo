@@ -28,8 +28,12 @@
   "ast": {
     "absolutePath": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol",
     "exportedSymbols": {
-      "AddressUpgradeable": [525],
-      "Initializable": [282]
+      "AddressUpgradeable": [
+        525
+      ],
+      "Initializable": [
+        282
+      ]
     },
     "id": 283,
     "license": "MIT",
@@ -37,7 +41,12 @@
     "nodes": [
       {
         "id": 133,
-        "literals": ["solidity", "^", "0.8", ".2"],
+        "literals": [
+          "solidity",
+          "^",
+          "0.8",
+          ".2"
+        ],
         "nodeType": "PragmaDirective",
         "src": "113:23:1"
       },
@@ -67,7 +76,9 @@
         },
         "fullyImplemented": true,
         "id": 282,
-        "linearizedBaseContracts": [282],
+        "linearizedBaseContracts": [
+          282
+        ],
         "name": "Initializable",
         "nameLocation": "2401:13:1",
         "nodeType": "ContractDefinition",
@@ -195,7 +206,9 @@
               "src": "3101:483:1",
               "statements": [
                 {
-                  "assignments": [150],
+                  "assignments": [
+                    150
+                  ],
                   "declarations": [
                     {
                       "constant": false,
@@ -605,7 +618,10 @@
                       "id": 154,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [4294967278, 4294967278],
+                      "overloadedDeclarations": [
+                        4294967278,
+                        4294967278
+                      ],
                       "referencedDeclaration": 4294967278,
                       "src": "3157:7:1",
                       "typeDescriptions": {
@@ -1034,7 +1050,10 @@
                       "id": 207,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [4294967278, 4294967278],
+                      "overloadedDeclarations": [
+                        4294967278,
+                        4294967278
+                      ],
                       "referencedDeclaration": 4294967278,
                       "src": "4409:7:1",
                       "typeDescriptions": {
@@ -1360,7 +1379,10 @@
                       "id": 238,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [4294967278, 4294967278],
+                      "overloadedDeclarations": [
+                        4294967278,
+                        4294967278
+                      ],
                       "referencedDeclaration": 4294967278,
                       "src": "4902:7:1",
                       "typeDescriptions": {
@@ -1482,7 +1504,10 @@
                       "id": 249,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [4294967278, 4294967278],
+                      "overloadedDeclarations": [
+                        4294967278,
+                        4294967278
+                      ],
                       "referencedDeclaration": 4294967278,
                       "src": "5447:7:1",
                       "typeDescriptions": {
@@ -1888,7 +1913,7 @@
   },
   "networks": {},
   "schemaVersion": "3.4.10",
-  "updatedAt": "2022-10-09T04:41:00.801Z",
+  "updatedAt": "2022-10-13T06:00:35.708Z",
   "devdoc": {
     "custom:oz-upgrades-unsafe-allow": "constructor constructor() {     _disableInitializers(); } ``` ====",
     "details": "This is a base contract to aid in writing upgradeable contracts, or any kind of contract that will be deployed behind a proxy. Since proxied contracts do not make use of a constructor, it's common to move constructor logic to an external initializer function, usually called `initialize`. It then becomes necessary to protect this initializer function so it can only be called once. The {initializer} modifier provided by this contract will have this effect. The initialization functions use a version number. Once a version number is used, it is consumed and cannot be reused. This mechanism prevents re-execution of each \"step\" but allows the creation of new initialization steps in case an upgrade adds a module that needs to be initialized. For example: [.hljs-theme-light.nopadding] ``` contract MyToken is ERC20Upgradeable {     function initialize() initializer public {         __ERC20_init(\"MyToken\", \"MTK\");     } } contract MyTokenV2 is MyToken, ERC20PermitUpgradeable {     function initializeV2() reinitializer(2) public {         __ERC20Permit_init(\"MyToken\");     } } ``` TIP: To avoid leaving the proxy in an uninitialized state, the initializer function should be called as early as possible by providing the encoded function call as the `_data` argument to {ERC1967Proxy-constructor}. CAUTION: When used with inheritance, manual care must be taken to not invoke a parent initializer twice, or to ensure that all initializers are idempotent. This is not verified automatically as constructors are by Solidity. [CAUTION] ==== Avoid leaving a contract uninitialized. An uninitialized contract can be taken over by an attacker. This applies to both a proxy and its implementation contract, which may impact the proxy. To prevent the implementation contract from being used, you should invoke the {_disableInitializers} function in the constructor to automatically lock it when it is deployed: [.hljs-theme-light.nopadding] ```",

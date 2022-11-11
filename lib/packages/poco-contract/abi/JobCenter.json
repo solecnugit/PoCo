@@ -88,7 +88,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [],
@@ -170,7 +171,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [],
@@ -183,7 +185,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [],
@@ -196,7 +199,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     }
   ],
   "metadata": "{\"compiler\":{\"version\":\"0.8.17+commit.8df45f5f\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"version\",\"type\":\"uint8\"}],\"name\":\"Initialized\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"jobId\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"messenger\",\"type\":\"address\"}],\"name\":\"NewJob\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"jobId\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"claimer\",\"type\":\"address\"}],\"name\":\"SubmitJob\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"activeJobCount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getJobs\",\"outputs\":[{\"internalType\":\"uint256[]\",\"name\":\"\",\"type\":\"uint256[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"jobCount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"messager\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"secret\",\"type\":\"bytes32\"}],\"name\":\"postJob\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"jobId\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"jobId\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"key\",\"type\":\"bytes\"}],\"name\":\"submitJob\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"owner()\":{\"details\":\"Returns the address of the current owner.\"},\"renounceOwnership()\":{\"details\":\"Leaves the contract without owner. It will not be possible to call `onlyOwner` functions anymore. Can only be called by the current owner. NOTE: Renouncing ownership will leave the contract without an owner, thereby removing any functionality that is only available to the owner.\"},\"transferOwnership(address)\":{\"details\":\"Transfers ownership of the contract to a new account (`newOwner`). Can only be called by the current owner.\"}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"project:/contracts/JobCenter.sol\":\"JobCenter\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol\":{\"keccak256\":\"0x247c62047745915c0af6b955470a72d1696ebad4352d7d3011aef1a2463cd888\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://d7fc8396619de513c96b6e00301b88dd790e83542aab918425633a5f7297a15a\",\"dweb:/ipfs/QmXbP4kiZyp7guuS7xe8KaybnwkRPGrBc2Kbi3vhcTfpxb\"]},\"@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol\":{\"keccak256\":\"0x0203dcadc5737d9ef2c211d6fa15d18ebc3b30dfa51903b64870b01a062b0b4e\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://6eb2fd1e9894dbe778f4b8131adecebe570689e63cf892f4e21257bfe1252497\",\"dweb:/ipfs/QmXgUGNfZvrn6N2miv3nooSs7Jm34A41qz94fu2GtDFcx8\"]},\"@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol\":{\"keccak256\":\"0x611aa3f23e59cfdd1863c536776407b3e33d695152a266fa7cfb34440a29a8a3\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://9b4b2110b7f2b3eb32951bc08046fa90feccffa594e1176cb91cdfb0e94726b4\",\"dweb:/ipfs/QmSxLwYjicf9zWFuieRc8WQwE4FisA1Um5jp1iSa731TGt\"]},\"@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol\":{\"keccak256\":\"0x963ea7f0b48b032eef72fe3a7582edf78408d6f834115b9feadd673a4d5bd149\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://d6520943ea55fdf5f0bafb39ed909f64de17051bc954ff3e88c9e5621412c79c\",\"dweb:/ipfs/QmWZ4rAKTQbNG2HxGs46AcTXShsVytKeLs7CUCdCSv5N7a\"]},\"@openzeppelin/contracts/utils/structs/EnumerableSet.sol\":{\"keccak256\":\"0x5050943b32b6a8f282573d166b2e9d87ab7eb4dbba4ab6acf36ecb54fe6995e4\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://d4831d777a29ebdf9f2caecd70e74b97bff1b70e53622fd0a02aed01e21c8271\",\"dweb:/ipfs/QmUqurVVnCc7XkMxb2k23TVQUtuhHZduJ3hTZarTJrqU24\"]},\"project:/contracts/JobCenter.sol\":{\"keccak256\":\"0x28452cca407c3eb956c64e0778a501975989d4b1ec0383807fcd1c382247b650\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://7e92fb3ce0b197b9bac4a9db7e2d9ef720b38fb85d153ad3a3d885f655ee2024\",\"dweb:/ipfs/QmR81TJD76ksnGqFwEeU4cb4CsUDEnBME521ypcAp3KsqF\"]}},\"version\":1}",
@@ -7948,12 +7952,24 @@
   "ast": {
     "absolutePath": "project:/contracts/JobCenter.sol",
     "exportedSymbols": {
-      "AddressUpgradeable": [525],
-      "ContextUpgradeable": [567],
-      "EnumerableSet": [1166],
-      "Initializable": [282],
-      "JobCenter": [1376],
-      "OwnableUpgradeable": [131]
+      "AddressUpgradeable": [
+        525
+      ],
+      "ContextUpgradeable": [
+        567
+      ],
+      "EnumerableSet": [
+        1166
+      ],
+      "Initializable": [
+        282
+      ],
+      "JobCenter": [
+        1376
+      ],
+      "OwnableUpgradeable": [
+        131
+      ]
     },
     "id": 1377,
     "license": "MIT",
@@ -7961,7 +7977,15 @@
     "nodes": [
       {
         "id": 1168,
-        "literals": ["solidity", ">=", "0.4", ".22", "<", "0.9", ".0"],
+        "literals": [
+          "solidity",
+          ">=",
+          "0.4",
+          ".22",
+          "<",
+          "0.9",
+          ".0"
+        ],
         "nodeType": "PragmaDirective",
         "src": "32:32:5"
       },
@@ -7996,7 +8020,9 @@
             "baseName": {
               "id": 1171,
               "name": "OwnableUpgradeable",
-              "nameLocations": ["231:18:5"],
+              "nameLocations": [
+                "231:18:5"
+              ],
               "nodeType": "IdentifierPath",
               "referencedDeclaration": 131,
               "src": "231:18:5"
@@ -8011,7 +8037,12 @@
         "contractKind": "contract",
         "fullyImplemented": true,
         "id": 1376,
-        "linearizedBaseContracts": [1376, 131, 567, 282],
+        "linearizedBaseContracts": [
+          1376,
+          131,
+          567,
+          282
+        ],
         "name": "JobCenter",
         "nameLocation": "218:9:5",
         "nodeType": "ContractDefinition",
@@ -8022,7 +8053,9 @@
             "libraryName": {
               "id": 1173,
               "name": "EnumerableSet",
-              "nameLocations": ["262:13:5"],
+              "nameLocations": [
+                "262:13:5"
+              ],
               "nodeType": "IdentifierPath",
               "referencedDeclaration": 1166,
               "src": "262:13:5"
@@ -8035,7 +8068,10 @@
               "pathNode": {
                 "id": 1174,
                 "name": "EnumerableSet.UintSet",
-                "nameLocations": ["280:13:5", "294:7:5"],
+                "nameLocations": [
+                  "280:13:5",
+                  "294:7:5"
+                ],
                 "nodeType": "IdentifierPath",
                 "referencedDeclaration": 1036,
                 "src": "280:21:5"
@@ -8210,7 +8246,9 @@
                 "pathNode": {
                   "id": 1187,
                   "name": "Job",
-                  "nameLocations": ["452:3:5"],
+                  "nameLocations": [
+                    "452:3:5"
+                  ],
                   "nodeType": "IdentifierPath",
                   "referencedDeclaration": 1185,
                   "src": "452:3:5"
@@ -8246,7 +8284,10 @@
               "pathNode": {
                 "id": 1191,
                 "name": "EnumerableSet.UintSet",
-                "nameLocations": ["467:13:5", "481:7:5"],
+                "nameLocations": [
+                  "467:13:5",
+                  "481:7:5"
+                ],
                 "nodeType": "IdentifierPath",
                 "referencedDeclaration": 1036,
                 "src": "467:21:5"
@@ -8517,7 +8558,9 @@
                 "modifierName": {
                   "id": 1211,
                   "name": "initializer",
-                  "nameLocations": ["696:11:5"],
+                  "nameLocations": [
+                    "696:11:5"
+                  ],
                   "nodeType": "IdentifierPath",
                   "referencedDeclaration": 202,
                   "src": "696:11:5"
@@ -8601,7 +8644,9 @@
                 "modifierName": {
                   "id": 1220,
                   "name": "onlyInitializing",
-                  "nameLocations": ["796:16:5"],
+                  "nameLocations": [
+                    "796:16:5"
+                  ],
                   "nodeType": "IdentifierPath",
                   "referencedDeclaration": 245,
                   "src": "796:16:5"
@@ -8732,7 +8777,9 @@
                 "modifierName": {
                   "id": 1229,
                   "name": "onlyInitializing",
-                  "nameLocations": ["911:16:5"],
+                  "nameLocations": [
+                    "911:16:5"
+                  ],
                   "nodeType": "IdentifierPath",
                   "referencedDeclaration": 245,
                   "src": "911:16:5"
@@ -9431,7 +9478,10 @@
                       "id": 1290,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [4294967278, 4294967278],
+                      "overloadedDeclarations": [
+                        4294967278,
+                        4294967278
+                      ],
                       "referencedDeclaration": 4294967278,
                       "src": "1366:7:5",
                       "typeDescriptions": {
@@ -9625,7 +9675,10 @@
                       "id": 1298,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [4294967278, 4294967278],
+                      "overloadedDeclarations": [
+                        4294967278,
+                        4294967278
+                      ],
                       "referencedDeclaration": 4294967278,
                       "src": "1433:7:5",
                       "typeDescriptions": {
@@ -9807,7 +9860,10 @@
                       "id": 1311,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [4294967278, 4294967278],
+                      "overloadedDeclarations": [
+                        4294967278,
+                        4294967278
+                      ],
                       "referencedDeclaration": 4294967278,
                       "src": "1512:7:5",
                       "typeDescriptions": {
@@ -10538,63 +10594,22 @@
     "version": "0.8.17+commit.8df45f5f.Emscripten.clang"
   },
   "networks": {
-    "1664677427434": {
+    "1665641374069": {
       "events": {},
       "links": {},
-      "address": "0xb3f7a2FA2eF160F150FBaa770948F42De087Ac6B",
-      "transactionHash": "0x166d389569022188869f8d3060dd4fa68aa4c1219bbda1dd7029fb7876c644e1"
+      "address": "0x6a692Cd5D12A529AcEA7f7b00EE273f1B1eB556C",
+      "transactionHash": "0x3fab70de517095b064d4c8f312e5572be1dfaa273f417094e9227afa4969311f"
     },
-    "1664696395437": {
+    "1668139949561": {
       "events": {},
       "links": {},
-      "address": "0xB68bEcecE2f60C7fb0b271C38013aAdB0572808d",
-      "transactionHash": "0x6edf25e95d49ac618d09f96188f3cb58abd54784223c74988244cc5c449dcb68"
-    },
-    "1664760780123": {
-      "events": {},
-      "links": {},
-      "address": "0x8A32098a6170D4a50A900a4B2cfdd561A50E37B8",
-      "transactionHash": "0x54ef575f2d9fc2e6d6206c610d554ded2748c73fb4c85f90fa1fcaede5224fa2"
-    },
-    "1664788623004": {
-      "events": {},
-      "links": {},
-      "address": "0x5E73C4756F920f766fd4F678d158EF9373A9Ee74",
-      "transactionHash": "0x7d5c11f22d69ab76c2cc593f465ce7d26d206a49eb635f34b5b37ce2f92a0a9b"
-    },
-    "1664949083424": {
-      "events": {},
-      "links": {},
-      "address": "0xB2b49dE332a1658d937c84245af437589b4137F5",
-      "transactionHash": "0x7319fdefc12bc4972900f322ac4518292e886a24bf0e2f9d190da9f18e8ca48a"
-    },
-    "1665033643347": {
-      "events": {},
-      "links": {},
-      "address": "0x8EaC4B53576F663c71E2f0405c1289d9A9E4DE85",
-      "transactionHash": "0xb512ce146921c08e23b7452f3cb786b5bd469c3621e639375116362b1f098b1d"
-    },
-    "1665108905220": {
-      "events": {},
-      "links": {},
-      "address": "0x25a5346af40C7B4331AC0e304332416E55539b5b",
-      "transactionHash": "0x9ea572c8bc13ea72d89aaeb8f28f1bd5198708617a8f4ee149d218979a7cb916"
-    },
-    "1665149497177": {
-      "events": {},
-      "links": {},
-      "address": "0xfe6d578559f06DEc402060Bfdb6874F73B6dD9dc",
-      "transactionHash": "0x42e0a3d8bef9d3b8c9b897860f302baf152f5b869c4f389c0164003e6368c5a3"
-    },
-    "1665210263256": {
-      "events": {},
-      "links": {},
-      "address": "0xfE859c664FD71Ef84cf6347719668cC51C164a0F",
-      "transactionHash": "0x9b54b7c0a8b6531fc92a59907e877b2f2f90ec6fc22238dfa100634bbec97405"
+      "address": "0x1177795D833226ea06123310276B8c5C97EcE60f",
+      "transactionHash": "0x869abd50153114465785380fb78d209cd63fac0c53430b34477eebb2a3dc0149"
     }
   },
   "schemaVersion": "3.4.10",
-  "updatedAt": "2022-10-09T04:41:00.809Z",
+  "updatedAt": "2022-11-11T04:17:32.500Z",
+  "networkType": "ethereum",
   "devdoc": {
     "kind": "dev",
     "methods": {

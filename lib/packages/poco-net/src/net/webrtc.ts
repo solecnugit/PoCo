@@ -304,7 +304,7 @@ export class PocoPeerWebRTCConnection<
     return channel;
   }
 
-  send<
+  async send<
     Event extends ReservedOrUserEventNames<
       PocoPeerWebRTCConnectionInternalEvents,
       Events
@@ -316,14 +316,27 @@ export class PocoPeerWebRTCConnection<
       Events,
       Event
     >
-  ): void | Promise<void> {
+  ): Promise<void> {
     const channel = this.getChannel("poco");
     const buffer = serializePocoMessagePayload([event, ...payload]);
 
     const packets = toPackets(buffer, PACKET_WEB_RTC_CONNECTION_MTU);
 
-    for (const packet of packets) {
-      channel.send(packet.toUint8Array());
+    let i = 0;
+    while(i < packets.length) {
+      if (channel.bufferedAmount > channel.bufferedAmountLowThreshold) {
+        const promise = new Promise((resolve) => {
+          channel.onbufferedamountlow = () => {
+            channel.onbufferedamountlow = null;
+            resolve(undefined);
+          }
+        })
+
+        await promise;
+      } else {
+        channel.send(packets[i].toUint8Array());
+        i += 1;
+      }
     }
   }
 }

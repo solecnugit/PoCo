@@ -17,7 +17,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [],
@@ -30,7 +31,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -1515,7 +1517,9 @@
   "ast": {
     "absolutePath": "project:/contracts/Migrations.sol",
     "exportedSymbols": {
-      "Migrations": [1416]
+      "Migrations": [
+        1416
+      ]
     },
     "id": 1417,
     "license": "MIT",
@@ -1523,7 +1527,15 @@
     "nodes": [
       {
         "id": 1378,
-        "literals": ["solidity", ">=", "0.4", ".22", "<", "0.9", ".0"],
+        "literals": [
+          "solidity",
+          ">=",
+          "0.4",
+          ".22",
+          "<",
+          "0.9",
+          ".0"
+        ],
         "nodeType": "PragmaDirective",
         "src": "32:32:6"
       },
@@ -1535,7 +1547,9 @@
         "contractKind": "contract",
         "fullyImplemented": true,
         "id": 1416,
-        "linearizedBaseContracts": [1416],
+        "linearizedBaseContracts": [
+          1416
+        ],
         "name": "Migrations",
         "nameLocation": "75:10:6",
         "nodeType": "ContractDefinition",
@@ -1785,7 +1799,10 @@
                       "id": 1393,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [4294967278, 4294967278],
+                      "overloadedDeclarations": [
+                        4294967278,
+                        4294967278
+                      ],
                       "referencedDeclaration": 4294967278,
                       "src": "252:7:6",
                       "typeDescriptions": {
@@ -1896,7 +1913,9 @@
                 "modifierName": {
                   "id": 1407,
                   "name": "restricted",
-                  "nameLocations": ["441:10:6"],
+                  "nameLocations": [
+                    "441:10:6"
+                  ],
                   "nodeType": "IdentifierPath",
                   "referencedDeclaration": 1403,
                   "src": "441:10:6"
@@ -1967,63 +1986,22 @@
     "version": "0.8.17+commit.8df45f5f.Emscripten.clang"
   },
   "networks": {
-    "1664677427434": {
+    "1665641374069": {
       "events": {},
       "links": {},
-      "address": "0x5c9463a9abF38abc3F3215Fad4F9EFF2CEC8DeEA",
-      "transactionHash": "0xd31e32352552505ecbaf259313f1fb9350ad5b0ff5f8fa596115ee82f49ee0ac"
+      "address": "0x26752DA239d7bd56e4C46CEC134Bb5247A938733",
+      "transactionHash": "0x7152be948ce1eb244b6d4bb328e7ba65c0eb3762fc8bf744277c11629333ca82"
     },
-    "1664696395437": {
+    "1668139949561": {
       "events": {},
       "links": {},
-      "address": "0x51578586BB24A54e52C32D066C0C8Df59661FA99",
-      "transactionHash": "0xf386626909c97007aff163089d4cffb267ab2374495e622c00ce1cc91a8137dd"
-    },
-    "1664760780123": {
-      "events": {},
-      "links": {},
-      "address": "0xd2a26bF1EdCE3C081fDc7aeD4284eE50Fe855A35",
-      "transactionHash": "0xff5395f695bdd3a124b44d8e3ccf28a70b6f9ef1ebd908fc36681821afffd658"
-    },
-    "1664788623004": {
-      "events": {},
-      "links": {},
-      "address": "0xb7BA1fA95Cf802439bDbdFDbDc8a56098F37512c",
-      "transactionHash": "0x171bde77db8b9fc533d648d299c10776c3c7ecf89b248e4735a98856b76fcc41"
-    },
-    "1664949083424": {
-      "events": {},
-      "links": {},
-      "address": "0x90f40d9672faCF7e032FF794e094BF49b3c927c3",
-      "transactionHash": "0x2772bb982177c145b21f6871b90b6ef692a0a7d1b5b9ecfcb32ac06f12fc8bf1"
-    },
-    "1665033643347": {
-      "events": {},
-      "links": {},
-      "address": "0x3A8Eef179cB1b209128F2CB7791c38ED67Dbf0a9",
-      "transactionHash": "0x1a517b69453ef67756a1cd7ae7d052aa1bddde8aea02ed7c65eb294cd5750f10"
-    },
-    "1665108905220": {
-      "events": {},
-      "links": {},
-      "address": "0x82546f6208fEB56A217429d5E400b0b5Ab5966E8",
-      "transactionHash": "0xe197bfa0a6e7a5e909f42556e364444b3ec8617dc2fae0ee2f9601ec86ee1e54"
-    },
-    "1665149497177": {
-      "events": {},
-      "links": {},
-      "address": "0x5C88e5c72f6aE5fbb4eD4d224416d23a975C6EEe",
-      "transactionHash": "0x76bd434575c650a5390494715c61d4bc6075864737e49ac409a74dc0b21193e0"
-    },
-    "1665210263256": {
-      "events": {},
-      "links": {},
-      "address": "0xFfC6823B253ae854a562290c5f4732254390553e",
-      "transactionHash": "0xd2a89f1b4bfd9c1ae7ee7748681689cf1fd63ff6d882f57a00a965e779161d34"
+      "address": "0xb4a1853De53ea94b32563dF69786396b14B94a6D",
+      "transactionHash": "0xb3332e7d1c51bd44e862e7b7bb90ee5e70c5177f84f58c9ab5c262c95d4bd756"
     }
   },
   "schemaVersion": "3.4.10",
-  "updatedAt": "2022-10-09T04:41:00.811Z",
+  "updatedAt": "2022-11-11T04:17:32.853Z",
+  "networkType": "ethereum",
   "devdoc": {
     "kind": "dev",
     "methods": {},

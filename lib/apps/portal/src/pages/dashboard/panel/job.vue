@@ -39,8 +39,11 @@ const download = async (jobId: BigNumber, buffer: ArrayBuffer) => {
     keepExistingData: false,
   });
 
+  await stream.seek(0);
+
   await stream.write({
-    data: buffer,
+    // @ts-ignore
+    data: buffer.buffer,
     type: "write",
   });
   await stream.close();
