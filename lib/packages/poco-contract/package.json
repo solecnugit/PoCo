@@ -14,7 +14,7 @@
     "repl": "pnpm exec truffle console",
     "clean": "rm -rf build types",
     "test": "pnpm exec truffle test",
-    "ganache": "pnpm exec ganache",
+    "ganache": "./ganache.sh",
     "build": "pnpm exec truffle compile && pnpm run types && pnpm run setup && pnpm run compile",
     "postinstall": "pnpm run build"
   },
