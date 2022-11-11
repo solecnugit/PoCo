@@ -47,7 +47,7 @@ export const usePoco = defineStore("poco", {
         messenger: [] as PocoClientServiceInfo[],
       },
       logs: [] as (PocoClientLog & { id: number })[],
-      jobs: [] as (PocoClientJob & { buffer: ArrayBuffer | undefined })[],
+      jobs: [] as (PocoClientJob & { buffer: Uint8Array | undefined })[],
       jobFileMapping: new Map<string, FileSystemHandle>(),
     };
   },
@@ -122,6 +122,7 @@ export const usePoco = defineStore("poco", {
         }
 
         job.buffer = buffer;
+        job.status = "done";
       });
 
       instance.on("AccountChanged", (account) => {

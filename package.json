@@ -2,7 +2,7 @@
   "name": "poco",
   "version": "0.0.3",
   "scripts": {
-    "prepare": "husky install",
+    "prepare": "echo 'stop' && husky install",
     "hook": "pnpm exec husky add .husky/commit-msg 'pnpm exec commitlint --edit $1'",
     "changelog": "pnpm exec conventional-changelog -p angular -i CHANGELOG.md -s",
     "cz": "git-cz"

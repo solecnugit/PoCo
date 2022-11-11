@@ -244,7 +244,7 @@ export class PocoPeerSocketIOConnection<
 
     try {
       await this.connection.once("peer connected", {
-        timeout: this.options?.timeout || 5000,
+        timeout: this.options?.timeout || 10000,
       });
 
       this.setStatus("connected");

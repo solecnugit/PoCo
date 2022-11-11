@@ -54,7 +54,7 @@ export interface PocoClientEvents {
   JobResultAvailable: (
     this: ThisType<PocoClient>,
     jobId: BigNumber,
-    buffer: ArrayBuffer
+    buffer: Uint8Array
   ) => void;
   NewJob: (
     this: ThisType<PocoClient>,
@@ -89,12 +89,12 @@ export interface PocoClientWebRTCEvents {
   SendJob: (
     this: ThisType<PocoPeerWebRTCConnection<PocoClientWebRTCEvents>>,
     jobIdInString: string,
-    buffer: ArrayBuffer
+    buffer: Uint8Array
   ) => void;
   SubmitJob: (
     this: ThisType<PocoPeerWebRTCConnection<PocoClientWebRTCEvents>>,
     jobIdInString: string,
-    buffer: ArrayBuffer
+    buffer: Uint8Array
   ) => void;
   SendJobKey: (
     this: ThisType<PocoPeerWebRTCConnection<PocoClientWebRTCEvents>>,
@@ -369,11 +369,15 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
             BigNumber.from(jobIdInString),
             `${rtcConnection.remoteAddress} took the job.`
           );
+          this.updateJobStatus(
+            BigNumber.from(jobIdInString),
+            "running",
+          )
 
           await rtcConnection.send(
             "SendJob",
             jobIdInString,
-            await file.arrayBuffer()
+            new Uint8Array(await file.arrayBuffer())
           );
         });
 
@@ -427,7 +431,7 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
     });
   }
 
-  protected setupMetaMaskListenrs() {
+  protected setupMetaMaskListeners() {
     const ethereum = (window as any).ethereum;
 
     if (typeof ethereum == "undefined") {
@@ -450,7 +454,7 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
   }
 
   async setup(force?: boolean) {
-    this.setupMetaMaskListenrs();
+    this.setupMetaMaskListeners();
 
     this.jobCenter = await getContract<JobCenter>(this.provider, "JobCenter", {
       network: this.network,

@@ -16,10 +16,10 @@ const takeJob = async (jobId: BigNumber) => {
 const setJobFile = async (jobId: BigNumber) => {
   const [fileHandle] = await window.showOpenFilePicker({ multiple: false });
 
-  poco.clientInstance.setJobFile(jobId, await fileHandle.getFile());
+  poco.clientInstance!.setJobFile(jobId, await fileHandle.getFile());
 };
 
-const download = async (jobId: BigNumber, buffer: ArrayBuffer) => {
+const download = async (jobId: BigNumber, buffer: Uint8Array) => {
   // const originalFile = poco.clientInstance.getJobFile(jobId.toString());
 
   // const originalBuffer = await originalFile.arrayBuffer();
@@ -42,8 +42,7 @@ const download = async (jobId: BigNumber, buffer: ArrayBuffer) => {
   await stream.seek(0);
 
   await stream.write({
-    // @ts-ignore
-    data: buffer.buffer,
+    data: buffer,
     type: "write",
   });
   await stream.close();
@@ -117,7 +116,7 @@ const download = async (jobId: BigNumber, buffer: ArrayBuffer) => {
             <td class="h-16 px-2 gap-1">
               <div class="flex items-center gap-2">
                 <button
-                  v-if="item.status === 'pending'"
+                  v-if="item.status === 'pending' && !item.isOwn"
                   :disabled="item.status !== 'pending'"
                   type="button"
                   @click="takeJob(item.jobId)"
@@ -170,7 +169,7 @@ const download = async (jobId: BigNumber, buffer: ArrayBuffer) => {
                 <button
                   type="button"
                   @click="setJobFile(item.jobId)"
-                  v-if="item.isOwn"
+                  v-if="item.status == 'pending' && item.isOwn"
                   class="text-white bg-gradient-to-br from-pink-500 to-orange-400 hover:hue-rotate-30 font-medium rounded-full text-sm p-2.5 text-center inline-flex items-center mr-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
                 >
                   <svg
