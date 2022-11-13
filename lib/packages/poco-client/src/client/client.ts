@@ -729,4 +729,8 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
   getJobFile(jobId: BigNumber): File {
     return this.jobToFileMapping.get(jobId.toString())!;
   }
+
+  hasJobFile(jobId: BigNumber): boolean {
+    return this.jobToFileMapping.get(jobId.toString()) !== undefined;
+  }
 }

@@ -32,16 +32,16 @@ const messenger = $computed(() => services.messenger);
           >
             <th
               scope="row"
-              class="h-10 px-6 font-medium text-white whitespace-nowrap text-ellipsis overflow-hidden"
+              class="h-12 px-6 font-medium text-white whitespace-nowrap text-ellipsis overflow-hidden"
             >
               {{ item.provider }}
             </th>
             <td
-              class="h-10 px-6 text-white whitespace-nowrap text-ellipsis overflow-hidden"
+              class="h-12 px-6 text-white whitespace-nowrap text-ellipsis overflow-hidden"
             >
               {{ item.endpoint }}
             </td>
-            <td class="h-10 px-6 uppercase text-white">
+            <td class="h-12 px-6 uppercase text-white">
               <StatusIndicator
                 :status="item.status"
                 size="default"

@@ -48,7 +48,7 @@ export const usePoco = defineStore("poco", {
       },
       logs: [] as (PocoClientLog & { id: number })[],
       jobs: [] as (PocoClientJob & { buffer: Uint8Array | undefined })[],
-      jobFileMapping: new Map<string, FileSystemHandle>(),
+      jobFileMapping: new Map<string, File>(),
     };
   },
   actions: {
@@ -132,7 +132,7 @@ export const usePoco = defineStore("poco", {
       instance.on("AccountDisconnected", () => {
         const state = useState();
 
-        state.setGlobalCoveringMessage("Account discconnected.")
+        state.setGlobalCoveringMessage("Account disconnected.")
         state.setGlobalCoveringStatus("error")
         state.showGlobalCovering()
 
@@ -194,13 +194,20 @@ export const usePoco = defineStore("poco", {
         multiple: false,
       });
 
+      const file = await fileHandle.getFile();
+
       const jobId = await window.pocoClientInstance.postJob({
-        file: await fileHandle.getFile(),
+        file: file,
         messenger: this.services.messenger[0].provider,
       });
 
-      this.jobFileMapping.set(jobId.toString(), fileHandle);
+      this.jobFileMapping.set(jobId.toString(), file);
     },
+    async resetJobFile(jobId: BigNumber, file: File) {
+      window.pocoClientInstance!.setJobFile(jobId, file)
+
+      this.jobFileMapping.set(jobId.toString(), file)
+    }
   },
   getters: {
     userBalance(state) {
