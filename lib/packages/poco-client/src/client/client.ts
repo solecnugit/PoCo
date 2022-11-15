@@ -32,6 +32,7 @@ import {
   ServiceUpdateEvent,
 } from "@poco/contract/dist/ServiceRegistry";
 import { sha256Digest } from "../utils/crypto";
+import { transcode } from "@poco/codec"
 
 export interface PocoClientEvents {
   Log: (
@@ -637,12 +638,15 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
     rtcConnection.on("SendJob", async (jobIdInString, buffer) => {
       this.log("info", "network", `Receive buffer of ${jobIdInString}`);
 
+      const finalbuffer = await transcode(buffer);
+
       this.updateJobProgress(
         BigNumber.from(jobIdInString),
         "Job buffer received."
       );
 
-      await rtcConnection.send("SubmitJob", jobIdInString, buffer);
+      //@ts-ignore
+      await rtcConnection.send("SubmitJob", jobIdInString, finalbuffer);
     });
 
     rtcConnection.on("SendJobKey", async (jobIdInString, key, secret) => {

@@ -18,7 +18,8 @@
     "ethers": "^5.7.1",
     "@poco/contract": "workspace: *",
     "@poco/net": "workspace: *",
-    "@poco/util": "workspace: *"
+    "@poco/util": "workspace: *",
+    "@poco/codec": "workspace: *"
   },
   "devDependencies": {
     "@types/events": "^3.0.0"
