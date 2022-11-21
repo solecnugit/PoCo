@@ -265,7 +265,8 @@ class VideoTranscoder {
       // console.log('video chunkCount');
       //根据bbb视频多次实验，发现h264格式下解码出来的帧数总是会比总帧数少1
       //发现hevc格式下解码出来的帧数会比总帧数少3
-      if(framecount === chunkCount-1){
+      //切换试验视频，framecount比chunkCount少4
+      if(framecount === chunkCount-4){
         console.log('current video')
         console.log(framecount)
         console.log(chunkCount)

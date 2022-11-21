@@ -228,7 +228,8 @@ class AudioTranscoder {
     if(!this.overaudio && this.encoder!.encodeQueueSize === 0)
         this.fillDataBuffer();
     if(this.encoder!.encodeQueueSize === 0 && this.decoder!.decodeQueueSize === 0){
-      if(rechunkCount === 10576){
+      //目前的测试视频count为183
+      if(rechunkCount === 183){
         self.postMessage({type: 'exit'})
         console.log('current audio')
         console.log('post exit message to self...')

@@ -12,9 +12,9 @@ export class WebmMuxer{
     vp9_encoder_constraints = {
         // codec: 'av01.0.08M.08',
         codec: 'vp09.00.10.08.01',
-        width: 640,
-        height: 360,
-        bitrate: 356000,
+        width: 720,
+        height: 1280,
+        bitrate: 1725000,
         framerate: 30,
         latencyMode: 'realtime'
     }
@@ -22,9 +22,9 @@ export class WebmMuxer{
     av1_encoder_constraints = {
       
       codec: 'av01.0.00M.08',
-      width: 640,
-      height: 360,
-      bitrate: 356000,
+      width: 720,
+      height: 1280,
+      bitrate: 1725000,
       framerate: 30,
       latencyMode: 'realtime'
     }
@@ -77,7 +77,7 @@ export class WebmMuxer{
           console.log(this.vp9_encoder_constraints)
             return await max_video_config({
                 ...this.vp9_encoder_constraints,
-                ratio: 640 / 360
+                ratio: 720 / 1280
             }) || await max_video_config(this.vp9_encoder_constraints);
       }
 }
