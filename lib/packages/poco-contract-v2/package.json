@@ -1,0 +1,18 @@
+{
+  "name": "poco-contract-v2",
+  "version": "0.0.1",
+  "license": "(MIT AND Apache-2.0)",
+  "scripts": {
+    "deploy": "cd contract && WORKSPACE_DIR=$(pwd)/.. ./deploy.sh",
+    "build": "pnpm run build:contract",
+    "build:contract": "cd contract && ./build.sh",
+    "test": "pnpm run test:unit && pnpm run test:integration",
+    "test:unit": "cd contract && cargo test",
+    "test:integration": "cd integration-tests && cargo run --example integration-tests \"../contract/target/wasm32-unknown-unknown/release/poco.wasm\"",
+    "postinstall": "echo no frontend && echo rs tests && echo rs contract"
+  },
+  "devDependencies": {
+    "near-cli": "^3.3.0"
+  },
+  "dependencies": {}
+}
