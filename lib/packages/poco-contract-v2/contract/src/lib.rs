@@ -1,37 +1,37 @@
-// Find all our documentation at https://docs.near.org
+pub mod event;
+pub mod round;
+
+use event::EventBus;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{log, near_bindgen};
-
-// Define the default message
-const DEFAULT_MESSAGE: &str = "Hello";
+use round::RoundManager;
 
 // Define the contract structure
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Contract {
-    message: String,
+    round_manager: RoundManager,
+    event_bus: EventBus
 }
 
 // Define the default, which automatically initializes the contract
 impl Default for Contract{
     fn default() -> Self{
-        Self{message: DEFAULT_MESSAGE.to_string()}
+        let initial_round_id = 1;
+        let initial_round_duration = 1000 * 60 * 30;
+        let initial_preserve_round = 3;
+
+        Self{
+            round_manager: RoundManager::new(initial_round_id, initial_round_duration),
+            event_bus: EventBus::new(initial_round_id, initial_preserve_round),
+        }
     }
 }
 
-// Implement the contract structure
+
 #[near_bindgen]
 impl Contract {
-    // Public method - returns the greeting saved, defaulting to DEFAULT_MESSAGE
-    pub fn get_greeting(&self) -> String {
-        return self.message.clone();
-    }
 
-    // Public method - accepts a greeting, such as "howdy", and records it
-    pub fn set_greeting(&mut self, message: String) {
-        log!("Saving greeting {}", message);
-        self.message = message;
-    }
 }
 
 /*
@@ -42,23 +42,23 @@ impl Contract {
 mod tests {
     use super::*;
 
-    #[test]
-    fn get_default_greeting() {
-        let contract = Contract::default();
-        // this test did not call set_greeting so should return the default "Hello" greeting
-        assert_eq!(
-            contract.get_greeting(),
-            "Hello".to_string()
-        );
-    }
+    // #[test]
+    // fn get_default_greeting() {
+    //     let contract = Contract::default();
+    //     // this test did not call set_greeting so should return the default "Hello" greeting
+    //     assert_eq!(
+    //         contract.get_greeting(),
+    //         "Hello".to_string()
+    //     );
+    // }
 
-    #[test]
-    fn set_then_get_greeting() {
-        let mut contract = Contract::default();
-        contract.set_greeting("howdy".to_string());
-        assert_eq!(
-            contract.get_greeting(),
-            "howdy".to_string()
-        );
-    }
+    // #[test]
+    // fn set_then_get_greeting() {
+    //     let mut contract = Contract::default();
+    //     contract.set_greeting("howdy".to_string());
+    //     assert_eq!(
+    //         contract.get_greeting(),
+    //         "howdy".to_string()
+    //     );
+    // }
 }

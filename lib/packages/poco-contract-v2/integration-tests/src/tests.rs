@@ -22,45 +22,45 @@ async fn main() -> anyhow::Result<()> {
         .into_result()?;
 
     // begin tests
-    test_default_message(&alice, &contract).await?;
-    test_changes_message(&alice, &contract).await?;
+    // test_default_message(&alice, &contract).await?;
+    // test_changes_message(&alice, &contract).await?;
     Ok(())
 }
 
-async fn test_default_message(
-    user: &Account,
-    contract: &Contract,
-) -> anyhow::Result<()> {
-    let message: String = user
-        .call( contract.id(), "get_greeting")
-        .args_json(json!({}))
-        .transact()
-        .await?
-        .json()?;
+// async fn test_default_message(
+//     user: &Account,
+//     contract: &Contract,
+// ) -> anyhow::Result<()> {
+//     let message: String = user
+//         .call( contract.id(), "get_greeting")
+//         .args_json(json!({}))
+//         .transact()
+//         .await?
+//         .json()?;
 
-    assert_eq!(message, "Hello".to_string());
-    println!("      Passed ✅ gets default message");
-    Ok(())
-}
+//     assert_eq!(message, "Hello".to_string());
+//     println!("      Passed ✅ gets default message");
+//     Ok(())
+// }
 
-async fn test_changes_message(
-    user: &Account,
-    contract: &Contract,
-) -> anyhow::Result<()> {
-    user.call(contract.id(), "set_greeting")
-        .args_json(json!({"message": "Howdy"}))
-        .transact()
-        .await?
-        .into_result()?;
+// async fn test_changes_message(
+//     user: &Account,
+//     contract: &Contract,
+// ) -> anyhow::Result<()> {
+//     user.call(contract.id(), "set_greeting")
+//         .args_json(json!({"message": "Howdy"}))
+//         .transact()
+//         .await?
+//         .into_result()?;
 
-    let message: String = user
-        .call(contract.id(), "get_greeting")
-        .args_json(json!({}))
-        .transact()
-        .await?
-        .json()?;
+//     let message: String = user
+//         .call(contract.id(), "get_greeting")
+//         .args_json(json!({}))
+//         .transact()
+//         .await?
+//         .json()?;
 
-    assert_eq!(message, "Howdy".to_string());
-    println!("      Passed ✅ changes message");
-    Ok(())
-}
+//     assert_eq!(message, "Howdy".to_string());
+//     println!("      Passed ✅ changes message");
+//     Ok(())
+// }

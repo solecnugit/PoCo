@@ -2,6 +2,10 @@ if [ -z $NEAR_NETWORK_IP ]; then
     NEAR_NETWORK_IP="49.52.27.50"
 fi
 
+if [ -z $WORKSPACE_DIR ]; then
+    WORKSPACE_DIR=$(pwd)
+fi
+
 echo "NEAR NETWORK IP: ${NEAR_NETWORK_IP}"
 echo "WORKSPACE DIRECTORY: ${WORKSPACE_DIR}"
 
