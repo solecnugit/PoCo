@@ -99,7 +99,6 @@ class VideoTranscoder {
   muxer: WebmMuxer|undefined;
   fillInProgress: boolean = false;
   
-  // init_resolver: null|undefined;
   async initialize(demuxer: MP4PullDemuxer, muxer: WebmMuxer, buffer: ArrayBuffer) {
     // console.log('into videotranscoder init')
     //frameBuffer其实也已经没有用了，这里注释
@@ -130,14 +129,9 @@ class VideoTranscoder {
       error: e => console.error(e),
     });
 
-    // console.log('videotranscoder: decodeconfig')
-    // console.log(decodeconfig)
     console.assert(VideoDecoder.isConfigSupported(decodeconfig))
     this.decoder.configure(decodeconfig);
    
-    //init_resolver原本是用来表示是否初始化完成的过程，但是这里已经改成了转码版本，目前不需要这个过程了
-    // this.init_resolver = null;
-    // let promise = new Promise((resolver) => this.init_resolver = resolver );
     //初始化encoder
     this.encoder = new VideoEncoder({
       output: this.consumeFrame.bind(this),
@@ -150,11 +144,6 @@ class VideoTranscoder {
     // console.log("decoder & encoder configured finished")
     //要将相关参数返回去，这里return
     return encodeconfig;
-    //初始化之后进行fillFrameBuffer
-    //这里先注释
-    // this.fillFrameBuffer();
-    // console.log("finish fillFrameBuffer")
-    // return promise;
   }
 
 
@@ -182,23 +171,19 @@ class VideoTranscoder {
       //返回队列中挂起的解码请求数。
         (<number>(this.encoder?.encodeQueueSize) < DECODER_QUEUE_SIZE_MAX) && !this.over) {
           
-              //由demuxer来控制是否获取下一个chunk
-              // console.log('当前的encodequeuesize');
-              // console.log(this.encoder.encodeQueueSize)
-              // console.log('当前的decodequeuesize');
-              // console.log(this.decoder.decodeQueueSize)
       let chunk = await this.demuxer?.getNextChunk();
 
-      console.log('get chunk')
-      console.log(chunk);
+      // console.log('get chunk')
+      // console.log(chunk);
       if(!chunk){
         this.over = true; 
+        this.decoder!.flush();
       }
       else{ 
         chunkCount++;
         console.log('video chunk count')
         console.log(chunkCount)
-        this.decoder?.decode(chunk);
+        this.decoder!.decode(chunk);
       }
     }
     this.fillInProgress = false;
@@ -206,7 +191,7 @@ class VideoTranscoder {
     
 
     // Give decoder a chance to work, see if we saturated the pipeline.
-    //这里是fillframebuffer自己调用自己，也先被我注释了
+    //当encoder的encodeQueueSize为0时才会再次开始编码
     if(!this.over && this.encoder?.encodeQueueSize === 0)
       setTimeout(this.fillFrameBuffer.bind(this), 0);
   }
@@ -228,13 +213,12 @@ class VideoTranscoder {
     // this.frameBuffer.push(frame);
   }
 
-  //有没有什么办法记录最后一个frame呢
+  //encoder的回调函数
   async consumeFrame(chunk: EncodedVideoChunk) {
     //这个chunk的duration属性为0，但是也许可以通过timestamp计算出来？不知道会不会有影响？
     // console.log(chunk);
     const data = new ArrayBuffer(chunk.byteLength);
     chunk.copyTo(data);
-    //这里是有插件冲突，报错：(message: any, targetOrigin: string, transfer?: Transferable[] | undefined)
     self.postMessage({
       //这里要注意，后面会用type来替代
       type: 'video-data',
@@ -259,14 +243,14 @@ class VideoTranscoder {
         this.fillFrameBuffer();
     
     if(this.encoder?.encodeQueueSize === 0 && this.decoder?.decodeQueueSize === 0 && this.over){
-      // console.log(framecount)
-      // console.log('video framecount');
-      // console.log(chunkCount);
-      // console.log('video chunkCount');
+      console.log(framecount)
+      console.log('video framecount');
+      console.log(chunkCount);
+      console.log('video chunkCount');
       //根据bbb视频多次实验，发现h264格式下解码出来的帧数总是会比总帧数少1
       //发现hevc格式下解码出来的帧数会比总帧数少3
       //切换试验视频，framecount比chunkCount少4
-      if(framecount === chunkCount-4){
+      if(framecount === chunkCount){
         console.log('current video')
         console.log(framecount)
         console.log(chunkCount)
