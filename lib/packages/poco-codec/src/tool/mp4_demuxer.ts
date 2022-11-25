@@ -29,6 +29,7 @@ export class MP4PullDemuxer extends PullDemuxerBase {
   audioTrack: MP4AudioTrack|undefined;
   videoTrack: MP4VideoTrack|undefined;
   selectedTrack: any;
+  rest_number: number = 0;
   constructor() {
     super();
     // this.fileUri = fileUri;
@@ -67,7 +68,20 @@ export class MP4PullDemuxer extends PullDemuxerBase {
     // console.log('demuxer initialize finished')
   }
 
+  //这个方法将会返回framerate和bitrate
+  getOtherVideoConfig() {
+    return {
+      bitrate: Math.floor(this.videoTrack!.bitrate),
+      framerate: (this.videoTrack!.nb_samples/this.videoTrack!.duration*this.videoTrack!.timescale).toFixed(2)
+    }
+  }
+
   override getDecoderConfig(): VideoDecoderConfig|AudioEncoderConfig {
+
+    console.log('output the data...');
+    console.log(this.videoTrack!.nb_samples);
+    console.log(this.videoTrack!.duration);
+    console.log(this.videoTrack!.timescale);
     //判断当前流类型
     if (this.streamType == AUDIO_STREAM_TYPE) {
       // console.log('in audio config ')
@@ -130,7 +144,7 @@ export class MP4PullDemuxer extends PullDemuxerBase {
           data: sample!.data
         });
     }else
-      return null;
+      return this.rest_number;
   }
 
   //这里先定义avccBox是any
@@ -254,6 +268,7 @@ export class MP4PullDemuxer extends PullDemuxerBase {
     const SAMPLE_BUFFER_TARGET_SIZE = 50;
 
     if(samples.length < 1000) {
+      this.rest_number = samples.length
       this.over = true;
       console.log('已经取完全部samples了')
     }

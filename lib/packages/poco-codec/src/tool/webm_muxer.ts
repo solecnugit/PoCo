@@ -55,29 +55,22 @@ export class WebmMuxer{
         // console.log('muxer initialize finished')
       }
 
-    async getEncoderConfig() {
-        //判断当前流类型
-        //确实应该判断，但是这里先注释了
-        // if (this.streamType == AUDIO_STREAM_TYPE) {
-        //   return {
-        //     codec: this.audioTrack.codec,
-        //     sampleRate: this.audioTrack.audio.sample_rate,
-        //     numberOfChannels: this.audioTrack.audio.channel_count,
-        //     description: this.source.getAudioSpecificConfig()
-        //   };
-        // } else {
-        //     return await max_video_config({
-        //         ...encoder_constraints,
-        //         ratio: 1920 / 1080
-        //     }) || await max_video_config(encoder_constraints);
-        // }
+      //目前的getEncoderConfig应当返回视频的encoderconfig
+      //对于音频的encoderconfig，需要做的事情现在在audio_decoder中完成，后续仍然需要迭代。
+    async getEncoderConfig(decodeconfig: VideoDecoderConfig, bitrate: number, framerate: number) {
 
+      this.vp9_encoder_constraints.width = decodeconfig.codedWidth!;
+      this.vp9_encoder_constraints.height = decodeconfig.codedHeight!;
+
+
+      this.vp9_encoder_constraints.bitrate = bitrate;
+      this.vp9_encoder_constraints.framerate = framerate;
 
           console.log('in getencoder config');
           console.log(this.vp9_encoder_constraints)
             return await max_video_config({
                 ...this.vp9_encoder_constraints,
-                ratio: 720 / 1280
+                ratio: this.vp9_encoder_constraints.width / this.vp9_encoder_constraints.height
             }) || await max_video_config(this.vp9_encoder_constraints);
       }
 }

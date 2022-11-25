@@ -72,6 +72,8 @@ class AudioTranscoder {
   sampleRate: number = 0;
   channelCount: number = 0;
   muxer: WebmMuxer|undefined;
+  rest_number: number = -1;
+  exited: boolean = false;
   async initialize(demuxer: MP4PullDemuxer, muxer: WebmMuxer, buffer: ArrayBuffer) {
     // console.log('into audiotranscoder init')
     this.fillInProgress = false;
@@ -110,6 +112,7 @@ class AudioTranscoder {
       error: e => console.error(e)
     })
     //当转为webm格式时，音频的config直接写死
+    //目前的opus的encodeconfig不经过webm-muxer，直接从原来的audiodecoder生成而来
     const encodeconfig = {
       codec: 'opus',
       bitrate: 128 * 1000,
@@ -147,15 +150,17 @@ class AudioTranscoder {
 
       // console.log('get chunk')
       // console.log(chunk);
-        if(!chunk){
+        if(typeof chunk === 'number'){
           this.overaudio = true; 
+          this.rest_number = chunk;
+          console.log('get audio rest_number'+ this.rest_number)
           this.decoder!.flush();
           this.encoder!.flush();
         }
         else{ 
           chunkCount++;
-          console.log('audio chunk  count');
-          console.log(chunkCount);
+          // console.log('audio chunk  count');
+          // console.log(chunkCount);
           this.decoder!.decode(chunk);
         }
       }
@@ -187,8 +192,8 @@ class AudioTranscoder {
     
     debugLog(`bufferFrame(${frame.timestamp})`);
     // frameCount ++;
-    console.log('audio framecount')
-    console.log(frameCount);
+    // console.log('audio framecount')
+    // console.log(frameCount);
     this.encoder!.encode(frame);
     //这里注释了，为了暂停bufferframe
     // this.fillFrameBuffer();
@@ -219,17 +224,22 @@ class AudioTranscoder {
     this.lock!.unlock();
 
         //暂时去掉
-        console.log('audio rechunk count');
-        console.log(rechunkCount)
+        // console.log('audio rechunk count');
+        // console.log(rechunkCount)
 
     if(!this.overaudio && this.encoder!.encodeQueueSize === 0)
         this.fillDataBuffer();
-    if(this.encoder!.encodeQueueSize === 0 && this.decoder!.decodeQueueSize === 0){
+    if(this.overaudio && this.encoder!.encodeQueueSize === 0 && this.decoder!.decodeQueueSize === 0){
       //目前的测试视频count为183
-      if(frameCount === chunkCount){
+      // console.log('current audio framecount'+ frameCount)
+      // console.log('current audio chunkCount'+ chunkCount)
+      // console.log('current rest_number'+ this.rest_number)
+      if(frameCount === chunkCount && chunkCount % 1000 === this.rest_number && !this.exited){
+        this.exited = !this.exited;
         self.postMessage({type: 'exit'})
-        console.log('current audio')
-        console.log('post exit message to self...')
+        console.log('post audio transcoder exit message to self...')
+        console.log('current audio framecount'+ frameCount)
+        console.log('current audio chunkCount'+ chunkCount)
       }
     }
   }

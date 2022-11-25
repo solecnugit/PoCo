@@ -98,6 +98,7 @@ class VideoTranscoder {
   demuxer: MP4PullDemuxer|undefined;
   muxer: WebmMuxer|undefined;
   fillInProgress: boolean = false;
+  rest_number: number = -1;
   
   async initialize(demuxer: MP4PullDemuxer, muxer: WebmMuxer, buffer: ArrayBuffer) {
     // console.log('into videotranscoder init')
@@ -118,8 +119,11 @@ class VideoTranscoder {
     console.log('videotranscoder finish initialize demuxer')
 
     const decodeconfig = this.demuxer?.getDecoderConfig();
-    const encodeconfig = await this.muxer?.getEncoderConfig();
-    // console.log(decodeconfig);
+    const otherconfig = this.demuxer?.getOtherVideoConfig();
+    console.log('see see decodeconfig')
+        console.log(decodeconfig);
+    const encodeconfig = await this.muxer?.getEncoderConfig(decodeconfig, otherconfig.bitrate, Number(otherconfig.framerate));
+
     console.log('video encodeconfig');
     console.log(encodeconfig)
 
@@ -175,7 +179,8 @@ class VideoTranscoder {
 
       // console.log('get chunk')
       // console.log(chunk);
-      if(!chunk){
+      if(typeof chunk === 'number'){
+        this.rest_number = chunk;
         this.over = true; 
         this.decoder!.flush();
       }
@@ -183,7 +188,7 @@ class VideoTranscoder {
         chunkCount++;
         console.log('video chunk count')
         console.log(chunkCount)
-        this.decoder!.decode(chunk);
+        this.decoder!.decode(chunk!);
       }
     }
     this.fillInProgress = false;
@@ -254,7 +259,7 @@ class VideoTranscoder {
         console.log('current video')
         console.log(framecount)
         console.log(chunkCount)
-        console.log('post exit message to self...')
+        console.log('post videotranscoder exit message to self...')
         console.log(framecount)
         self.postMessage({type: 'exit'})
       }
