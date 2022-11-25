@@ -142,27 +142,23 @@ class AudioTranscoder {
     
     while (this.decoder!.decodeQueueSize < ENCODER_QUEUE_SIZE_MAX && 
       //返回队列中挂起的解码请求数。
-        this.encoder!.encodeQueueSize < ENCODER_QUEUE_SIZE_MAX && !this.overaudio) {
-          
-              //由demuxer来控制是否获取下一个chunk
-              // console.log('当前的encodequeuesize');
-              // console.log(this.encoder.encodeQueueSize)
-              // console.log('当前的decodequeuesize');
-              // console.log(this.decoder.decodeQueueSize)
-      let chunk = await this.demuxer!.getNextChunk();
+      this.encoder!.encodeQueueSize < ENCODER_QUEUE_SIZE_MAX && !this.overaudio) {
+        let chunk = await this.demuxer!.getNextChunk();
 
       // console.log('get chunk')
       // console.log(chunk);
-      if(!chunk){
-        this.overaudio = true; 
+        if(!chunk){
+          this.overaudio = true; 
+          this.decoder!.flush();
+          this.encoder!.flush();
+        }
+        else{ 
+          chunkCount++;
+          console.log('audio chunk  count');
+          console.log(chunkCount);
+          this.decoder!.decode(chunk);
+        }
       }
-      else{ 
-        chunkCount++;
-        console.log('chunk data count');
-        console.log(chunkCount);
-        this.decoder!.decode(chunk);
-      }
-    }
     // this.fillInProgress = false;
     this.fillInProgress = false;
 
@@ -191,6 +187,7 @@ class AudioTranscoder {
     
     debugLog(`bufferFrame(${frame.timestamp})`);
     // frameCount ++;
+    console.log('audio framecount')
     console.log(frameCount);
     this.encoder!.encode(frame);
     //这里注释了，为了暂停bufferframe
@@ -222,14 +219,14 @@ class AudioTranscoder {
     this.lock!.unlock();
 
         //暂时去掉
-        console.log('rechunk count');
+        console.log('audio rechunk count');
         console.log(rechunkCount)
 
     if(!this.overaudio && this.encoder!.encodeQueueSize === 0)
         this.fillDataBuffer();
     if(this.encoder!.encodeQueueSize === 0 && this.decoder!.decodeQueueSize === 0){
       //目前的测试视频count为183
-      if(rechunkCount === 183){
+      if(frameCount === chunkCount){
         self.postMessage({type: 'exit'})
         console.log('current audio')
         console.log('post exit message to self...')
