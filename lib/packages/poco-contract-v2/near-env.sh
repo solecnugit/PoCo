@@ -1,3 +1,5 @@
+#!/bin/bash
+
 if [ -z $NEAR_NETWORK_IP ]; then
     NEAR_NETWORK_IP="49.52.27.50"
 fi
