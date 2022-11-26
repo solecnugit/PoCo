@@ -9,12 +9,12 @@ fi
 
 echo ">> Deploying contract"
 
-if [ $NEAR_ENV = "local" ]; then
+if [ "$NEAR_ENV" = "local" ]; then
   NEAR_MODE="env"
   source ../near-env.sh
   echo ">> Use local near blockchain"
-  NEAR_DEPLOY_COMMAND="pnpm exec near deploy"
-elif [ $NEAR_ENV = "testnet" ]; then
+  NEAR_DEPLOY_COMMAND="pnpm exec near dev-deploy"
+elif [ "$NEAR_ENV" = "testnet" ]; then
   echo ">> Use near testnet"
   NEAR_DEPLOY_COMMAND="pnpm exec near dev-deploy"
 else
@@ -24,4 +24,8 @@ fi
 
 
 # https://docs.near.org/tools/near-cli#near-dev-deploy
-echo "y" | $NEAR_DEPLOY_COMMAND --wasmFile ${WORKSPACE_DIR}/contract/target/wasm32-unknown-unknown/release/poco.wasm --accountId ${NEAR_HELPER_ACCOUNT}
+OUTPUT=$(echo "y" | $NEAR_DEPLOY_COMMAND --wasmFile ${WORKSPACE_DIR}/contract/target/wasm32-unknown-unknown/release/poco.wasm --accountId ${NEAR_HELPER_ACCOUNT})
+CONTRACT_ID=$(echo $OUTPUT | awk '{ print $NF }')
+
+echo "Contract Id: ${CONTRACT_ID}"
+echo "export CONTRACT_ID=${CONTRACT_ID}" > ../contract.sh
