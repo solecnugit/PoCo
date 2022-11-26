@@ -1,17 +1,20 @@
 pub mod event;
 pub mod round;
 pub mod r#type;
+pub mod user;
 
 use event::{EventBus, ContractEventData, ContractEvent};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::{log, near_bindgen};
+use near_sdk::{log, near_bindgen, AccountId};
 use r#type::RoundId;
 use round::{RoundManager, RoundStatus};
+use user::{UserManager, UserProfile};
 
 // Define the contract structure
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Contract {
+    user_manager: UserManager,
     round_manager: RoundManager,
     event_bus: EventBus
 }
@@ -24,6 +27,7 @@ impl Default for Contract{
         let initial_preserve_round = 3;
 
         Self{
+            user_manager: UserManager::new(),
             round_manager: RoundManager::new(initial_round_id, initial_round_duration),
             event_bus: EventBus::new(initial_preserve_round),
         }
@@ -62,12 +66,24 @@ impl Contract {
     pub fn fetch_round_events(&self, from: usize, count: usize) -> Vec<ContractEventData> {
         self.event_bus.fetch_round_events(from, count)
     }
+
+    pub fn get_user_profile(&self, account: AccountId) -> UserProfile {
+        self.user_manager.get_user_profile(&account)
+    }
+
+    pub fn get_own_profile(&self) -> UserProfile {
+        let account = near_sdk::env::signer_account_id();
+
+        self.user_manager.get_user_profile(&account)
+    }
+
+    pub fn set_user_endpoint(&mut self, endpoint: String) {
+        let account = near_sdk::env::signer_account_id();
+
+        self.user_manager.set_user_endpoint(&account, endpoint);
+    }
 }
 
-/*
- * The rest of this file holds the inline tests for the code above
- * Learn more about Rust tests: https://doc.rust-lang.org/book/ch11-01-writing-tests.html
- */
 #[cfg(test)]
 mod tests {
     use super::*;
