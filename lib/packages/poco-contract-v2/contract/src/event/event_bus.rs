@@ -7,9 +7,9 @@ use crate::Events;
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct EventBus {
-    // Events happens in previous rounds
+    // Events happens in the previous rounds
     prev_round_events: UnorderedMap<RoundId, Vector<Events>>,
-    // Events happens in current round
+    // Events happens in the current round
     events: Vector<Events>,
     // Preserve last `preserve_round` events of round
     preserve_round: u64,

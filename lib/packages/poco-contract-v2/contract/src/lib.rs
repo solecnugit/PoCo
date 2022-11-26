@@ -1,13 +1,15 @@
 pub mod event;
 pub mod round;
-pub mod r#type;
 pub mod user;
+pub mod task;
+pub mod r#type;
 
 use event::{EventBus, EventQuery, Events};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{log, near_bindgen, AccountId};
 use r#type::RoundId;
 use round::{RoundManager, RoundStatus};
+use task::{TaskManager, TaskId};
 use user::{UserManager, UserProfile};
 
 // Define the contract structure
@@ -16,6 +18,7 @@ use user::{UserManager, UserProfile};
 pub struct Contract {
     user_manager: UserManager,
     round_manager: RoundManager,
+    task_manager: TaskManager,
     event_bus: EventBus,
 }
 
@@ -29,6 +32,7 @@ impl Default for Contract {
         Self {
             user_manager: UserManager::new(),
             round_manager: RoundManager::new(initial_round_id, initial_round_duration),
+            task_manager: TaskManager::new(initial_preserve_round),
             event_bus: EventBus::new(initial_preserve_round),
         }
     }
@@ -44,6 +48,8 @@ impl Contract {
         self.event_bus.emit(Events::NewRoundEvent {
             round_id: new_round_id,
         });
+
+        self.task_manager.switch_to_next_round(old_round_id);
 
         new_round_id
     }
@@ -105,6 +111,17 @@ impl Contract {
 
     pub fn get_user_endpoint(&self, account: AccountId) -> Option<String> {
         self.user_manager.get_user_endpoint(&account)
+    }
+
+    pub fn publish_task(&mut self) -> TaskId {
+        assert_eq!(self.get_round_status(), RoundStatus::Running, "Round has not been started yet.");
+
+        let owner = near_sdk::env::signer_account_id();
+        let task_id = self.task_manager.publish_task(self.get_round_id(), owner);
+
+        self.event_bus.emit(Events::NewTaskEvent { task_id: (&task_id).into() });
+
+        task_id
     }
 }
 

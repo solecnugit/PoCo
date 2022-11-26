@@ -9,6 +9,10 @@ use crate::r#type::RoundId;
 pub enum Events {
     #[event_version("0.0.1")]
     NewRoundEvent { round_id: RoundId },
+    
+    #[event_version("0.0.1")]
+    NewTaskEvent { task_id: String },
+
     #[event_version("0.0.1")]
     UserProfileFieldUpdateEvent {
         user_id: AccountId,
