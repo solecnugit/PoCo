@@ -1,59 +1,44 @@
-use near_sdk::collections::LazyOption;
+use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LookupMap;
 use near_sdk::AccountId;
-use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::serde::Serialize;
 
-#[derive(BorshDeserialize, BorshSerialize)]
-pub struct UserInternalProfile {
-    endpoint: LazyOption<String>
-}
-
-#[derive(Serialize)]
-#[serde(crate = "near_sdk::serde")]
-pub struct UserProfile {
-    endpoint: Option<String>
-}
-
-impl Default for UserInternalProfile {
-    fn default() -> Self {
-        Self { endpoint: LazyOption::new(b"e", None) }
-    }
-}
-
-impl Default for UserProfile {
-    fn default() -> Self {
-        Self { endpoint: None }
-    }
-}
+use super::InternalUserProfile;
+use super::UserProfile;
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct UserManager {
-    user_map: LookupMap<AccountId, UserInternalProfile>
+    user_map: LookupMap<AccountId, InternalUserProfile>,
 }
 
 impl UserManager {
     pub fn new() -> Self {
-        UserManager { user_map: LookupMap::new(b"u") }
+        UserManager {
+            user_map: LookupMap::new(b"u"),
+        }
     }
 
     #[inline]
     pub fn get_user_profile(&self, account: &AccountId) -> UserProfile {
         self.user_map
-        .get(account)
-        .map(|e| UserProfile { endpoint: e.endpoint.get() })
-        .unwrap_or_default()
+            .get(account)
+            .map(|e| e.into())
+            .unwrap_or_default()
     }
 
     #[inline]
-    pub fn set_user_endpoint(&mut self, account: &AccountId, endpoint: String) {
-        let mut profile = self
-        .user_map
-        .get(&account)
-        .unwrap_or_default();
+    pub fn set_user_endpoint(&mut self, account: &AccountId, endpoint: &String) {
+        let mut profile = self.user_map.get(&account).unwrap_or_default();
 
-        profile.endpoint = LazyOption::new(b"e", Some(&endpoint));
+        profile.set_endpoint(endpoint);
 
         self.user_map.insert(account, &profile);
+    }
+
+    #[inline]
+    pub fn get_user_endpoint(&self, account: &AccountId) -> Option<String> {
+        self.user_map
+            .get(account)
+            .map(|e| e.get_endpoint())
+            .flatten()
     }
 }

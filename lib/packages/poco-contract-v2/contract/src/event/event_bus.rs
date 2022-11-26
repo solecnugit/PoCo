@@ -1,18 +1,32 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{UnorderedMap, Vector};
+use near_sdk::serde::{Deserialize, Serialize};
 
 use crate::r#type::RoundId;
-use crate::ContractEvent;
-use crate::ContractEventData;
+use crate::Events;
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct EventBus {
     // Events happens in previous rounds
-    prev_round_events: UnorderedMap<RoundId, Vector<ContractEvent>>,
+    prev_round_events: UnorderedMap<RoundId, Vector<Events>>,
     // Events happens in current round
-    events: Vector<ContractEvent>,
+    events: Vector<Events>,
     // Preserve last `preserve_round` events of round
     preserve_round: u64,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct EventData {
+    id: u64,
+    payload: Events,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct EventQuery {
+    round_id: u64,
+    events: Vec<EventData>,
 }
 
 impl EventBus {
@@ -20,13 +34,13 @@ impl EventBus {
         EventBus {
             prev_round_events: UnorderedMap::new(b"p"),
             events: Vector::new(b"c"),
-            preserve_round: initial_preserve_round
+            preserve_round: initial_preserve_round,
         }
     }
 
     #[inline]
-    pub fn emit(&mut self, event: ContractEvent) {
-        event.emit();
+    pub fn emit(&mut self, event: Events) {
+        event.log_event();
 
         self.events.push(&event);
     }
@@ -38,7 +52,8 @@ impl EventBus {
             self.prev_round_events.remove(&round_id_to_remove);
         }
 
-        self.prev_round_events.insert(&current_round_id, &self.events);
+        self.prev_round_events
+            .insert(&current_round_id, &self.events);
         self.events.clear();
     }
 
@@ -53,27 +68,30 @@ impl EventBus {
     }
 
     #[inline]
-    pub fn fetch_round_events(&self, from: usize, count: usize) -> Vec<ContractEventData> {
-        self.events
+    pub fn query_round_events(&self, round_id: RoundId, from: usize, count: usize) -> EventQuery {
+        let events = self
+            .events
             .iter()
             .enumerate()
             .skip(from)
             .take(count)
-            .map(|e| ContractEventData {
+            .map(|e| EventData {
                 id: e.0 as u64,
                 payload: e.1,
             })
-            .collect()
+            .collect();
+
+        EventQuery { round_id, events }
     }
 
     #[inline]
-    pub fn fetch_round_events_at(
+    pub fn query_round_events_at(
         &self,
         current_round_id: &RoundId,
         round_id_to_fetch: &RoundId,
         from: usize,
         count: usize,
-    ) -> Vec<ContractEventData> {
+    ) -> EventQuery {
         assert!(
             current_round_id - self.preserve_round > *round_id_to_fetch,
             "Round is too old to retrieve events."
@@ -83,16 +101,21 @@ impl EventBus {
 
         assert!(events.is_some(), "Invalid round.");
 
-        events
+        let events = events
             .unwrap()
             .iter()
             .enumerate()
             .skip(from)
             .take(count)
-            .map(|e| ContractEventData {
+            .map(|e| EventData {
                 id: e.0 as u64,
                 payload: e.1,
             })
-            .collect()
+            .collect();
+
+        EventQuery {
+            round_id: *round_id_to_fetch,
+            events,
+        }
     }
 }

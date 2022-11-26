@@ -2,7 +2,10 @@ use std::cmp::Ordering;
 
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 
-use crate::{round::RoundStatus, r#type::{RoundId, RoundDuration, BlockTimestamp}};
+use crate::{
+    r#type::{BlockTimestamp, RoundDuration, RoundId},
+    round::RoundStatus,
+};
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct RoundManager {
@@ -10,7 +13,6 @@ pub struct RoundManager {
     round_start_time: BlockTimestamp,
     round_duration: RoundDuration,
 }
-
 
 impl RoundManager {
     pub fn new(initial_round_id: RoundId, initial_round_duration: u64) -> RoundManager {
@@ -23,11 +25,15 @@ impl RoundManager {
 
     #[inline]
     pub fn start_new_round(&mut self) -> RoundId {
-        assert_eq!(self.get_round_status(), RoundStatus::Pending, "current round has not ended yet.");
+        assert_eq!(
+            self.get_round_status(),
+            RoundStatus::Pending,
+            "current round has not ended yet."
+        );
 
         self.round_id += 1u64;
         self.round_start_time = near_sdk::env::block_timestamp_ms();
-        
+
         self.round_id
     }
 
