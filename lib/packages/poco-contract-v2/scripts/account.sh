@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if [ -z $WORKSPACE_DIR ]; then
+    WORKSPACE_DIR=$(pwd)/..
+fi
+
 create_account() {
     NEAR_MODE="env"
     source ./near-env.sh
@@ -12,7 +16,7 @@ create_account() {
         RANDOM_ACCOUNT="${RANDOM_PREFIX}.${NEAR_HELPER_ACCOUNT}"
 
         echo "Random account ${RANDOM_ACCOUNT}"
-        echo $RANDOM_ACCOUNT >> ./accounts
+        echo $RANDOM_ACCOUNT >> $WORKSPACE_DIR/accounts
 
         pnpm exec near create-account $RANDOM_ACCOUNT --masterAccount $NEAR_HELPER_ACCOUNT --initialBalance 100
     done
@@ -50,9 +54,9 @@ elif [ "$1" = "delete" ]; then
         exit 1
     fi
 elif [ "$1" = "clear" ]; then
-    for line in $(cat ./accounts); do
+    for line in $(cat $WORKSPACE_DIR/accounts); do
         delete_account $line
     done
 
-    cat /dev/null > ./accounts
+    cat /dev/null > $WORKSPACE_DIR/accounts
 fi

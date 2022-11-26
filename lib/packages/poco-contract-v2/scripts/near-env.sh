@@ -5,7 +5,7 @@ if [ -z $NEAR_NETWORK_IP ]; then
 fi
 
 if [ -z $WORKSPACE_DIR ]; then
-    WORKSPACE_DIR=$(pwd)
+    WORKSPACE_DIR=$(pwd)/..
 fi
 
 echo "NEAR NETWORK IP: ${NEAR_NETWORK_IP}"
@@ -25,6 +25,14 @@ if [ $NEAR_MODE = "env" ]; then
     export NEAR_HELPER_URL="http://${NEAR_NETWORK_IP}:8330"
     export NEAR_HELPER_ACCOUNT="test.near"
     export NEAR_EXPLORER_URL="http://${NEAR_NETWORK_IP}:8331"
+    
+    if [ ! -f "$WORKSPACE_DIR/neardev/dev-account" ]; then
+        unset CONTRACT_ID
+    else
+        export CONTRACT_ID=$(cat $WORKSPACE_DIR/neardev/dev-account)
+    fi
+
+    
 elif [ $NEAR_MODE = "command" ]; then
     echo "Setup alias command"
     export NEAR_DEVELOPMENT_COMMAND="NEAR_ENV=\"local\" NEAR_CLI_LOCALNET_NETWORK_ID=\"localnet\" NEAR_NODE_URL=\"http://${NEAR_NETWORK_IP}:8332\" NEAR_CLI_LOCALNET_KEY_PATH=\"${WORKSPACE_DIR}/validator-key.json\" NEAR_WALLET_URL=\"http://${NEAR_NETWORK_IP}:8334\" NEAR_HELPER_URL=\"http:/${NEAR_NETWORK_IP}:8330\" NEAR_HELPER_ACCOUNT=\"test.near\" NEAR_EXPLORER_URL=\"http://${NEAR_NETWORK_IP}:8331\" pnpm exec near"

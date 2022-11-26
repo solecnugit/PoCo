@@ -1,6 +1,6 @@
 #!/bin/bash
 
-./build.sh
+$WORKSPACE_DIR/scripts/build.sh
 
 if [ $? -ne 0 ]; then
   echo ">> Error building contract"
@@ -11,7 +11,7 @@ echo ">> Deploying contract"
 
 if [ "$NEAR_ENV" = "local" ]; then
   NEAR_MODE="env"
-  source ../near-env.sh
+  source $WORKSPACE_DIR/scripts/near-env.sh
   echo ">> Use local near blockchain"
   NEAR_DEPLOY_COMMAND="pnpm exec near dev-deploy"
 elif [ "$NEAR_ENV" = "testnet" ]; then
@@ -28,4 +28,4 @@ OUTPUT=$(echo "y" | $NEAR_DEPLOY_COMMAND --wasmFile ${WORKSPACE_DIR}/contract/ta
 CONTRACT_ID=$(echo $OUTPUT | awk '{ print $NF }')
 
 echo "Contract Id: ${CONTRACT_ID}"
-echo "export CONTRACT_ID=${CONTRACT_ID}" > ../contract.sh
+echo ">> Deployed."

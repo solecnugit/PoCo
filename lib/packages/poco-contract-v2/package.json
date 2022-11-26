@@ -3,9 +3,10 @@
   "version": "0.0.1",
   "license": "(MIT AND Apache-2.0)",
   "scripts": {
-    "deploy": "cd contract && WORKSPACE_DIR=$(pwd)/.. ./deploy.sh",
+    "deploy": "WORKSPACE_DIR=$(pwd) ./scripts/deploy.sh",
+    "redeploy": "WORKSPACE_DIR=$(pwd) ./scripts/redeploy.sh",
     "build": "pnpm run build:contract",
-    "build:contract": "cd contract && ./build.sh",
+    "build:contract": "WORKSPACE_DIR=$(pwd) ./scripts/build.sh",
     "test": "pnpm run test:unit && pnpm run test:integration",
     "test:unit": "cd contract && cargo test",
     "test:integration": "cd integration-tests && cargo run --example integration-tests \"../contract/target/wasm32-unknown-unknown/release/poco.wasm\"",
