@@ -9,5 +9,7 @@ construct_uint! {
 }
 
 pub type BlockTimestamp = u64;
-pub type RoundId = u64;
+pub type RoundId = u32;
 pub type RoundDuration = u64;
+pub type EventNonce = u32;
+pub type TaskNonce = u32;

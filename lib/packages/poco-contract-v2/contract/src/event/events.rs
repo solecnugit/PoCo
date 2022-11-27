@@ -2,16 +2,19 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::Deserialize;
 use near_sdk::{near_bindgen, AccountId};
 
-use crate::r#type::RoundId;
+use crate::r#type::{RoundId, TaskNonce};
 
 #[near_bindgen(event_json(standard = "nep297"))]
-#[derive(BorshDeserialize, BorshSerialize, Deserialize)]
+#[derive(BorshDeserialize, BorshSerialize, Deserialize, Clone)]
 pub enum Events {
     #[event_version("0.0.1")]
     NewRoundEvent { round_id: RoundId },
-    
+
     #[event_version("0.0.1")]
-    NewTaskEvent { task_id: String },
+    NewTaskEvent {
+        round_id: RoundId,
+        task_nonce: TaskNonce,
+    },
 
     #[event_version("0.0.1")]
     UserProfileFieldUpdateEvent {

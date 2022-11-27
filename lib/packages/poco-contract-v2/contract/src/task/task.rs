@@ -1,13 +1,53 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 
+use near_sdk::serde::de::{Unexpected, Visitor};
+use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::AccountId;
-use near_sdk::serde::Serialize;
 
-use crate::r#type::RoundId;
+use crate::r#type::{RoundId, TaskNonce};
 
-#[derive(BorshDeserialize, BorshSerialize, PartialEq, PartialOrd, Hash, Serialize)]
-#[serde(crate = "near_sdk::serde")]
-pub struct TaskId(RoundId, u64);
+#[derive(BorshDeserialize, BorshSerialize, PartialEq, PartialOrd, Hash)]
+pub struct TaskId(RoundId, TaskNonce);
+
+impl Serialize for TaskId {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: near_sdk::serde::Serializer,
+    {
+        let s: String = self.into();
+        serializer.serialize_str(s.as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for TaskId {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: near_sdk::serde::Deserializer<'de>,
+    {
+        struct TaskIdVisitor;
+        impl<'de> Visitor<'de> for TaskIdVisitor {
+            type Value = TaskId;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                write!(formatter, "task id format: round_id/task_nonce")
+            }
+
+            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+            where
+                E: near_sdk::serde::de::Error,
+            {
+                let r: Result<TaskId, &'static str> = v.try_into();
+
+                match r {
+                    Ok(r) => Ok(r),
+                    Err(_) => Err(E::invalid_value(Unexpected::Str(v), &self)),
+                }
+            }
+        }
+
+        deserializer.deserialize_str(TaskIdVisitor)
+    }
+}
 
 impl TryFrom<&str> for TaskId {
     type Error = &'static str;
@@ -53,20 +93,28 @@ impl From<TaskId> for String {
 
 impl TaskId {
     #[inline]
-    pub fn new(round_id: RoundId, task_nonce: u64) -> Self {
+    pub fn new(round_id: RoundId, task_nonce: TaskNonce) -> Self {
         TaskId(round_id, task_nonce)
+    }
+
+    #[inline]
+    pub fn get_round_id(&self) -> u32 {
+        self.0
+    }
+
+    #[inline]
+    pub fn get_task_nonce(&self) -> u32 {
+        self.1
     }
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Task {
-    owner: AccountId
+    owner: AccountId,
 }
 
 impl Task {
     pub fn new(owner: AccountId) -> Self {
-        Task {
-            owner
-        }
+        Task { owner }
     }
 }

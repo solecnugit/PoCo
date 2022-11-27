@@ -1,15 +1,15 @@
 pub mod event;
 pub mod round;
-pub mod user;
 pub mod task;
 pub mod r#type;
+pub mod user;
 
-use event::{EventBus, EventQuery, Events};
+use event::{EventBus, EventData, Events};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{log, near_bindgen, AccountId};
 use r#type::RoundId;
 use round::{RoundManager, RoundStatus};
-use task::{TaskManager, TaskId};
+use task::{TaskId, TaskManager};
 use user::{UserManager, UserProfile};
 
 // Define the contract structure
@@ -25,15 +25,14 @@ pub struct Contract {
 // Define the default, which automatically initializes the contract
 impl Default for Contract {
     fn default() -> Self {
-        let initial_round_id = 0u64;
+        let initial_round_id = 0;
         let initial_round_duration = 1000 * 60 * 30;
-        let initial_preserve_round = 3;
 
         Self {
             user_manager: UserManager::new(),
             round_manager: RoundManager::new(initial_round_id, initial_round_duration),
-            task_manager: TaskManager::new(initial_preserve_round),
-            event_bus: EventBus::new(initial_preserve_round),
+            task_manager: TaskManager::new(),
+            event_bus: EventBus::new(),
         }
     }
 }
@@ -41,15 +40,11 @@ impl Default for Contract {
 #[near_bindgen]
 impl Contract {
     pub fn start_new_round(&mut self) -> RoundId {
-        let old_round_id = self.round_manager.get_round_id();
-        let new_round_id = self.round_manager.start_new_round();
+        let new_round_id = self.round_manager.start_new_round(self.event_bus.len());
 
-        self.event_bus.switch_to_next_round(old_round_id);
         self.event_bus.emit(Events::NewRoundEvent {
             round_id: new_round_id,
         });
-
-        self.task_manager.switch_to_next_round(old_round_id);
 
         new_round_id
     }
@@ -69,23 +64,18 @@ impl Contract {
         )
     }
 
-    pub fn count_round_events(&self) -> u64 {
-        self.event_bus.count_round_events()
+    pub fn count_events(&self) -> u32 {
+        self.event_bus.len()
     }
 
-    pub fn query_round_events(&self, from: usize, count: usize) -> EventQuery {
-        self.event_bus
-            .query_round_events(self.get_round_id(), from, count)
+    pub fn query_events(&self, from: u32, count: u32) -> Vec<EventData> {
+        self.event_bus.query_event(from, count)
     }
 
-    pub fn query_round_events_at(
-        &self,
-        round_id: RoundId,
-        from: usize,
-        count: usize,
-    ) -> EventQuery {
-        self.event_bus
-            .query_round_events_at(&self.get_round_id(), &round_id, from, count)
+    pub fn query_round_events(&self, round_offset: u32, count: u32) -> Vec<EventData> {
+        let from = round_offset - self.round_manager.get_round_event_offset();
+
+        self.event_bus.query_event(from, count)
     }
 
     pub fn get_user_profile(&self, account: AccountId) -> UserProfile {
@@ -114,12 +104,19 @@ impl Contract {
     }
 
     pub fn publish_task(&mut self) -> TaskId {
-        assert_eq!(self.get_round_status(), RoundStatus::Running, "Round has not been started yet.");
+        assert_eq!(
+            self.get_round_status(),
+            RoundStatus::Running,
+            "Round has not been started yet."
+        );
 
         let owner = near_sdk::env::signer_account_id();
         let task_id = self.task_manager.publish_task(self.get_round_id(), owner);
 
-        self.event_bus.emit(Events::NewTaskEvent { task_id: (&task_id).into() });
+        self.event_bus.emit(Events::NewTaskEvent {
+            round_id: self.round_manager.get_round_id(),
+            task_nonce: task_id.get_task_nonce(),
+        });
 
         task_id
     }
@@ -128,24 +125,4 @@ impl Contract {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    // #[test]
-    // fn get_default_greeting() {
-    //     let contract = Contract::default();
-    //     // this test did not call set_greeting so should return the default "Hello" greeting
-    //     assert_eq!(
-    //         contract.get_greeting(),
-    //         "Hello".to_string()
-    //     );
-    // }
-
-    // #[test]
-    // fn set_then_get_greeting() {
-    //     let mut contract = Contract::default();
-    //     contract.set_greeting("howdy".to_string());
-    //     assert_eq!(
-    //         contract.get_greeting(),
-    //         "howdy".to_string()
-    //     );
-    // }
 }
