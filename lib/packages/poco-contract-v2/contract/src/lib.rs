@@ -1,8 +1,9 @@
 pub mod event;
 pub mod round;
 pub mod task;
-pub mod r#type;
 pub mod user;
+pub mod util;
+pub mod r#type;
 
 use event::{EventBus, EventData, Events};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};

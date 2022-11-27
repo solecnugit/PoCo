@@ -11,6 +11,10 @@ crate-type = ["cdylib"]
 near-sdk = "4.0.0"
 uint = { version = "0.9.3", default-features = false }
 
+[dev-dependencies]
+rand = { version = "0.8.5", features = ["getrandom"] }
+rand_xorshift = "0.3.0"
+
 [profile.release]
 codegen-units = 1
 opt-level = "z"
