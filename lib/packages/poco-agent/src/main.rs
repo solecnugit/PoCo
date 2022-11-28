@@ -2,11 +2,14 @@ pub mod agent;
 pub mod config;
 pub mod trace;
 
+use agent::agent::PocoAgent;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use near_jsonrpc_client::methods;
+use near_primitives::{views::QueryRequest, types::{BlockReference, Finality}};
 
 use std::{
     collections::VecDeque,
@@ -38,6 +41,7 @@ struct App {
     command: String,
     mode: InputMode,
     events: TracingEvents,
+    agent: Arc<Mutex<PocoAgent>>,
 }
 
 impl App {
@@ -46,18 +50,19 @@ impl App {
     }
 }
 
-impl Default for App {
-    fn default() -> App {
+impl App {
+    fn new() -> App {
         App {
             command: String::new(),
             mode: InputMode::Normal,
             events: Arc::new(Mutex::new(VecDeque::new())),
+            agent: Arc::new(Mutex::new(PocoAgent::new())),
         }
     }
 }
 
 fn main() -> Result<(), io::Error> {
-    let app = App::default();
+    let app = App::new();
 
     // Init Tracing
     tracing_subscriber::registry()
@@ -65,6 +70,54 @@ fn main() -> Result<(), io::Error> {
         // .with(tracing_subscriber::EnvFilter::from_default_env())
         .with(app.get_layer())
         .init();
+
+    tracing::event!(
+        Level::INFO,
+        message = "start loading poco-agent config",
+        category = format!("{:?}", TracingCategory::Agent)
+    );
+
+    let config = config::parse().get_config().expect("Failed to load config");
+
+    tracing::event!(
+        Level::INFO,
+        message = "finish loading poco-agent config",
+        category = format!("{:?}", TracingCategory::Agent)
+    );
+
+    tracing::event!(
+        Level::INFO,
+        message = "start connecting to near node",
+        category = format!("{:?}", TracingCategory::Agent)
+    );
+
+    app.agent.lock().unwrap().connect(config.near.rpc_endpoint);
+
+    tracing::event!(
+        Level::INFO,
+        message = "finish connecting to near node",
+        category = format!("{:?}", TracingCategory::Agent)
+    );
+
+    {
+        let guard = app.agent.lock().unwrap();
+        let client = guard.get_near_client();
+
+        let request = methods::query::RpcQueryRequest {
+            block_reference: BlockReference::Finality(Finality::Final),
+            request: QueryRequest::ViewAccount { account_id: "test.near".parse().unwrap() },
+        };
+
+        let response = guard.get_runtime().block_on( async {
+            client.call(request).await
+        }).unwrap();
+
+        tracing::event!(
+            Level::INFO,
+            message = format!("{:?}", response),
+            category = format!("{:?}", TracingCategory::Agent)
+        );
+    }
 
     tracing::event!(
         Level::INFO,

@@ -1435,6 +1435,7 @@ dependencies = [
  "config",
  "crossterm",
  "near-jsonrpc-client",
+ "near-primitives",
  "serde",
  "tokio",
  "tracing",

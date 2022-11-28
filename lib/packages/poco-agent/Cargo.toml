@@ -20,6 +20,7 @@ serde = { version = "1.0.147", features = ["derive"] }
 tokio = { version = "1.21.2", features = ["rt-multi-thread", "time", "sync", "signal"] }
 
 near-jsonrpc-client = "0.4.1"
+near-primitives = "0.15.0"
 
 [build-dependencies]
 anyhow = "1.0.66"
