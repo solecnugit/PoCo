@@ -9,10 +9,11 @@ use crossterm::{
 };
 
 use std::{
+    collections::VecDeque,
     io,
     sync::{Arc, Mutex},
 };
-use trace::AppCustomLayer;
+use trace::{AppCustomLayer, TracingEvent, TracingEvents};
 use tracing::{info, Level};
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -26,6 +27,8 @@ use tui::{
 };
 use unicode_width::UnicodeWidthStr;
 
+use crate::trace::TracingCategory;
+
 enum InputMode {
     Normal,
     Edit,
@@ -34,7 +37,7 @@ enum InputMode {
 struct App {
     command: String,
     mode: InputMode,
-    events: Arc<Mutex<Vec<String>>>,
+    events: TracingEvents,
 }
 
 impl App {
@@ -48,7 +51,7 @@ impl Default for App {
         App {
             command: String::new(),
             mode: InputMode::Normal,
-            events: Arc::new(Mutex::new(Vec::new())),
+            events: Arc::new(Mutex::new(VecDeque::new())),
         }
     }
 }
@@ -63,7 +66,11 @@ fn main() -> Result<(), io::Error> {
         .with(app.get_layer())
         .init();
 
-    tracing::event!(Level::INFO, "start initializing terminal ui");
+    tracing::event!(
+        Level::INFO,
+        message = "start initializing terminal ui",
+        category = format!("{:?}", TracingCategory::Agent)
+    );
 
     // Init Terminal UI State
     enable_raw_mode()?;
@@ -112,9 +119,13 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                 },
                 InputMode::Edit => match key.code {
                     event::KeyCode::Enter => {
-                        let command : String = app.command.drain(..).collect();
+                        let command: String = app.command.drain(..).collect();
 
-                        tracing::event!(Level::INFO, command);
+                        tracing::event!(
+                            Level::INFO,
+                            message = command,
+                            category = format!("{:?}", TracingCategory::Agent)
+                        );
                     }
                     event::KeyCode::Char(c) => {
                         app.command.push(c);
@@ -176,7 +187,7 @@ fn ui<B: Backend>(frame: &mut Frame<B>, app: &App) {
     let input = Paragraph::new(app.command.as_ref())
         .style(match app.mode {
             InputMode::Normal => Style::default(),
-            InputMode::Edit => Style::default().fg(Color::Yellow),
+            InputMode::Edit => Style::default().fg(Color::LightBlue),
         })
         .block(Block::default().borders(Borders::ALL).title(" Command "));
     frame.render_widget(input, chunks[1]);
@@ -199,15 +210,17 @@ fn ui<B: Backend>(frame: &mut Frame<B>, app: &App) {
 
     let guard = app.events.lock().unwrap();
 
+    let height = chunks[0].height as usize;
+
     let events: Vec<ListItem> = guard
         .iter()
-        .enumerate()
-        .map(|(i, m)| {
-            let content = vec![Spans::from(Span::raw(format!("{}: {}", i, m)))];
-            ListItem::new(content)
-        })
+        .rev()
+        .take(height)
+        .rev()
+        .map(|m| ListItem::new(Spans(m.to_spans())))
         .collect();
 
     let events = List::new(events).block(Block::default().borders(Borders::ALL).title(" Events "));
+
     frame.render_widget(events, chunks[0]);
 }
