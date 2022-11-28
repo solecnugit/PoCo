@@ -10,4 +10,6 @@ cargo install cargo-near
 
 # cargo build --all --target wasm32-unknown-unknown --release
 
-cargo near build
+cargo near build --release
+
+cp $WORKSPACE_DIR/contract/target/near/poco_abi.json $WORKSPACE_DIR/../poco-agent/abi.json
