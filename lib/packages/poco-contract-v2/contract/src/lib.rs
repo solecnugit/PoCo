@@ -1,16 +1,16 @@
 pub mod event;
 pub mod round;
 pub mod task;
+pub mod r#type;
 pub mod user;
 pub mod util;
-pub mod r#type;
 
 use event::{EventBus, EventData, Events};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{log, near_bindgen, AccountId};
 use r#type::RoundId;
 use round::{RoundManager, RoundStatus};
-use task::{TaskId, TaskManager};
+use task::{TaskConfig, TaskId, TaskManager};
 use user::{UserManager, UserProfile};
 
 // Define the contract structure
@@ -104,7 +104,7 @@ impl Contract {
         self.user_manager.get_user_endpoint(&account)
     }
 
-    pub fn publish_task(&mut self) -> TaskId {
+    pub fn publish_task(&mut self, config: TaskConfig) -> TaskId {
         assert_eq!(
             self.get_round_status(),
             RoundStatus::Running,
@@ -112,11 +112,14 @@ impl Contract {
         );
 
         let owner = near_sdk::env::signer_account_id();
-        let task_id = self.task_manager.publish_task(self.get_round_id(), owner);
+        let task_id = self
+            .task_manager
+            .publish_task(self.get_round_id(), owner, config.clone());
 
         self.event_bus.emit(Events::NewTaskEvent {
             round_id: self.round_manager.get_round_id(),
             task_nonce: task_id.get_task_nonce(),
+            task_config: config,
         });
 
         task_id

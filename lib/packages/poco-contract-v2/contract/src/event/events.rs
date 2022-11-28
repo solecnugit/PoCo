@@ -3,6 +3,7 @@ use near_sdk::serde::Deserialize;
 use near_sdk::{near_bindgen, AccountId};
 
 use crate::r#type::{RoundId, TaskNonce};
+use crate::task::TaskConfig;
 
 #[near_bindgen(event_json(standard = "nep297"))]
 #[derive(BorshDeserialize, BorshSerialize, Deserialize, Clone)]
@@ -14,6 +15,7 @@ pub enum Events {
     NewTaskEvent {
         round_id: RoundId,
         task_nonce: TaskNonce,
+        task_config: TaskConfig,
     },
 
     #[event_version("0.0.1")]

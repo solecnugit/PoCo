@@ -4,6 +4,7 @@ use near_sdk::AccountId;
 
 use crate::r#type::RoundId;
 
+use super::config::TaskConfig;
 use super::task::Task;
 use super::TaskId;
 
@@ -15,13 +16,18 @@ pub struct TaskManager {
 impl TaskManager {
     pub fn new() -> Self {
         TaskManager {
-            tasks: Vector::new(b"v"),
+            tasks: Vector::new(b"taskmanager".to_vec()),
         }
     }
 
     #[inline]
-    pub fn publish_task(&mut self, current_round_id: RoundId, owner: AccountId) -> TaskId {
-        self.tasks.push(Task::new(owner));
+    pub fn publish_task(
+        &mut self,
+        current_round_id: RoundId,
+        owner: AccountId,
+        config: TaskConfig,
+    ) -> TaskId {
+        self.tasks.push(Task::new(owner, config));
 
         TaskId::new(current_round_id, self.tasks.len() - 1)
     }

@@ -6,6 +6,8 @@ use near_sdk::AccountId;
 
 use crate::r#type::{RoundId, TaskNonce};
 
+use super::config::TaskConfig;
+
 #[derive(BorshDeserialize, BorshSerialize, PartialEq, PartialOrd, Hash)]
 pub struct TaskId(RoundId, TaskNonce);
 
@@ -108,13 +110,15 @@ impl TaskId {
     }
 }
 
-#[derive(BorshDeserialize, BorshSerialize)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
 pub struct Task {
     owner: AccountId,
+    config: TaskConfig,
 }
 
 impl Task {
-    pub fn new(owner: AccountId) -> Self {
-        Task { owner }
+    pub fn new(owner: AccountId, config: TaskConfig) -> Self {
+        Task { owner, config }
     }
 }

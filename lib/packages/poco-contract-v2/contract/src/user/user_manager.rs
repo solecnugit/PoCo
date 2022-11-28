@@ -1,5 +1,5 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::LookupMap;
+use near_sdk::store::LookupMap;
 use near_sdk::AccountId;
 
 use super::InternalUserProfile;
@@ -13,7 +13,7 @@ pub struct UserManager {
 impl UserManager {
     pub fn new() -> Self {
         UserManager {
-            user_map: LookupMap::new(b"u"),
+            user_map: LookupMap::new(b"usermanager-usermap".to_vec()),
         }
     }
 
@@ -27,11 +27,18 @@ impl UserManager {
 
     #[inline]
     pub fn set_user_endpoint(&mut self, account: &AccountId, endpoint: &String) {
-        let mut profile = self.user_map.get(&account).unwrap_or_default();
+        if self.user_map.contains_key(&account) {
+            self.user_map
+                .get_mut(&account)
+                .unwrap()
+                .set_endpoint(endpoint);
+        } else {
+            let mut profile = InternalUserProfile::new(account);
 
-        profile.set_endpoint(endpoint);
+            profile.set_endpoint(endpoint);
 
-        self.user_map.insert(account, &profile);
+            self.user_map.insert(account.clone(), profile);
+        }
     }
 
     #[inline]

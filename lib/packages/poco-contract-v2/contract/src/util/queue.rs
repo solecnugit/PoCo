@@ -1,12 +1,15 @@
-use std::fmt::{Debug, Formatter};
 use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
-use near_sdk::IntoStorageKey;
 use near_sdk::store::Vector;
+use near_sdk::IntoStorageKey;
+use std::fmt::Debug;
 
 mod iter;
 
+#[derive(Debug)]
 pub struct CircularQueue<T>
-where T: BorshDeserialize + BorshSerialize {
+where
+    T: BorshDeserialize + BorshSerialize,
+{
     buf: Vector<T>,
     head: u64,
     tail: u64,
@@ -14,22 +17,11 @@ where T: BorshDeserialize + BorshSerialize {
     length: u64,
 }
 
-impl<T> Debug for CircularQueue<T>
-where T: BorshDeserialize + BorshSerialize + Debug {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("RollingQueue")
-            .field("buf", &self.buf)
-            .field("head", &self.head)
-            .field("tail", &self.tail)
-            .field("offset", &self.offset)
-            .field("length", &self.length)
-            .finish()
-    }
-}
-
 impl<T> CircularQueue<T>
-    where T: BorshDeserialize + BorshSerialize {
-    pub fn new<S : IntoStorageKey>(length: u64, prefix: S) -> Self {
+where
+    T: BorshDeserialize + BorshSerialize,
+{
+    pub fn new<S: IntoStorageKey>(length: u64, prefix: S) -> Self {
         let length = length + 1;
 
         Self {
@@ -98,7 +90,7 @@ impl<T> CircularQueue<T>
     }
 
     pub fn get(&self, index: u64) -> Option<&T> {
-        if index < self.offset || index >= self.offset + self.len()  {
+        if index < self.offset || index >= self.offset + self.len() {
             return None;
         }
 
@@ -118,7 +110,7 @@ impl<T> CircularQueue<T>
     }
 
     pub fn replace(&mut self, index: u64, element: T) -> Option<T> {
-        if index < self.offset || index >= self.offset + self.len()  {
+        if index < self.offset || index >= self.offset + self.len() {
             return None;
         }
 
@@ -137,7 +129,9 @@ impl<T> CircularQueue<T>
 }
 
 impl<T> CircularQueue<T>
-where T: BorshDeserialize + BorshSerialize + Clone {
+where
+    T: BorshDeserialize + BorshSerialize + Clone,
+{
     pub fn pop_front(&mut self) -> Option<T> {
         if self.is_empty() {
             return None;
@@ -160,9 +154,9 @@ where T: BorshDeserialize + BorshSerialize + Clone {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::VecDeque;
-    use rand::{Rng, SeedableRng};
     use super::*;
+    use rand::{Rng, SeedableRng};
+    use std::collections::VecDeque;
 
     #[test]
     fn test_push_back() {
@@ -183,11 +177,11 @@ mod tests {
             assert_eq!(queue.get(i), baseline.get(i as usize));
         }
 
-        for i in 0 .. range - length {
+        for i in 0..range - length {
             assert_eq!(queue.get(i), None);
         }
 
-        for i in range .. range + length {
+        for i in range..range + length {
             assert_eq!(queue.get(i), None);
         }
     }
