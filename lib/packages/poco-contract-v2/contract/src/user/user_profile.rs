@@ -3,6 +3,7 @@ use near_sdk::collections::LazyOption;
 use near_sdk::serde::Serialize;
 use near_sdk::store::Vector;
 use near_sdk::AccountId;
+use schemars::JsonSchema;
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub(crate) struct InternalUserProfile {
@@ -10,7 +11,7 @@ pub(crate) struct InternalUserProfile {
     endpoint: LazyOption<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 #[serde(crate = "near_sdk::serde")]
 pub struct UserProfile {
     qos: Vec<u64>,

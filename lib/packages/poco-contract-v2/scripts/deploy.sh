@@ -24,7 +24,7 @@ fi
 
 
 # https://docs.near.org/tools/near-cli#near-dev-deploy
-OUTPUT=$(echo "y" | $NEAR_DEPLOY_COMMAND --wasmFile ${WORKSPACE_DIR}/contract/target/wasm32-unknown-unknown/release/poco.wasm --accountId ${NEAR_HELPER_ACCOUNT})
+OUTPUT=$(echo "y" | $NEAR_DEPLOY_COMMAND --wasmFile ${WORKSPACE_DIR}/contract/target/near/poco.wasm --accountId ${NEAR_HELPER_ACCOUNT})
 CONTRACT_ID=$(echo $OUTPUT | awk '{ print $NF }')
 
 echo "Contract Id: ${CONTRACT_ID}"

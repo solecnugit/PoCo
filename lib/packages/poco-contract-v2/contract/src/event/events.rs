@@ -1,12 +1,13 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::Deserialize;
 use near_sdk::{near_bindgen, AccountId};
+use schemars::JsonSchema;
 
 use crate::r#type::{RoundId, TaskNonce};
 use crate::task::TaskConfig;
 
 #[near_bindgen(event_json(standard = "nep297"))]
-#[derive(BorshDeserialize, BorshSerialize, Deserialize, Clone)]
+#[derive(BorshDeserialize, BorshSerialize, Deserialize, JsonSchema, Clone)]
 pub enum Events {
     #[event_version("0.0.1")]
     NewRoundEvent { round_id: RoundId },
