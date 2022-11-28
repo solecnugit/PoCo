@@ -22,7 +22,7 @@ var midCount = 0;
 let videoTranscoder: VideoTranscoder|null = null;
 
 
-
+//vp9相关编码参数
 const vp9_params = {
   profile: 0,
   level: 10,
@@ -31,6 +31,7 @@ const vp9_params = {
   chroma_subsampling: 1
 };
 
+//av1相关编码参数
 const av1_params = {
   profile: 0,
   level: 0,
@@ -43,11 +44,13 @@ const av1_params = {
   chroma_sample_position: 0,
 };
 
+//这里整一块都是audiotranscoder module的回调部分，其实仅仅监听两个方法。
 onmessage = async function (e) {
   const msg = e.data;
   if(videoTranscoder === null)
     videoTranscoder = new VideoTranscoder();
   switch (msg.type) {
+  //监听方法1： initialize，将会初始化audioTranscoder。
     case 'initialize':
       console.log('video transcoder: case initialize is triggered');
       let videoDemuxer =  new MP4PullDemuxer();
@@ -72,6 +75,7 @@ onmessage = async function (e) {
         }
       });
       break;
+      //监听方法2： start-transcode：将会开始音频的转码。
     case 'start-transcode':
       //初始调用fillFrameBuffer
       console.log('video transcoder is below')
@@ -91,13 +95,25 @@ onmessage = async function (e) {
 // decoded frames for future rendering.
 //控制了解复用和对视频轨道的解码
 class VideoTranscoder {
+
   encoder: VideoEncoder|undefined;
+  
   decoder: VideoDecoder|undefined;
+
+  //锁：保证公共资源不被并发访问
   lock: SampleLock|undefined;
+
+  //over：判断video是否已经转码完成
   over: boolean = false;
+
   demuxer: MP4PullDemuxer|undefined;
+
   muxer: WebmMuxer|undefined;
+
+  //锁：保证公共资源不被并发访问
   fillInProgress: boolean = false;
+
+  //rest_number：默认为-1，当getNextChunk无法返回samples时，将会返回它，用于判断视频是否解码完成。
   rest_number: number = -1;
   
   async initialize(demuxer: MP4PullDemuxer, muxer: WebmMuxer, buffer: ArrayBuffer) {
@@ -206,26 +222,20 @@ class VideoTranscoder {
     return ((<number>this.encoder?.encodeQueueSize) >= DECODER_QUEUE_SIZE_MAX);
   }
 
-  //将frame buffer起来
+  //VideoDecoder的回调方法，将在回调方法中执行encode方法
   bufferFrame(frame: VideoFrame) {
     midCount++;
     console.log('video midcount'+midCount)
     debugLog(`bufferFrame(${frame.timestamp})`);
     this.encoder?.encode(frame);
-    //这里注释了，为了暂停bufferframe
-    // this.fillFrameBuffer();
     frame.close();
-    // this.frameBuffer.push(frame);
   }
 
   //encoder的回调函数
   async consumeFrame(chunk: EncodedVideoChunk) {
-    //这个chunk的duration属性为0，但是也许可以通过timestamp计算出来？不知道会不会有影响？
-    // console.log(chunk);
     const data = new ArrayBuffer(chunk.byteLength);
     chunk.copyTo(data);
     self.postMessage({
-      //这里要注意，后面会用type来替代
       type: 'video-data',
       timestamp: chunk.timestamp,
       duration: chunk.duration,
@@ -251,10 +261,7 @@ class VideoTranscoder {
       console.log(framecount)
       console.log('video framecount');
       console.log(chunkCount);
-      console.log('video chunkCount');
-      //根据bbb视频多次实验，发现h264格式下解码出来的帧数总是会比总帧数少1
-      //发现hevc格式下解码出来的帧数会比总帧数少3
-      //切换试验视频，framecount比chunkCount少4
+      //之前存在解码帧数不一致的问题，现在已经修复了，当framecount === chunkCount时，就意味着解码完成了。
       if(framecount === chunkCount){
         console.log('current video')
         console.log(framecount)

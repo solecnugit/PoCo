@@ -20,12 +20,14 @@ var rechunkCount = 0;
 
 let audioTranscoder: AudioTranscoder|undefined;
 
+//这里整一块都是audiotranscoder module的回调部分，其实仅仅监听两个方法。
 onmessage = async function (e) {
   const msg = e.data;
   console.log('in audio data message...')
   if(!audioTranscoder)
     audioTranscoder = new AudioTranscoder();
   switch (msg.type) {
+    //监听方法1： initialize，将会初始化audioTranscoder。
     case 'initialize':
       console.log('audio transcoder: case initialize is triggered');
       // let demuxer = await import('../tool/mp4_demuxer');
@@ -50,12 +52,13 @@ onmessage = async function (e) {
         }
       });
       break;
+    //监听方法2： start-transcode：将会开始音频的转码。
     case 'start-transcode':
       //初始调用fillFrameBuffer
-      console.log('audio: transcoder is below')
-      console.log(audioTranscoder.encoder);
-      console.log(audioTranscoder.decoder);
-      console.log('audio: transcoder: case start-transcode is triggered');
+      // console.log('audio: transcoder is below')
+      // console.log(audioTranscoder.encoder);
+      // console.log(audioTranscoder.decoder);
+      // console.log('audio: transcoder: case start-transcode is triggered');
       audioTranscoder.fillDataBuffer()
       break;
   }
@@ -63,17 +66,35 @@ onmessage = async function (e) {
 
 
 class AudioTranscoder {
+  //防止并发访问公共资源做的锁的设计，当其为true时，不能够访问。
   fillInProgress: boolean = false;
+  //同样是锁，避免对公共资源的并发访问。
   lock: SampleLock | undefined;
+
   demuxer: MP4PullDemuxer|undefined;
+  
   encoder: AudioEncoder|undefined;
+  
   decoder: AudioDecoder|undefined;
+  
+  //判断audio的解码是否完成，如果完成的话，overaudio将为true。
   overaudio: boolean = false;
+
+  //重要参数：samplerate
   sampleRate: number = 0;
+
+  //重要参数：channelCount
   channelCount: number = 0;
+
+  //webmmuxer，主要用于获取mux的相关信息（目前没有作用，因为encoder的config设置都是在transcoder中完成了）
   muxer: WebmMuxer|undefined;
+
+  //rest_number：默认为-1，当getNextChunk无法返回samples时，将会返回它，用于判断音频是否解码完成。
   rest_number: number = -1;
+
+  //exited：用于标识音频已经解码完成，防止多次发送exit信号，导致转码异常。
   exited: boolean = false;
+
   async initialize(demuxer: MP4PullDemuxer, muxer: WebmMuxer, buffer: ArrayBuffer) {
     // console.log('into audiotranscoder init')
     this.fillInProgress = false;
@@ -148,8 +169,8 @@ class AudioTranscoder {
       this.encoder!.encodeQueueSize < ENCODER_QUEUE_SIZE_MAX && !this.overaudio) {
         let chunk = await this.demuxer!.getNextChunk();
 
-      // console.log('get chunk')
-      // console.log(chunk);
+      //如果chunk为number，那么就代表所有的samples都完成了
+      //这个时候获得rest_number
         if(typeof chunk === 'number'){
           this.overaudio = true; 
           this.rest_number = chunk;
@@ -170,11 +191,9 @@ class AudioTranscoder {
     if(!this.overaudio && this.encoder!.encodeQueueSize === 0)
       setTimeout(this.fillDataBuffer.bind(this), 0);
 
-
-
-
   }
 
+  //判断audio解码过程是否full
   audioDataFull(){
     return this.encoder!.encodeQueueSize >= ENCODER_QUEUE_SIZE_MAX;
   }
@@ -208,7 +227,6 @@ class AudioTranscoder {
 
     const data = new ArrayBuffer(chunk.byteLength);
     chunk.copyTo(data);
-    //这里是有插件冲突，报错：(message: any, targetOrigin: string, transfer?: Transferable[] | undefined)
     self.postMessage({
       type: 'audio-data',
       timestamp: chunk.timestamp,
@@ -218,6 +236,7 @@ class AudioTranscoder {
         //@ts-ignore
     }, [data])
 
+    //请求锁
     await this.lock!.status;
     this.lock!.lock();
     rechunkCount++;
@@ -230,10 +249,10 @@ class AudioTranscoder {
     if(!this.overaudio && this.encoder!.encodeQueueSize === 0)
         this.fillDataBuffer();
     if(this.overaudio && this.encoder!.encodeQueueSize === 0 && this.decoder!.decodeQueueSize === 0){
-      //目前的测试视频count为183
-      // console.log('current audio framecount'+ frameCount)
-      // console.log('current audio chunkCount'+ chunkCount)
-      // console.log('current rest_number'+ this.rest_number)
+      //判断已经解码完成
+      //条件1：frmeCount === chunkCount
+      //条件2：exited为false
+      //条件3：当前chunkCount对1000的余数为rest_number
       if(frameCount === chunkCount && chunkCount % 1000 === this.rest_number && !this.exited){
         this.exited = !this.exited;
         self.postMessage({type: 'exit'})

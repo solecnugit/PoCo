@@ -37,12 +37,7 @@ export class MP4PullDemuxer extends PullDemuxerBase {
 
   override async initialize(streamType: number, buffer: ArrayBuffer) {
     
-    // console.log('this.fileUri')
-    // console.log(this.fileUri)
     this.source = new MP4Source(buffer);
-    // console.log(streamType);
-    // console.log(this.fileUri+'finish init source')
-
     this.readySamples = [];
     this.over = false;
     this._pending_read_resolver = null;
@@ -68,7 +63,7 @@ export class MP4PullDemuxer extends PullDemuxerBase {
     // console.log('demuxer initialize finished')
   }
 
-  //这个方法将会返回framerate和bitrate
+  //这个方法将会返回video的framerate和bitrate，这是videoencoder的重要参数，目前默认返回相同的部分。
   getOtherVideoConfig() {
     return {
       bitrate: Math.floor(this.videoTrack!.bitrate),
@@ -77,7 +72,6 @@ export class MP4PullDemuxer extends PullDemuxerBase {
   }
 
   override getDecoderConfig(): VideoDecoderConfig|AudioEncoderConfig {
-
     console.log('output the data...');
     console.log(this.videoTrack!.nb_samples);
     console.log(this.videoTrack!.duration);
@@ -96,6 +90,7 @@ export class MP4PullDemuxer extends PullDemuxerBase {
         description: this.source?.getAudioSpecificConfig()
       };
     } else {
+      //目前支持h264&h265两种编码方式，在这里进行了判断，将会返回不同的解码codec以及description
       let description: Uint8Array|undefined;
       if (this.videoTrack!.codec.includes('avc1') || this.videoTrack!.codec.includes('avc3'))
         description = this._getAvcDescription(this.source?.getAvccBox());
@@ -108,35 +103,28 @@ export class MP4PullDemuxer extends PullDemuxerBase {
         codec: this.videoTrack!.codec,
         codedWidth: this.videoTrack?.track_width,
         codedHeight: this.videoTrack?.track_height,
-
-        // displayWidth: this.videoTrack?.track_width,
-        // displayHeight: this.videoTrack?.track_height,
         description: description
       });
         return {
           codec: this.videoTrack!.codec,
           codedWidth: this.videoTrack?.track_width,
           codedHeight: this.videoTrack?.track_height,
-
-          // displayWidth: this.videoTrack?.track_width,
-          // displayHeight: this.videoTrack?.track_height,
           description: description
         }
       
     }
   }
 
+  //转码具体frame的第一步：请求getNextChunk
   override async getNextChunk() {
-    //第一步：直接请求getNextChunk
-    // console.log(this.over)
-    //这里先注释，搞清楚为什么第一帧不见了
-
       let sample = await this._readSample();
+      //根据sample给判断
       if(sample !== null){
         const type = sample?.is_sync ? "key" : "delta";
         const pts_us = (sample?.cts! * 1000000) / sample?.timescale!;
         const duration_us = (sample?.duration! * 1000000) / sample?.timescale!;
         const ChunkType = this.streamType == AUDIO_STREAM_TYPE ? EncodedAudioChunk : EncodedVideoChunk;
+        //对读取到的frmae进行了哈恩转。
         return new ChunkType({
           type: type,
           timestamp: pts_us,
@@ -144,11 +132,11 @@ export class MP4PullDemuxer extends PullDemuxerBase {
           data: sample!.data
         });
     }else
+    //如果所有的sample都被读取完成，那么将会返回这个video的rest_number，作用是使得转码视频帧完成后能够及时退出
       return this.rest_number;
   }
 
   //这里先定义avccBox是any
-  //为什么这里能够work呢？？？
   _getAvcDescription(avccBox: any) {
     console.log('avccbox below')
     console.log(avccBox);
@@ -166,7 +154,7 @@ export class MP4PullDemuxer extends PullDemuxerBase {
     return new Uint8Array(stream.buffer, 8);  // Remove the box header.
   }
 
-
+//之前的读取HvcDescription的方法
   // _getHvcDescription(hvccBox: any) {
   //   var i, j;
   //   var size = 23;
@@ -217,6 +205,7 @@ export class MP4PullDemuxer extends PullDemuxerBase {
   //   return writer.getData();
   // }
 
+  //从读取到的视频获取相应的videotrack&audiotrack
   async _tracksReady() {
     console.log(this.source)
     let info = await this.source!.getInfo();
@@ -231,8 +220,9 @@ export class MP4PullDemuxer extends PullDemuxerBase {
     this.source?.selectTrack(track);
   }
 
+  //转码具体frame的第二步：从_readSample获取
   async _readSample(): Promise<MP4Sample|undefined>{
-    //第二步：从_readSample获取
+
     console.assert(this.selectedTrack);
     console.assert(!this._pending_read_resolver);
 
@@ -262,11 +252,14 @@ export class MP4PullDemuxer extends PullDemuxerBase {
     return promise;
   }
 
+  //转码具体frame的第三步（其实中间通过回调套了很多步）
   _onSamples(samples: MP4Sample[]) {
     
     // debugger;
     const SAMPLE_BUFFER_TARGET_SIZE = 50;
 
+    //这里取1000是因为MP4box默认sample的数目是1000
+    //如果获取到的数量小于1000，那么将会意味着这是最后一批samples
     if(samples.length < 1000) {
       this.rest_number = samples.length
       this.over = true;

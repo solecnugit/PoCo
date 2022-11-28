@@ -1,18 +1,21 @@
 // import { MyAudioContext } from "./audiocontext";
 import { WebMWriter } from "./webm-writer";
 
-//dom操作元素
-//   window.$ = document.querySelector.bind(document);
-
-//确实返回了，逻辑上只能从一个地方return
 //@ts-ignore
 export class Transcoder{
+  //定义解复用worker
   demuxDecodeWorker: Worker;
+  //定义复用worker
   webm_worker: Worker;
+  //定义webm-writer
   writer: WebMWriter;
+  //定义返回的解码后文件的buffer
   finalBuffer: ArrayBuffer|undefined;
+  //定义输入文件的buffer
   buffer: ArrayBuffer;
+  
   wait_for_reslut: ((value: ArrayBuffer) => void) | null | undefined;
+  //定义promise
   status: Promise<ArrayBuffer>;
 
   constructor(buffer: ArrayBuffer){
@@ -25,6 +28,7 @@ export class Transcoder{
       type: "module"
     });
 
+    //为worker分别设定onmessage和onerror方法。
     this.demuxDecodeWorker.onmessage = this.demuxWorkerCallback.bind(this);
 
     this.demuxDecodeWorker.onerror = this.onerror;
@@ -33,15 +37,15 @@ export class Transcoder{
 
     this.webm_worker.onmessage = this.webmWorkerCallback.bind(this);
 
+    //创建webMWriter对象。
     this.writer = new WebMWriter();
     // console.log(this.writer)
     // console.log('demo initialize: writer finished')
     
-
+    //创建promise，当promise fulfilled时，将会返回解码文件的buffer
     this.status = new Promise((resolve) => this.wait_for_reslut = resolve)
 
-    
-
+    //将输入的文件buffer赋值给buffer
     this.buffer = buffer;
     
   }
@@ -50,76 +54,55 @@ export class Transcoder{
     console.error(e);
   }
 
+  //转码的调用
   async start(): Promise<ArrayBuffer> {
+    //发送给demuxworker初始化message，并且在后续几个worker的相互作用之下进行转码的过程
     this.demuxDecodeWorker.postMessage({type: 'initialize', buffer: this.buffer});
+    //当statusfulfilled，将会返回最终解码的结构
     return this.status;
   }
 
   async webmWorkerCallback(e: MessageEvent){
     const msg = e.data;
     switch (msg.type) {
-        //原本的exit由外部事件触发，在这里应该是根据demux_decode_worker的事件触发
+        //原本的exit由外部事件触发，在这里是根据demux_decode_worker的事件触发
         case 'exit':
-            //这个是最后一步执行的
+            //这将作为最后一步执行
             console.log('demo: exit')
             if (msg.code !== 0) {
                 this.onerror(`muxer exited with status ${msg.code}`);
             }
-            //本方法并不会等待 worker 去完成它剩余的操作；worker 将会被立刻停止
+            //terminate并不会等待 worker 去完成它剩余的操作；worker 将会被立刻停止
             this.webm_worker.terminate();
             console.log('demo: webm_worker terminated')
         
-                const r = await this.writer.finish();
+            //调用writer的finish函数，返回相应的结果
+            const r = await this.writer.finish();
                 // console.log(r);
-                console.log(`Finished: Duration ${this.writer.duration}ms, Size ${this.writer.size} bytes`);
-                // if (inmem_el.checked) {
+            console.log(`Finished: Duration ${this.writer.duration}ms, Size ${this.writer.size} bytes`);
 
-                  const blob = new Blob(r, { type: 'video/webm' });
-                  console.log('blob finished')
-                  this.finalBuffer = await blob.arrayBuffer();
-                  this.wait_for_reslut!(this.finalBuffer);
-                  this.wait_for_reslut = null;
-                  // console.log('get finalbuffer')
-                  // return Promise.resolve(this.finalBuffer);
-                    // const blob = new Blob(r, { type: 'video/webm' });
-                    // const a = document.createElement('a');
-                    // const filename = 'video-transcode.webm';
-                    // a.textContent = filename;
-                    // a.href = URL.createObjectURL(blob);
-                    // a.download = filename;
-                    // //这里可能会有问题，因为要直接操作document
-                    // document.body.appendChild(a);
-                    // a.click();
-                    // document.body.removeChild(a);
-                // } else {
-                //     rec_info.innerText += `, Filename ${writer.name}, Cues at ${r ? 'start' : 'end'}`;
-                // }
-            // }
-
-            //按钮全部不需要，因此注释
-            // start_el.disabled = false;
-            // record_el.disabled = false;
-            // pcm_el.disabled = !record_el.checked;
-            // inmem_el.disabled = !record_el.checked;
-            // demuxDecodeWorker.postMessage({type: 'terminate'});
+                //将r转换为blob，进而再次转换成为arraybuffer，并且resolve返回最终结果。
+            const blob = new Blob(r, { type: 'video/webm' });
+            console.log('blob finished')
+            this.finalBuffer = await blob.arrayBuffer();
+            //当这一步被调用，finalbuffer返回给status。
+            this.wait_for_reslut!(this.finalBuffer);
+            this.wait_for_reslut = null;
             break;
 
         case 'start-stream':
             //第八步：主线程接受到webm_worker的start stream信号
             console.log('demo: start stream')
-            //webm_muxer.js和我的目前一个显著区别在于：
+            //可能可以优化的地方：
             //webm_muxer的decodeconfig和encodeconfig等是在主线程获得的，
-            //而我目前的东西都是在transcoder中获得的
+            //而目前的写法中，decodeconfig和encodeconfig都是在transcoder中获得的
             //哪个更好还不确定？
             this.demuxDecodeWorker.postMessage({type: 'start-transcode'})
-
             break;
 
         case 'muxed-data':
             //理论上来说，获得muxed-data时，就代表一个encodedchunkdata经过了decode-encode再mux的过程了
             console.log('demo: muxed-data')
-            //默认要记录，因此checked注释
-            // if (record_el.checked) {
             await this.writer.write(msg.data);
             console.log(`Recorded ${this.writer.size} bytes`);
             break;
@@ -147,7 +130,7 @@ export class Transcoder{
       //这里使用无名式的初始化方法
       await this.writer.start();
       // console.log('writer open over')
-      //audiotext应该是播放的时候，校准时间的，这里似乎用处不大，先注释
+      //audiotext应当在播放的时候起到校准时间的作用，这里目前用处不大，先注释
       // myAudioContext.initialize();
     // audioController.initialize(e.data.sampleRate, e.data.channelCount,
     //                     e.data.sharedArrayBuffer);
@@ -178,6 +161,4 @@ export class Transcoder{
       break;
   }
   }
-
-
 }
