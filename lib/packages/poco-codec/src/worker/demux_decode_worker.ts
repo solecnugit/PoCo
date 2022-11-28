@@ -49,10 +49,7 @@ function passdata(ev: MessageEvent){
         videoConfig = msg.config;
       else
         audioConfig = msg.config;
-        //这里先不加入音频
-      console.log('videoconfig')
-      console.log(videoConfig)
-      console.log(workerNum);
+        //只有在收到两个worker初始化完成的信息后，才会发送initialize-done的信息
       if(++workerNum === 2){
         console.log('in demux worker')
         console.log(videoConfig);
@@ -128,7 +125,6 @@ self.addEventListener('message', async function(e: MessageEvent) {
       // this.postMessage({command: 'initialize-done'})
       break;
     case 'start-transcode':
-      //这里目前只有一个video_worker，还有一个audio_worker等待添加
       video_Worker.postMessage({
         type: 'start-transcode'
       });

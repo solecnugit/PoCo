@@ -1,3 +1,6 @@
+//AudioContext在播放用户视频和音频协同时起到作用
+//目前转码还不涉及到。
+//不过在加入在线播放视频之后，将会涉及到audiocontext的引入
 export class MyAudioContext{
   audioContext: AudioContext| undefined;
     async initialize(){
