@@ -11,7 +11,9 @@ crossterm = "0.25"
 unicode-width = "0.1"
 
 tracing = "0.1.37"
-tracing-subscriber = { version = "0.3.16", features = ["fmt", "env-filter" ,"local-time"] }
+tracing-subscriber = { version = "0.3.16", features = ["fmt", "env-filter" ,"local-time", "ansi"] }
+tracing-appender = "0.2.2"
+
 chrono = "0.4.23"
 
 clap = { version = "4.0.23", features = ["derive"] }

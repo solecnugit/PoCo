@@ -4,12 +4,19 @@ use clap::Parser;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct AppConfig {
+    pub log_dir: String,
+    pub log_prefix: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct NearConfig {
     pub rpc_endpoint: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
+    pub app: AppConfig,
     pub near: NearConfig,
 }
 

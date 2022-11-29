@@ -12,11 +12,22 @@ use crate::app::trace::TracingCategory;
 use crate::app::App;
 
 fn main() -> Result<(), io::Error> {
-    let mut app = App::new();
+    let config = config::parse().get_config().expect("Failed to load config");
+    let log_file_appender =
+        tracing_appender::rolling::daily(config.app.log_dir, config.app.log_prefix);
+    let (non_blocking_appender, _guard) = tracing_appender::non_blocking(log_file_appender);
 
+    let mut app = App::new();
     // Init Tracing
     tracing_subscriber::registry()
-        .with(tracing_subscriber::fmt::layer())
+        .with(
+            tracing_subscriber::fmt::layer()
+                .pretty()
+                .with_thread_ids(true)
+                .with_thread_names(true)
+                .with_ansi(false)
+                .with_writer(non_blocking_appender),
+        )
         // .with(tracing_subscriber::EnvFilter::from_default_env())
         .with(app.get_tracing_layer())
         .init();
@@ -26,8 +37,6 @@ fn main() -> Result<(), io::Error> {
         message = "start loading poco-agent config",
         category = format!("{:?}", TracingCategory::Agent)
     );
-
-    let config = config::parse().get_config().expect("Failed to load config");
 
     tracing::event!(
         Level::INFO,

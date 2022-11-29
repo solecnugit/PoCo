@@ -3,7 +3,7 @@ pub mod trace;
 pub mod command;
 pub mod ui;
 
-use std::{io, thread::JoinHandle};
+use std::{io, thread::JoinHandle, sync::Arc, cell::RefCell};
 
 use tracing::Level;
 
@@ -17,7 +17,7 @@ use self::{
 
 pub struct App {
     ui: UI,
-    agent: PocoAgent,
+    agent: Arc<RefCell<PocoAgent>>,
 
     join_handles: Vec<JoinHandle<()>>,
 }
@@ -26,7 +26,7 @@ impl App {
     pub fn new() -> App {
         App {
             ui: UI::new(),
-            agent: PocoAgent::new(),
+            agent: Arc::new(RefCell::new(PocoAgent::new())),
             join_handles: Vec::new(),
         }
     }
@@ -42,7 +42,7 @@ impl App {
             category = format!("{:?}", TracingCategory::Agent)
         );
 
-        self.agent.connect(rpc_endpoint);
+        RefCell::borrow_mut(&self.agent).connect(rpc_endpoint);
 
         tracing::event!(
             Level::INFO,
