@@ -38,7 +38,6 @@ impl CLI {
             .add_source(config::Environment::with_prefix("POCO"))
             .build()?;
 
-        config
-            .try_deserialize::<Config>()
+        config.try_deserialize::<Config>()
     }
 }
