@@ -3,10 +3,6 @@ use std::collections::HashMap;
 use chrono::{DateTime, Local};
 use tracing::{field::Visit, Level, Subscriber};
 use tracing_subscriber::Layer;
-use tui::{
-    style::{Color, Style},
-    text::Span,
-};
 
 use super::ui::action::UIAction;
 
@@ -105,38 +101,5 @@ impl TracingEvent {
             message,
             fields,
         }
-    }
-
-    pub fn to_spans(&self) -> Vec<Span> {
-        let mut spans = vec![];
-
-        spans.push(Span::styled(
-            self.timestamp.format("%H:%M:%S%.3f").to_string(),
-            Style::default().fg(Color::Yellow),
-        ));
-        spans.push(Span::raw(" "));
-
-        spans.push(Span::styled(
-            self.level.as_str(),
-            match self.level {
-                Level::TRACE => Style::default().fg(Color::White),
-                Level::DEBUG => Style::default().fg(Color::White),
-                Level::INFO => Style::default().fg(Color::Green),
-                Level::WARN => Style::default().fg(Color::Yellow),
-                Level::ERROR => Style::default().fg(Color::Red),
-            },
-        ));
-        spans.push(Span::raw(" "));
-
-        let message = self.message.clone().unwrap_or_default();
-
-        spans.push(Span::raw(message));
-        spans.push(Span::raw(" "));
-
-        for (key, value) in &self.fields {
-            spans.push(Span::raw(format!(" {}={}", key, value)));
-        }
-
-        spans
     }
 }

@@ -24,14 +24,16 @@ use self::state::UIState;
 
 pub struct UI {
     state: UIState,
+
     receiver: crossbeam_channel::Receiver<UIAction>,
-    sender: crossbeam_channel::Sender<UIAction>,
+    sender: crossbeam_channel::Sender<String>,
 }
 
 impl UI {
-    pub fn new() -> Self {
-        let (sender, receiver) = crossbeam_channel::unbounded();
-
+    pub fn new(
+        receiver: crossbeam_channel::Receiver<UIAction>,
+        sender: crossbeam_channel::Sender<String>,
+    ) -> Self {
         let state = UIState {
             mode: UIInputMode::Normal,
             input: String::new(),
@@ -43,10 +45,6 @@ impl UI {
             receiver,
             sender,
         }
-    }
-
-    pub fn create_sender(&self) -> crossbeam_channel::Sender<UIAction> {
-        self.sender.clone()
     }
 
     pub fn receive_commands(&mut self) {
@@ -98,9 +96,15 @@ impl UI {
                         UIInputMode::Edit => match key.code {
                             event::KeyCode::Enter => {
                                 self.state.mode = UIInputMode::Normal;
-                                self.state.ui_commands.push_back(UIAction::LogString(
-                                    self.state.input.drain(..).collect::<String>(),
-                                ));
+
+                                if !self.state.input.is_empty() {
+                                    let _command = self.state.input.drain(..).collect::<String>();
+                                    // CommandExecutor::execute( command, &mut self)
+                                }
+
+                                // self.state.ui_commands.push_back(UIAction::LogString(
+
+                                // ));
                                 self.state.input.clear();
                             }
                             event::KeyCode::Char(c) => {
@@ -196,14 +200,7 @@ impl UI {
             .rev()
             .take(height)
             .rev()
-            .map(|command| {
-                let spans = match command {
-                    UIAction::LogString(msg) => Spans(vec![Span::raw(msg)]),
-                    UIAction::LogTracingEvent(event) => Spans(event.to_spans()),
-                };
-
-                ListItem::new(spans)
-            })
+            .map(|action| ListItem::new(action.to_ui_span()))
             .collect();
 
         let logs = List::new(logs).block(Block::default().borders(Borders::ALL).title(" Logs "));
