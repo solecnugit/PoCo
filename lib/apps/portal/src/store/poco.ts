@@ -52,6 +52,7 @@ export const usePoco = defineStore("poco", {
     };
   },
   actions: {
+    //初始化方法
     async setup(network: Networks) {
       if (this.initialized || window.pocoClientInstance) {
         console.warn("Poco can not be initialized twice!");
@@ -76,6 +77,7 @@ export const usePoco = defineStore("poco", {
         });
       });
 
+      //更改jobProcess时触发
       instance.on("JobProcessUpdate", (jobId, info) => {
         const job = this.jobs.find((e) => e.jobId.eq(jobId));
 
@@ -92,6 +94,7 @@ export const usePoco = defineStore("poco", {
         job.progressInfo = info;
       });
 
+      //更改jobstatus时触发
       instance.on("JobStatusUpdate", (jobId, status) => {
         const job = this.jobs.find((e) => e.jobId.eq(jobId));
 
@@ -108,6 +111,7 @@ export const usePoco = defineStore("poco", {
         job.status = status;
       });
 
+      //poco-client中触发JobResultAvailable
       instance.on("JobResultAvailable", (jobId, buffer) => {
         const job = this.jobs.find((e) => e.jobId.eq(jobId));
 
@@ -185,6 +189,8 @@ export const usePoco = defineStore("poco", {
         message,
       });
     },
+
+    //发送当前job
     async postJob() {
       if (!window.pocoClientInstance) {
         throw new Error("client not ready");

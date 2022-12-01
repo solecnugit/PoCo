@@ -292,9 +292,12 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
     connection: PocoSocketIOConnection<PocoClientSocketIOConnectionEvents>
   ) {
     const setupPeerConnection = (
+      //peer的属性是PocoPeerSocketIOConnection
       peer: PocoPeerSocketIOConnection<PocoClientPeerSocketIOEvents>
     ) => {
+      //监听webrtc offer
       peer.on("webrtc offer", async (offer) => {
+        //这里正式创建PocoPeerWebRTCConnection
         const rtcConnection =
           new PocoPeerWebRTCConnection<PocoClientWebRTCEvents>(
             peer.remoteAddress,
@@ -305,6 +308,8 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
             }
           );
 
+          //创建后对webrocconnection进行监听
+          //webrtc connection监听是否connected
         rtcConnection.on("connected", () => {
           this.log(
             "info",
@@ -315,6 +320,7 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
           this.rtcConnections.set(peer.remoteAddress, rtcConnection);
         });
 
+        //webrtc connection监听message
         rtcConnection.on("message", (message) => {
           this.log(
             "info",
@@ -349,6 +355,7 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
           console.error(error);
         });
 
+        //connection监听到TakeJob触发后做的事情
         rtcConnection.on("TakeJob", async (jobIdInString) => {
           const file = this.jobToFileMapping.get(jobIdInString);
 
@@ -366,15 +373,19 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
             return;
           }
 
+          //更新job的progress
           this.updateJobProgress(
             BigNumber.from(jobIdInString),
             `${rtcConnection.remoteAddress} took the job.`
           );
+
+          //更新job的状态
           this.updateJobStatus(
             BigNumber.from(jobIdInString),
             "running",
           )
 
+          //在takejob的回调中最后触发调用sendJob
           await rtcConnection.send(
             "SendJob",
             jobIdInString,
@@ -382,6 +393,7 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
           );
         });
 
+        //rtc connection触发了submitjob之后做的事情
         rtcConnection.on("SubmitJob", async (jobIdInString, buffer) => {
           const jobId = BigNumber.from(jobIdInString);
 
@@ -389,8 +401,9 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
             jobId,
             `${rtcConnection.remoteAddress} returned the job result.`
           );
-          this.emit("JobResultAvailable", jobId, buffer);
 
+          //将buffer传递至JobResultAvailable
+          this.emit("JobResultAvailable", jobId, buffer);
           const { secret, key } = this.storage.getItem(
             `job-${jobIdInString}`
           ) as any;
@@ -402,6 +415,8 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
       });
     };
 
+    //直到这里，setupConnection方法才结束，
+    //PocoSocketIOConnection 监听peer setu
     connection.on("peer setup", async (from, to) => {
       if (to !== this.localAddress) {
         return;
@@ -413,6 +428,7 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
         `Receive peer connection request from ${from}.`
       );
 
+      //在这里创建PocoPeerSocketIOConnection
       const peerConnection =
         createPocoPeerSocketIOConnection<PocoClientPeerSocketIOEvents>({
           type: "socketIO",
@@ -427,6 +443,7 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
       await peerConnection.connect();
     });
 
+    //PocoSocketIOConnection 监听peer connected
     connection.on("peer connected", async () => {
       this.log("info", "client", `Peer connection established successfully.`);
     });
@@ -548,6 +565,7 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
     return jobId;
   }
 
+  //点击takehjob按钮之后，第一步执行这个
   async takeJob({ jobId }: PocoTakeJobOptions) {
     if (this.connections.size === 0) {
       throw new PocoClientNotReadyError(this);
@@ -565,10 +583,12 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
       throw new Error(`we have not connect to ${job.messenger} yet`);
     }
 
+    //更新job的状态和progress
     this.updateJobStatus(jobId, "running");
     this.updateJobProgress(jobId, "Ready to establish connection.");
 
     const connection = this.connections.get(job.messenger)!;
+    //通过job的connection创建PocoPeerSocketIOConnection
     const peerConnection = createPocoPeerSocketIOConnection({
       type: "socketIO",
       localAddress: this.localAddress,
@@ -584,6 +604,7 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
       "SocketIO peer connection established successfully."
     );
 
+    //根据PocoPeerSocketIOConnection创建PocoPeerWebRTCConnection
     const rtcConnection =
       createPocoPeerWebRTCConnection<PocoClientWebRTCEvents>({
         type: "webrtc",
@@ -635,16 +656,45 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
       }
     });
 
+    //监听sendJob方法的调用
     rtcConnection.on("SendJob", async (jobIdInString, buffer) => {
       this.log("info", "network", `Receive buffer of ${jobIdInString}`);
-
-      const finalbuffer = await transcode(buffer);
 
       this.updateJobProgress(
         BigNumber.from(jobIdInString),
         "Job buffer received."
       );
 
+
+      //之前的写法：将整个buffer全部转换完才会返回，现在需要改成流式传输
+      // const finalbuffer = await transcode(buffer);
+      const finalbuffer = await transcode(buffer);
+
+      //以下部分是第一次对buffer进行修改，并且尝试改为stream的过程。
+      // const finalStream = await transcodeStream(buffer);
+
+      // const streamReader = finalStream.getReader();
+
+      // async function dealStream({done, value}: ReadableStreamReadResult<Uint8Array>) {
+      //   if(done) {
+      //     // 发送一个特殊指令，表示传完了
+      //     return;
+      //   }
+
+      //   let currentBuf = value.buffer;
+
+      //   console.log(currentBuf);
+
+      //   //@ts-ignore
+      //   await rtcConnection.send("SubmitJob", jobIdInString, currentBuf);
+
+      //   streamReader.read().then(dealStream);
+      // }
+      // streamReader.read().then(dealStream);
+
+
+
+      //在触发SendJob回调之后的最后一步，调用SubnmitJob
       //@ts-ignore
       await rtcConnection.send("SubmitJob", jobIdInString, finalbuffer);
     });
@@ -670,6 +720,7 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
       this.updateJobProgress(jobId, "Job submitted.");
     });
 
+    //所有事件的监听发生在connect之前
     await rtcConnection.connect();
 
     this.updateJobProgress(
@@ -683,10 +734,12 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
       `Create WebRTC connection to ${peerConnection.remoteAddress} successfully.`
     );
 
+    //rtcconnection触发TakeJob事件，等待其完成
     await rtcConnection.send("TakeJob", jobIdInString);
 
     this.updateJobProgress(jobId, "Sending TakeJob request.");
 
+    //在connections中添加当前的connection
     this.rtcConnections.set(peerConnection.remoteAddress, rtcConnection);
   }
 

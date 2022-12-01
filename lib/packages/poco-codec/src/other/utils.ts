@@ -37,6 +37,15 @@ export async function decode(location: string) {
 //     beginEncode(mediaStream)
 // }
 
+//这里添加方法transcodestream，但是依然没有完全实现功能
+//因为读取的视频应当同样是流式的。
+//以下是对buffer改成流的做出的相应更改，这里先注释
+// export async function transcodeStream(buffer: ArrayBuffer) {
+//     const transcoder = new Transcoder(buffer);
+//     const finalStream = await transcoder.start();
+//     return finalStream;
+// }
+
 export async function transcode(buffer: ArrayBuffer){
     console.log(buffer)
     // console.log(location);
