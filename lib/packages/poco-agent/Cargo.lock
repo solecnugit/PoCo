@@ -1458,6 +1458,7 @@ dependencies = [
  "near-jsonrpc-primitives",
  "near-primitives",
  "serde",
+ "strum",
  "tokio",
  "tracing",
  "tracing-appender",

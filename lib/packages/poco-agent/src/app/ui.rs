@@ -19,25 +19,28 @@ use tui::{Frame, Terminal};
 use unicode_width::UnicodeWidthStr;
 
 use self::action::UIAction;
+use self::action::UIActionEvent;
 use self::state::UIInputMode;
 use self::state::UIState;
+
+use super::CommandString;
 
 pub struct UI {
     state: UIState,
 
-    receiver: crossbeam_channel::Receiver<UIAction>,
+    receiver: crossbeam_channel::Receiver<UIActionEvent>,
     sender: crossbeam_channel::Sender<String>,
 }
 
 impl UI {
     pub fn new(
-        receiver: crossbeam_channel::Receiver<UIAction>,
+        receiver: crossbeam_channel::Receiver<UIActionEvent>,
         sender: crossbeam_channel::Sender<String>,
     ) -> Self {
         let state = UIState {
             mode: UIInputMode::Normal,
             input: String::new(),
-            ui_commands: VecDeque::new(),
+            ui_event_logs: VecDeque::new(),
         };
 
         UI {
@@ -49,7 +52,7 @@ impl UI {
 
     pub fn receive_commands(&mut self) {
         while let Ok(command) = self.receiver.try_recv() {
-            self.state.ui_commands.push_back(command);
+            self.state.ui_event_logs.push_back(command);
         }
     }
 
@@ -98,13 +101,15 @@ impl UI {
                                 self.state.mode = UIInputMode::Normal;
 
                                 if !self.state.input.is_empty() {
-                                    let _command = self.state.input.drain(..).collect::<String>();
-                                    // CommandExecutor::execute( command, &mut self)
+                                    let command =
+                                        self.state.input.drain(..).collect::<CommandString>();
+
+                                    self.state
+                                        .ui_event_logs
+                                        .push_back(UIAction::LogCommand(command.clone()).into());
+
+                                    self.sender.send(command).unwrap();
                                 }
-
-                                // self.state.ui_commands.push_back(UIAction::LogString(
-
-                                // ));
                                 self.state.input.clear();
                             }
                             event::KeyCode::Char(c) => {
@@ -195,12 +200,13 @@ impl UI {
 
         let logs: Vec<ListItem> = self
             .state
-            .ui_commands
+            .ui_event_logs
             .iter()
             .rev()
             .take(height)
             .rev()
-            .map(|action| ListItem::new(action.to_ui_span()))
+            .flat_map(|event| event.to_spans())
+            .map(ListItem::new)
             .collect();
 
         let logs = List::new(logs).block(Block::default().borders(Borders::ALL).title(" Logs "));

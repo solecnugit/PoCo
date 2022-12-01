@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 
 use chrono::{DateTime, Local};
+use strum::Display;
 use tracing::{field::Visit, Level, Subscriber};
 use tracing_subscriber::Layer;
 
-use super::ui::action::UIAction;
+use super::ui::action::{UIAction, UIActionEvent};
 
 pub struct TracingEvent {
     pub category: TracingCategory,
@@ -14,7 +15,7 @@ pub struct TracingEvent {
     pub fields: Vec<(String, String)>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Display)]
 pub enum TracingCategory {
     Contract,
     Agent,
@@ -22,11 +23,11 @@ pub enum TracingCategory {
 }
 
 pub struct UITracingLayer {
-    sender: crossbeam_channel::Sender<UIAction>,
+    sender: crossbeam_channel::Sender<UIActionEvent>,
 }
 
 impl UITracingLayer {
-    pub fn new(sender: crossbeam_channel::Sender<UIAction>) -> Self {
+    pub fn new(sender: crossbeam_channel::Sender<UIActionEvent>) -> Self {
         UITracingLayer { sender }
     }
 }
@@ -81,7 +82,9 @@ impl<S: Subscriber> Layer<S> for UITracingLayer {
 
             let event = TracingEvent::new(category, timestamp, level.clone(), message, fields);
 
-            self.sender.send(UIAction::LogTracingEvent(event)).unwrap();
+            self.sender
+                .send(UIAction::LogTracingEvent(event).into())
+                .unwrap();
         }
     }
 }

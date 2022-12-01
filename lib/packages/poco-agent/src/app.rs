@@ -11,19 +11,20 @@ use crate::app::trace::TracingCategory;
 use self::{
     backend::Backend,
     trace::UITracingLayer,
-    ui::{action::UIAction, UI},
+    ui::{action::UIActionEvent, UI},
 };
+
+type CommandString = String;
 
 pub struct App {
     ui: UI,
-    backend: Backend,
     ui_channel: (
-        crossbeam_channel::Sender<UIAction>,
-        crossbeam_channel::Receiver<UIAction>,
+        crossbeam_channel::Sender<UIActionEvent>,
+        crossbeam_channel::Receiver<UIActionEvent>,
     ),
     backend_channel: (
-        crossbeam_channel::Sender<String>,
-        crossbeam_channel::Receiver<String>,
+        crossbeam_channel::Sender<CommandString>,
+        crossbeam_channel::Receiver<CommandString>,
     ),
     join_handles: Vec<JoinHandle<()>>,
 }
@@ -34,8 +35,6 @@ impl App {
         let (ui_command_sender, ui_command_receiver) = crossbeam_channel::unbounded();
         App {
             ui: UI::new(ui_action_receiver.clone(), ui_command_sender.clone()),
-            backend: Backend::new(ui_command_receiver.clone(), ui_action_sender.clone()),
-
             ui_channel: (ui_action_sender, ui_action_receiver),
             backend_channel: (ui_command_sender, ui_command_receiver),
             join_handles: Vec::new(),
@@ -49,17 +48,11 @@ impl App {
             category = format!("{:?}", TracingCategory::Agent)
         );
 
-        // RefCell::borrow_mut(&self.agent).connect(rpc_endpoint);
-
         tracing::event!(
             Level::INFO,
             message = "finish connecting to near node",
             category = format!("{:?}", TracingCategory::Agent)
         );
-
-        // self.agent.get_runtime().spawn(async {
-        //     self.agent.gas_price();
-        // });
 
         tracing::event!(
             Level::INFO,
@@ -67,7 +60,10 @@ impl App {
             category = format!("{:?}", TracingCategory::Agent)
         );
 
-        self.backend.run_backend();
+        let backend = Backend::new(self.backend_channel.1.clone(), self.ui_channel.0.clone());
+
+        backend.run_backend_thread();
+
         self.ui.run_ui()
     }
 

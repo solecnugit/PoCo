@@ -5,87 +5,125 @@ use tui::{
     text::{Span, Spans},
 };
 
-use crate::app::trace::TracingEvent;
+use crate::app::trace::{TracingCategory, TracingEvent};
 
-pub enum UIAction {
-    LogString(DateTime<Local>, String),
-    LogTracingEvent(TracingEvent),
-    LogCommandEvent(DateTime<Local>, String, Option<String>),
+pub struct UIActionEvent(pub DateTime<Local>, pub UIAction);
+
+impl UIActionEvent {
+    pub fn new(action: UIAction) -> Self {
+        UIActionEvent(Local::now(), action)
+    }
 }
 
-impl UIAction {
-    pub fn to_ui_span(&self) -> Spans {
-        match self {
-            UIAction::LogString(timestamp, string) => Spans(vec![
-                Span::styled(
-                    timestamp.format("%H:%M:%S%.3f").to_string(),
-                    Style::default().fg(Color::Yellow),
-                ),
+impl From<UIAction> for UIActionEvent {
+    fn from(action: UIAction) -> Self {
+        UIActionEvent::new(action)
+    }
+}
+
+pub enum UIAction {
+    LogString(String),
+    LogTracingEvent(TracingEvent),
+    LogCommand(String),
+    QuitApp,
+}
+
+impl UIActionEvent {
+    pub fn to_spans(&self) -> Vec<Spans> {
+        let time_span = Span::styled(
+            self.0.format("%Y-%m-%d %H:%M:%S").to_string(),
+            Style::default().fg(Color::White),
+        );
+
+        match &self.1 {
+            UIAction::LogString(string) => vec![Spans::from(vec![
+                time_span,
                 Span::raw(" "),
-                Span::styled("STR", Style::default().fg(Color::Green)),
-                Span::raw(" "),
-                Span::raw(string),
-            ]),
+                Span::styled(string, Style::default().fg(Color::White)),
+            ])],
+
             UIAction::LogTracingEvent(event) => {
-                let mut spans = vec![];
+                let level_color = match event.level {
+                    Level::TRACE => Color::White,
+                    Level::DEBUG => Color::Cyan,
+                    Level::INFO => Color::Green,
+                    Level::WARN => Color::Yellow,
+                    Level::ERROR => Color::Red,
+                };
 
-                spans.push(Span::styled(
-                    event.timestamp.format("%H:%M:%S%.3f").to_string(),
-                    Style::default().fg(Color::Yellow),
-                ));
-                spans.push(Span::raw(" "));
+                let level_span =
+                    Span::styled(event.level.as_str(), Style::default().fg(level_color));
 
-                spans.push(Span::styled(
-                    event.level.as_str(),
-                    match event.level {
-                        Level::TRACE => Style::default().fg(Color::White),
-                        Level::DEBUG => Style::default().fg(Color::White),
-                        Level::INFO => Style::default().fg(Color::Green),
-                        Level::WARN => Style::default().fg(Color::Yellow),
-                        Level::ERROR => Style::default().fg(Color::Red),
-                    },
-                ));
-                spans.push(Span::raw(" "));
+                let category_color = match event.category {
+                    TracingCategory::Contract => Color::LightYellow,
+                    TracingCategory::Agent => Color::LightBlue,
+                    TracingCategory::Config => Color::LightMagenta,
+                };
 
-                let message = event.message.clone().unwrap_or_default();
+                let category_span = Span::styled(
+                    format!("[{}]", event.category),
+                    Style::default().fg(category_color),
+                );
 
-                spans.push(Span::raw(message));
-                spans.push(Span::raw(" "));
+                let message_span = Span::styled(
+                    event.message.clone().unwrap_or_default(),
+                    Style::default().fg(Color::White),
+                );
 
-                for (key, value) in &event.fields {
-                    spans.push(Span::raw(format!(" {}={}", key, value)));
-                }
+                let ignore_fields = vec!["message", "category", "level"];
 
-                Spans(spans)
-            }
-            UIAction::LogCommandEvent(timestamp, command, err) => {
-                if let Some(err) = err {
-                    Spans(vec![
-                        Span::styled(
-                            timestamp.format("%H:%M:%S%.3f").to_string(),
-                            Style::default().fg(Color::Yellow),
-                        ),
+                let fields_span = event
+                    .fields
+                    .iter()
+                    .filter(|e| ignore_fields.contains(&e.0.as_str()))
+                    .flat_map(|(k, v)| {
+                        vec![
+                            Span::styled(k, Style::default().fg(Color::LightBlue)),
+                            Span::raw("="),
+                            Span::styled(v, Style::default().fg(Color::Green)),
+                        ]
+                    })
+                    .collect::<Vec<Span>>();
+
+                if fields_span.is_empty() {
+                    vec![Spans::from(vec![
+                        time_span,
                         Span::raw(" "),
-                        Span::styled("CMD", Style::default().fg(Color::LightBlue)),
+                        level_span,
                         Span::raw(" "),
-                        Span::styled(
-                            format!("{} {}", command, err),
-                            Style::default().fg(Color::Red),
-                        ),
-                    ])
+                        category_span,
+                        Span::raw(" "),
+                        message_span,
+                    ])]
                 } else {
-                    Spans(vec![
-                        Span::styled(
-                            chrono::Local::now().format("%H:%M:%S%.3f").to_string(),
-                            Style::default().fg(Color::Yellow),
-                        ),
-                        Span::raw(" "),
-                        Span::styled("CMD", Style::default().fg(Color::LightBlue)),
-                        Span::raw(" "),
-                        Span::styled(command, Style::default().fg(Color::Green)),
-                    ])
+                    vec![
+                        Spans::from(vec![
+                            time_span,
+                            Span::raw(" "),
+                            level_span,
+                            Span::raw(" "),
+                            category_span,
+                            Span::raw(" "),
+                            message_span,
+                        ]),
+                        Spans::from(fields_span),
+                    ]
                 }
             }
+
+            UIAction::LogCommand(command) => {
+                vec![Spans::from(vec![
+                    time_span,
+                    Span::raw(" "),
+                    Span::styled(">>", Style::default().fg(Color::Yellow)),
+                    Span::raw(" "),
+                    Span::styled(command, Style::default().fg(Color::White)),
+                ])]
+            }
+            UIAction::QuitApp => vec![Spans::from(Span::styled(
+                "Quitting app",
+                Style::default().fg(Color::White),
+            ))],
         }
     }
 }

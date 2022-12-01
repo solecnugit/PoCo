@@ -1,7 +1,10 @@
 use std::collections::VecDeque;
 
-use super::action::UIAction;
+use strum::Display;
 
+use super::action::UIActionEvent;
+
+#[derive(Display)]
 pub(crate) enum UIInputMode {
     Normal,
     Edit,
@@ -10,5 +13,5 @@ pub(crate) enum UIInputMode {
 pub(crate) struct UIState {
     pub mode: UIInputMode,
     pub input: String,
-    pub ui_commands: VecDeque<UIAction>,
+    pub ui_event_logs: VecDeque<UIActionEvent>,
 }
