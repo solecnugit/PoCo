@@ -2,6 +2,9 @@ pub mod agent;
 pub mod app;
 pub mod config;
 
+#[macro_use]
+extern crate lazy_static;
+
 use std::io;
 
 use tracing::Level;

@@ -1454,6 +1454,7 @@ dependencies = [
  "config",
  "crossbeam-channel",
  "crossterm",
+ "lazy_static",
  "near-jsonrpc-client",
  "near-jsonrpc-primitives",
  "near-primitives",

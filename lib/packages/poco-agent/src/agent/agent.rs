@@ -8,19 +8,18 @@ use near_primitives::types::{AccountId, Balance, BlockReference, Finality};
 use near_primitives::views::{AccountView, QueryRequest};
 
 pub struct PocoAgent {
-    runtime: tokio::runtime::Runtime,
     near_client: Option<JsonRpcClient>,
+}
+
+impl Default for PocoAgent {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl PocoAgent {
     pub fn new() -> Self {
-        let runtime = tokio::runtime::Builder::new_multi_thread()
-            .enable_all()
-            .build()
-            .unwrap();
-
         PocoAgent {
-            runtime,
             near_client: None,
         }
     }
@@ -29,10 +28,6 @@ impl PocoAgent {
         let near_rpc_client = JsonRpcClient::connect(rpc_endpoint);
         self.near_client = Some(near_rpc_client);
         self
-    }
-
-    pub fn get_runtime(&self) -> &tokio::runtime::Runtime {
-        &self.runtime
     }
 
     pub fn get_near_rpc_client(&self) -> &JsonRpcClient {

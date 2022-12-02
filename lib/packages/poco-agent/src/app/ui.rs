@@ -139,7 +139,7 @@ impl UI {
                     Constraint::Length(3),
                     Constraint::Length(1),
                 ]
-                .as_ref(),
+                    .as_ref(),
             )
             .split(frame.size());
 
@@ -181,7 +181,7 @@ impl UI {
 
         match self.state.mode {
             UIInputMode::Normal =>
-                // Hide the cursor. `Frame` does this by default, so we don't need to do anything here
+            // Hide the cursor. `Frame` does this by default, so we don't need to do anything here
                 {}
 
             UIInputMode::Edit => {

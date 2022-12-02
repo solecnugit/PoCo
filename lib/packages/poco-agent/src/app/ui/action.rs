@@ -23,6 +23,7 @@ impl From<UIAction> for UIActionEvent {
 
 pub enum UIAction {
     LogString(String),
+    LogMultipleString(Vec<String>),
     LogTracingEvent(TracingEvent),
     LogCommand(String),
     QuitApp,
@@ -41,6 +42,16 @@ impl UIActionEvent {
                 Span::raw(" "),
                 Span::styled(string, Style::default().fg(Color::White)),
             ])],
+
+            UIAction::LogMultipleString(strings) => {
+                strings.iter().map(|e| {
+                    Spans::from(vec![
+                        time_span.clone(),
+                        Span::raw(" "),
+                        Span::styled(e, Style::default().fg(Color::White)),
+                    ])
+                }).collect()
+            }
 
             UIAction::LogTracingEvent(event) => {
                 let level_color = match event.level {
