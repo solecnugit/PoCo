@@ -8,8 +8,10 @@ use std::io;
 use std::sync::Arc;
 
 use tracing::Level;
+use tracing_subscriber::fmt::time::OffsetTime;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
+use time::{format_description, UtcOffset};
 
 use crate::app::trace::TracingCategory;
 use crate::app::App;
@@ -21,6 +23,7 @@ fn main() -> Result<(), io::Error> {
         config.app.log_prefix.to_string(),
     );
     let (non_blocking_appender, _guard) = tracing_appender::non_blocking(log_file_appender);
+    let format = "[year]-[month]-[day] [hour]:[minute]:[second].[subsecond digits:3]";
 
     let mut app = App::new();
     // Init Tracing
@@ -31,7 +34,11 @@ fn main() -> Result<(), io::Error> {
                 .with_thread_ids(true)
                 .with_thread_names(true)
                 .with_ansi(false)
-                .with_writer(non_blocking_appender),
+                .with_writer(non_blocking_appender)
+            .with_timer(OffsetTime::new(
+            UtcOffset::current_local_offset().unwrap(),
+            format_description::parse(format).unwrap(),
+        )),
         )
         // .with(tracing_subscriber::EnvFilter::from_default_env())
         .with(app.get_tracing_layer())
