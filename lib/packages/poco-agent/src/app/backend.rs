@@ -159,18 +159,34 @@ impl Backend {
         let arg_matches = get_internal_command().get_matches_from(command.split_whitespace());
 
         match arg_matches.subcommand() {
-            Some(("help", _)) => Ok(HelpCommand(
-                get_internal_command()
-                    .render_help()
-                    .to_string()
-                    .lines()
-                    .map(|e| e.to_string())
-                    .collect(),
-            )),
+            Some(("help", args)) => {
+                if let Some(command) = args.get_one::<String>("command") {
+                    Ok(HelpCommand(
+                        get_internal_command()
+                            .get_subcommands_mut()
+                            .find(|subcommand| subcommand.get_name() == command)
+                            .unwrap()
+                            .render_help()
+                            .to_string()
+                            .lines()
+                            .map(|e| e.to_string())
+                            .collect(),
+                    ))
+                } else {
+                    Ok(HelpCommand(
+                        get_internal_command()
+                            .render_help()
+                            .to_string()
+                            .lines()
+                            .map(|e| e.to_string())
+                            .collect(),
+                    ))
+                }
+            }
             Some(("gas-price", _)) => Ok(GasPriceCommand),
             Some(("network-status", _)) => Ok(NetworkStatusCommand),
-            Some(("view-account", account)) => {
-                if let Some(account) = account.get_one::<String>("account-id") {
+            Some(("view-account", args)) => {
+                if let Some(account) = args.get_one::<String>("account-id") {
                     Ok(ViewAccountCommand(account.to_string()))
                 } else {
                     Err(MissingCommandParameter("account-id".to_string()))

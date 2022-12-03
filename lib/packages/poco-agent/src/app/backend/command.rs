@@ -20,11 +20,31 @@ pub(crate) fn get_internal_command() -> Command {
         ",
         )
         .subcommands([
-            Command::new("help").about("Get help for poco-agent"),
-            Command::new("gas-price").about("Get gas price"),
-            Command::new("network-status").about("Get network status"),
+            Command::new("help")
+                .about("Get help for poco-agent")
+                .arg(clap::Arg::new("command").required(false).index(1))
+                .disable_help_subcommand(true)
+                .disable_help_flag(true)
+                .disable_colored_help(true)
+                .disable_version_flag(true),
+            Command::new("gas-price")
+                .about("Get gas price")
+                .disable_help_subcommand(true)
+                .disable_help_flag(true)
+                .disable_colored_help(true)
+                .disable_version_flag(true),
+            Command::new("network-status")
+                .about("Get network status")
+                .disable_help_subcommand(true)
+                .disable_help_flag(true)
+                .disable_colored_help(true)
+                .disable_version_flag(true),
             Command::new("view-account")
                 .about("View account")
+                .disable_help_subcommand(true)
+                .disable_help_flag(true)
+                .disable_colored_help(true)
+                .disable_version_flag(true)
                 .arg(clap::Arg::new("account-id").required(true).index(1)),
         ])
 }
