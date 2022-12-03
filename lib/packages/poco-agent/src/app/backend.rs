@@ -1,4 +1,8 @@
+use std::future::Future;
 use std::sync::Arc;
+
+use thread_local::ThreadLocal;
+use tracing::Level;
 
 use crate::agent::agent::PocoAgent;
 use crate::app::backend::command::{
@@ -10,14 +14,9 @@ use crate::app::backend::command::{
 use crate::app::trace::TracingCategory;
 use crate::config::PocoAgentConfig;
 
-
-
-use thread_local::ThreadLocal;
-use tracing::Level;
-
-use self::command::{get_internal_command, BackendCommand, ParseBackendCommandError};
-
 use super::ui::action::{UIAction, UIActionEvent};
+
+use self::command::{BackendCommand, get_internal_command, ParseBackendCommandError};
 
 pub mod command;
 
@@ -28,6 +27,7 @@ pub struct Backend {
     async_runtime: Box<tokio::runtime::Runtime>,
     agent: Arc<ThreadLocal<PocoAgent>>,
 }
+
 
 impl Backend {
     pub fn new(
@@ -49,82 +49,74 @@ impl Backend {
         }
     }
 
+    fn execute_command_block<F, R>(&mut self, f: F)
+        where F: FnOnce(crossbeam_channel::Sender<UIActionEvent>, Arc<ThreadLocal<PocoAgent>>, Arc<PocoAgentConfig>) -> R,
+              R: Future<Output=()> + Send + 'static {
+        let sender = self.sender.clone();
+        let agent = self.agent.clone();
+        let config = self.config.clone();
+
+        self.async_runtime.spawn(f(sender, agent, config));
+    }
+
     fn execute_command(&mut self, command: BackendCommand) {
         match command {
-            BackendCommand::HelpCommand(help) => {
+            HelpCommand(help) => {
                 self.sender
                     .send(UIAction::LogMultipleString(help).into())
                     .unwrap();
             }
-            BackendCommand::GasPriceCommand => {
-                let sender = self.sender.clone();
-                let agent = self.agent.clone();
-                let config = self.config.clone();
+            GasPriceCommand => self.execute_command_block(async move |sender, agent, config| {
+                let agent = agent.get_or(|| PocoAgent::new(config.clone()));
+                let gas_price = agent.gas_price().await;
 
-                self.async_runtime.spawn(async move {
-                    let agent =
-                        agent.get_or(|| PocoAgent::connect(config.near.rpc_endpoint.as_str()));
-                    let gas_price = agent.gas_price().await;
+                if let Ok(gas_price) = gas_price {
+                    sender
+                        .send(UIAction::LogString(format!("Gas Price: {}", gas_price)).into())
+                        .unwrap();
+                } else {
+                    sender
+                        .send(UIAction::LogString("Failed to get gas price".to_string()).into())
+                        .unwrap();
+                }
+            }),
+            NetworkStatusCommand => self.execute_command_block(async move |sender, agent, config| {
+                let agent =
+                    agent.get_or(|| PocoAgent::new(config));
+                let network_status = agent.network_status().await;
 
-                    if let Ok(gas_price) = gas_price {
-                        sender
-                            .send(UIAction::LogString(format!("Gas Price: {}", gas_price)).into())
-                            .unwrap();
-                    } else {
-                        sender
-                            .send(UIAction::LogString("Failed to get gas price".to_string()).into())
-                            .unwrap();
-                    }
-                });
-            }
-            BackendCommand::NetworkStatusCommand => {
-                let sender = self.sender.clone();
-                let agent = self.agent.clone();
-                let config = self.config.clone();
-
-                self.async_runtime.spawn(async move {
-                    let agent =
-                        agent.get_or(|| PocoAgent::connect(config.near.rpc_endpoint.as_str()));
-                    let network_status = agent.network_status().await;
-
-                    if let Ok(network_status) = network_status {
-                        sender
-                            .send(
-                                UIAction::LogMultipleString(vec![
-                                    format!(
-                                        "Num Active Peers: {}",
-                                        network_status.num_active_peers
-                                    ),
-                                    format!(
-                                        "Sent Bytes Per Sec: {}",
-                                        network_status.sent_bytes_per_sec
-                                    ),
-                                    format!(
-                                        "Received Bytes Per Sec: {}",
-                                        network_status.received_bytes_per_sec
-                                    ),
-                                ])
+                if let Ok(network_status) = network_status {
+                    sender
+                        .send(
+                            UIAction::LogMultipleString(vec![
+                                format!(
+                                    "Num Active Peers: {}",
+                                    network_status.num_active_peers
+                                ),
+                                format!(
+                                    "Sent Bytes Per Sec: {}",
+                                    network_status.sent_bytes_per_sec
+                                ),
+                                format!(
+                                    "Received Bytes Per Sec: {}",
+                                    network_status.received_bytes_per_sec
+                                ),
+                            ])
                                 .into(),
-                            )
-                            .unwrap();
-                    } else {
-                        sender
-                            .send(
-                                UIAction::LogString("Failed to get network status".to_string())
-                                    .into(),
-                            )
-                            .unwrap();
-                    }
-                });
-            }
-            BackendCommand::StatusCommand => {
-                let sender = self.sender.clone();
-                let agent = self.agent.clone();
-                let config = self.config.clone();
-
-                self.async_runtime.spawn(async move {
-                    let agent =
-                        agent.get_or(|| PocoAgent::connect(config.near.rpc_endpoint.as_str()));
+                        )
+                        .unwrap();
+                } else {
+                    sender
+                        .send(
+                            UIAction::LogString("Failed to get network status".to_string())
+                                .into(),
+                        )
+                        .unwrap();
+                }
+            }),
+            StatusCommand => self.execute_command_block(async move |sender, agent, config| {
+                let agent =
+                        agent.get_or(|| PocoAgent::new(config));
                     let status = agent.status().await;
 
                     if let Ok(status) = status {
@@ -159,7 +151,7 @@ impl Backend {
                                     format!("  Syncing: {}", status.sync_info.syncing),
                                     format!("Uptime Sec: {}", status.uptime_sec),
                                 ])
-                                .into(),
+                                    .into(),
                             )
                             .unwrap();
                     } else {
@@ -167,16 +159,10 @@ impl Backend {
                             .send(UIAction::LogString("Failed to get status".to_string()).into())
                             .unwrap();
                     }
-                });
-            }
-            BackendCommand::ViewAccountCommand(account_id) => {
-                let sender = self.sender.clone();
-                let agent = self.agent.clone();
-                let config = self.config.clone();
-
-                self.async_runtime.spawn(async move {
-                    let agent =
-                        agent.get_or(|| PocoAgent::connect(config.near.rpc_endpoint.as_str()));
+            }),
+            ViewAccountCommand(account_id) => self.execute_command_block(async move |sender, agent, config| {
+                let agent =
+                        agent.get_or(|| PocoAgent::new(config));
                     if let Ok(account) = account_id.parse() {
                         let account = agent.view_account(account).await;
 
@@ -191,7 +177,7 @@ impl Backend {
                                         format!("Storage Usage: {}", account.storage_usage),
                                         format!("Storage Paid At: {}", account.storage_paid_at),
                                     ])
-                                    .into(),
+                                        .into(),
                                 )
                                 .unwrap();
                         } else {
@@ -206,8 +192,7 @@ impl Backend {
                             .send(UIAction::LogString("Invalid account ID".to_string()).into())
                             .unwrap();
                     }
-                });
-            }
+            }),
         }
     }
 
@@ -263,14 +248,14 @@ impl Backend {
                         Ok(command) => match self.parse_command(command.trim()) {
                             Ok(command) => self.execute_command(command),
                             Err(error) => match error {
-                                ParseBackendCommandError::UnknownCommand(command) => {
+                                UnknownCommand(command) => {
                                     tracing::event!(
                                         Level::ERROR,
                                         message = format!("unknown command: {}", command),
                                         category = format!("{:?}", TracingCategory::Agent)
                                     );
                                 }
-                                ParseBackendCommandError::MissingCommandParameter(parameter) => {
+                                MissingCommandParameter(parameter) => {
                                     tracing::event!(
                                         Level::ERROR,
                                         message =
