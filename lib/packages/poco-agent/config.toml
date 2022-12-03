@@ -4,3 +4,6 @@ log_prefix = "poco.log"
 
 [near]
 rpc_endpoint = "http://gpu1.solelab.tech:8332"
+
+[poco]
+poco_contract_account = "dev-1669615052604-46668178894901"

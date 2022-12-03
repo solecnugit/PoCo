@@ -15,9 +15,15 @@ pub struct NearConfig {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct PocoConfig {
+    pub poco_contract_account: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct PocoAgentConfig {
     pub app: AppConfig,
     pub near: NearConfig,
+    pub poco: PocoConfig,
 }
 
 #[derive(Parser)]

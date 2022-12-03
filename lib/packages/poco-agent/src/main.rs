@@ -1,3 +1,5 @@
+#![feature(async_closure)]
+
 pub mod agent;
 pub mod app;
 pub mod config;

@@ -11,6 +11,7 @@ use crate::app::backend::command::{
     },
     ParseBackendCommandError::{MissingCommandParameter, UnknownCommand},
 };
+use crate::app::backend::command::BackendCommand::RoundStatusCommand;
 use crate::app::trace::TracingCategory;
 use crate::config::PocoAgentConfig;
 
@@ -193,6 +194,22 @@ impl Backend {
                             .unwrap();
                     }
             }),
+            RoundStatusCommand => self.execute_command_block(async move |sender, agent, config| {
+                let agent =
+                        agent.get_or(|| PocoAgent::new(config));
+
+                let round_status = agent.get_round_status().await;
+
+                if let Ok(round_status) = round_status {
+                    sender
+                            .send(UIAction::LogString(format!("Round Status: {}", round_status)).into())
+                            .unwrap();
+                } else {
+                    sender
+                        .send(UIAction::LogString("Failed to get round status".to_string()).into())
+                        .unwrap();
+                }
+            })
         }
     }
 
@@ -234,6 +251,7 @@ impl Backend {
                     Err(MissingCommandParameter("account-id".to_string()))
                 }
             }
+            Some(("round-status", _)) => Ok(RoundStatusCommand),
             _ => Err(UnknownCommand(command.to_string())),
         }
     }
