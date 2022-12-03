@@ -1,6 +1,7 @@
 [app]
 log_dir = "log/"
 log_prefix = "poco.log"
+connection_timeout = 500
 
 [near]
 rpc_endpoint = "http://gpu1.solelab.tech:8332"

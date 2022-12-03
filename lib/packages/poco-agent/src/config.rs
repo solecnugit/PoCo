@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 pub struct AppConfig {
     pub log_dir: String,
     pub log_prefix: String,
+    pub connection_timeout: u64,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
