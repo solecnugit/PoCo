@@ -39,6 +39,12 @@ pub(crate) fn get_internal_command() -> Command {
                 .disable_help_flag(true)
                 .disable_colored_help(true)
                 .disable_version_flag(true),
+            Command::new("status")
+                .about("Get Blockchain status")
+                .disable_help_subcommand(true)
+                .disable_help_flag(true)
+                .disable_colored_help(true)
+                .disable_version_flag(true),
             Command::new("view-account")
                 .about("View account")
                 .disable_help_subcommand(true)
@@ -54,6 +60,7 @@ pub enum BackendCommand {
     HelpCommand(Vec<String>),
     GasPriceCommand,
     NetworkStatusCommand,
+    StatusCommand,
     ViewAccountCommand(String),
 }
 
