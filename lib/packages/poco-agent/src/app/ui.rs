@@ -1,7 +1,6 @@
 pub mod action;
 pub mod state;
 
-
 use std::io;
 use std::time;
 

@@ -57,7 +57,7 @@ pub(crate) fn get_internal_command() -> Command {
                 .disable_help_subcommand(true)
                 .disable_help_flag(true)
                 .disable_colored_help(true)
-                .disable_version_flag(true)
+                .disable_version_flag(true),
         ])
 }
 

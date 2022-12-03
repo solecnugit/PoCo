@@ -5,19 +5,19 @@ use thread_local::ThreadLocal;
 use tracing::Level;
 
 use crate::agent::agent::PocoAgent;
+use crate::app::backend::command::BackendCommand::RoundStatusCommand;
 use crate::app::backend::command::{
     BackendCommand::{
         GasPriceCommand, HelpCommand, NetworkStatusCommand, StatusCommand, ViewAccountCommand,
     },
     ParseBackendCommandError::{MissingCommandParameter, UnknownCommand},
 };
-use crate::app::backend::command::BackendCommand::RoundStatusCommand;
 use crate::app::trace::TracingCategory;
 use crate::config::PocoAgentConfig;
 
 use super::ui::action::{UIAction, UIActionEvent};
 
-use self::command::{BackendCommand, get_internal_command, ParseBackendCommandError};
+use self::command::{get_internal_command, BackendCommand, ParseBackendCommandError};
 
 pub mod command;
 
@@ -28,7 +28,6 @@ pub struct Backend {
     async_runtime: Box<tokio::runtime::Runtime>,
     agent: Arc<ThreadLocal<PocoAgent>>,
 }
-
 
 impl Backend {
     pub fn new(
@@ -51,8 +50,14 @@ impl Backend {
     }
 
     fn execute_command_block<F, R>(&mut self, f: F)
-        where F: FnOnce(crossbeam_channel::Sender<UIActionEvent>, Arc<ThreadLocal<PocoAgent>>, Arc<PocoAgentConfig>) -> R,
-              R: Future<Output=()> + Send + 'static {
+    where
+        F: FnOnce(
+            crossbeam_channel::Sender<UIActionEvent>,
+            Arc<ThreadLocal<PocoAgent>>,
+            Arc<PocoAgentConfig>,
+        ) -> R,
+        R: Future<Output = ()> + Send + 'static,
+    {
         let sender = self.sender.clone();
         let agent = self.agent.clone();
         let config = self.config.clone();
@@ -81,89 +86,89 @@ impl Backend {
                         .unwrap();
                 }
             }),
-            NetworkStatusCommand => self.execute_command_block(async move |sender, agent, config| {
-                let agent =
-                    agent.get_or(|| PocoAgent::new(config));
-                let network_status = agent.network_status().await;
+            NetworkStatusCommand => {
+                self.execute_command_block(async move |sender, agent, config| {
+                    let agent = agent.get_or(|| PocoAgent::new(config));
+                    let network_status = agent.network_status().await;
 
-                if let Ok(network_status) = network_status {
-                    sender
-                        .send(
-                            UIAction::LogMultipleString(vec![
-                                format!(
-                                    "Num Active Peers: {}",
-                                    network_status.num_active_peers
-                                ),
-                                format!(
-                                    "Sent Bytes Per Sec: {}",
-                                    network_status.sent_bytes_per_sec
-                                ),
-                                format!(
-                                    "Received Bytes Per Sec: {}",
-                                    network_status.received_bytes_per_sec
-                                ),
-                            ])
-                                .into(),
-                        )
-                        .unwrap();
-                } else {
-                    sender
-                        .send(
-                            UIAction::LogString("Failed to get network status".to_string())
-                                .into(),
-                        )
-                        .unwrap();
-                }
-            }),
-            StatusCommand => self.execute_command_block(async move |sender, agent, config| {
-                let agent =
-                        agent.get_or(|| PocoAgent::new(config));
-                    let status = agent.status().await;
-
-                    if let Ok(status) = status {
+                    if let Ok(network_status) = network_status {
                         sender
                             .send(
                                 UIAction::LogMultipleString(vec![
-                                    format!("Version: {}", status.version.version),
-                                    format!("Build: {}", status.version.build),
-                                    format!("Protocol Version: {}", status.protocol_version),
                                     format!(
-                                        "Latest Protocol Version: {}",
-                                        status.latest_protocol_version
-                                    ),
-                                    format!("Rpc Address: {}", status.rpc_addr.unwrap_or_default()),
-                                    format!("Sync Info: "),
-                                    format!(
-                                        "  Latest Block Hash: {}",
-                                        status.sync_info.latest_block_hash
+                                        "Num Active Peers: {}",
+                                        network_status.num_active_peers
                                     ),
                                     format!(
-                                        "  Latest Block Height: {}",
-                                        status.sync_info.latest_block_height
+                                        "Sent Bytes Per Sec: {}",
+                                        network_status.sent_bytes_per_sec
                                     ),
                                     format!(
-                                        "  Latest State Root: {}",
-                                        status.sync_info.latest_state_root
+                                        "Received Bytes Per Sec: {}",
+                                        network_status.received_bytes_per_sec
                                     ),
-                                    format!(
-                                        "  Latest Block Time: {}",
-                                        status.sync_info.latest_block_time
-                                    ),
-                                    format!("  Syncing: {}", status.sync_info.syncing),
-                                    format!("Uptime Sec: {}", status.uptime_sec),
                                 ])
-                                    .into(),
+                                .into(),
                             )
                             .unwrap();
                     } else {
                         sender
-                            .send(UIAction::LogString("Failed to get status".to_string()).into())
+                            .send(
+                                UIAction::LogString("Failed to get network status".to_string())
+                                    .into(),
+                            )
                             .unwrap();
                     }
+                })
+            }
+            StatusCommand => self.execute_command_block(async move |sender, agent, config| {
+                let agent = agent.get_or(|| PocoAgent::new(config));
+                let status = agent.status().await;
+
+                if let Ok(status) = status {
+                    sender
+                        .send(
+                            UIAction::LogMultipleString(vec![
+                                format!("Version: {}", status.version.version),
+                                format!("Build: {}", status.version.build),
+                                format!("Protocol Version: {}", status.protocol_version),
+                                format!(
+                                    "Latest Protocol Version: {}",
+                                    status.latest_protocol_version
+                                ),
+                                format!("Rpc Address: {}", status.rpc_addr.unwrap_or_default()),
+                                format!("Sync Info: "),
+                                format!(
+                                    "  Latest Block Hash: {}",
+                                    status.sync_info.latest_block_hash
+                                ),
+                                format!(
+                                    "  Latest Block Height: {}",
+                                    status.sync_info.latest_block_height
+                                ),
+                                format!(
+                                    "  Latest State Root: {}",
+                                    status.sync_info.latest_state_root
+                                ),
+                                format!(
+                                    "  Latest Block Time: {}",
+                                    status.sync_info.latest_block_time
+                                ),
+                                format!("  Syncing: {}", status.sync_info.syncing),
+                                format!("Uptime Sec: {}", status.uptime_sec),
+                            ])
+                            .into(),
+                        )
+                        .unwrap();
+                } else {
+                    sender
+                        .send(UIAction::LogString("Failed to get status".to_string()).into())
+                        .unwrap();
+                }
             }),
-            ViewAccountCommand(account_id) => self.execute_command_block(async move |sender, agent, config| {
-                let agent =
-                        agent.get_or(|| PocoAgent::new(config));
+            ViewAccountCommand(account_id) => {
+                self.execute_command_block(async move |sender, agent, config| {
+                    let agent = agent.get_or(|| PocoAgent::new(config));
                     if let Ok(account) = account_id.parse() {
                         let account = agent.view_account(account).await;
 
@@ -178,7 +183,7 @@ impl Backend {
                                         format!("Storage Usage: {}", account.storage_usage),
                                         format!("Storage Paid At: {}", account.storage_paid_at),
                                     ])
-                                        .into(),
+                                    .into(),
                                 )
                                 .unwrap();
                         } else {
@@ -193,23 +198,23 @@ impl Backend {
                             .send(UIAction::LogString("Invalid account ID".to_string()).into())
                             .unwrap();
                     }
-            }),
+                })
+            }
             RoundStatusCommand => self.execute_command_block(async move |sender, agent, config| {
-                let agent =
-                        agent.get_or(|| PocoAgent::new(config));
+                let agent = agent.get_or(|| PocoAgent::new(config));
 
                 let round_status = agent.get_round_status().await;
 
                 if let Ok(round_status) = round_status {
                     sender
-                            .send(UIAction::LogString(format!("Round Status: {}", round_status)).into())
-                            .unwrap();
+                        .send(UIAction::LogString(format!("Round Status: {}", round_status)).into())
+                        .unwrap();
                 } else {
                     sender
                         .send(UIAction::LogString("Failed to get round status".to_string()).into())
                         .unwrap();
                 }
-            })
+            }),
         }
     }
 

@@ -1,9 +1,7 @@
-use std::{collections::VecDeque};
+use std::collections::VecDeque;
 
 use strum::Display;
-use tui::{
-    widgets::ListItem,
-};
+use tui::widgets::ListItem;
 
 use super::action::UIActionEvent;
 

@@ -1,5 +1,6 @@
 use std::str::FromStr;
 use std::sync::Arc;
+use std::time::Duration;
 
 use near_crypto::PublicKey;
 use near_jsonrpc_client::errors::{JsonRpcError, JsonRpcServerError};
@@ -8,11 +9,11 @@ use near_jsonrpc_client::methods::network_info::{RpcNetworkInfoError, RpcNetwork
 use near_jsonrpc_client::methods::query::RpcQueryError;
 use near_jsonrpc_client::methods::status::{RpcStatusError, RpcStatusResponse};
 use near_jsonrpc_client::{methods, JsonRpcClient};
-use near_jsonrpc_primitives::types::query::QueryResponseKind;
+use near_jsonrpc_primitives::types::query::{QueryResponseKind, RpcQueryResponse};
 use near_primitives::types::{AccountId, Balance, BlockReference, Finality};
 use near_primitives::views::{AccessKeyView, AccountView, QueryRequest};
-use serde::{Deserialize, Serialize};
 use serde::de::DeserializeOwned;
+use serde::{Serialize};
 use strum::Display;
 
 use crate::config::PocoAgentConfig;
@@ -33,7 +34,12 @@ pub enum ArgsType {
 
 impl PocoAgent {
     pub fn new(config: Arc<PocoAgentConfig>) -> Self {
-        let rpc_client = JsonRpcClient::connect(config.near.rpc_endpoint.as_str());
+        let client = reqwest::Client::builder()
+            .connection_verbose(true)
+            .connect_timeout(Duration::from_millis(config.app.connection_timeout))
+            .build()
+            .unwrap();
+        let rpc_client = JsonRpcClient::with(client).connect(config.near.rpc_endpoint.as_str());
 
         PocoAgent { config, rpc_client }
     }
@@ -140,6 +146,12 @@ impl PocoAgent {
 
         let response = self.rpc_client.call(request).await?;
 
+        Self::get_buffer_from_call_response(response)
+    }
+
+    fn get_buffer_from_call_response(
+        response: RpcQueryResponse,
+    ) -> Result<Vec<u8>, JsonRpcError<RpcQueryError>> {
         if let QueryResponseKind::CallResult(call_result) = response.kind {
             Ok(call_result.result)
         } else {
@@ -169,15 +181,7 @@ impl PocoAgent {
 
         let response = self.rpc_client.call(request).await?;
 
-        if let QueryResponseKind::CallResult(call_result) = response.kind {
-            Ok(call_result.result)
-        } else {
-            Err(JsonRpcError::ServerError(
-                JsonRpcServerError::InternalError {
-                    info: "Unexpected response".to_string().into(),
-                },
-            ))
-        }
+        Self::get_buffer_from_call_response(response)
     }
 
     pub async fn call_view_function_json<T, R>(
