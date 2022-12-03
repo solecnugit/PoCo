@@ -37,11 +37,7 @@ impl UI {
         receiver: crossbeam_channel::Receiver<UIActionEvent>,
         sender: crossbeam_channel::Sender<String>,
     ) -> Self {
-        let state = UIState {
-            mode: UIInputMode::Normal,
-            input: String::new(),
-            ui_event_logs: VecDeque::new(),
-        };
+        let state = UIState::new(5001);
 
         UI {
             state,
@@ -50,9 +46,9 @@ impl UI {
         }
     }
 
-    pub fn receive_commands(&mut self) {
-        while let Ok(command) = self.receiver.try_recv() {
-            self.state.ui_event_logs.push_back(command);
+    pub fn retrieve_events(&mut self) {
+        while let Ok(event) = self.receiver.try_recv() {
+            self.state.push_event(event);
         }
     }
 
@@ -82,11 +78,11 @@ impl UI {
 
     pub fn ui_loop<B: Backend>(&mut self, terminal: &mut Terminal<B>) -> io::Result<()> {
         loop {
-            self.receive_commands();
+            self.retrieve_events();
 
             terminal.draw(|frame| self.draw_ui(frame))?;
 
-            if event::poll(time::Duration::from_millis(24))? {
+            if event::poll(time::Duration::from_millis(100))? {
                 if let Event::Key(key) = event::read()? {
                     match self.state.mode {
                         UIInputMode::Normal => match key.code {
@@ -94,6 +90,14 @@ impl UI {
                                 self.state.mode = UIInputMode::Edit;
                             }
                             event::KeyCode::Char('q') => return Ok(()),
+                            event::KeyCode::Up => {
+                                self.state.offset += 1;
+                            }
+                            event::KeyCode::Down => {
+                                if self.state.offset > 0 {
+                                    self.state.offset -= 1;
+                                }
+                            }
                             _ => {}
                         },
                         UIInputMode::Edit => match key.code {
@@ -105,8 +109,7 @@ impl UI {
                                         self.state.input.drain(..).collect::<CommandString>();
 
                                     self.state
-                                        .ui_event_logs
-                                        .push_back(UIAction::LogCommand(command.clone()).into());
+                                        .push_event(UIAction::LogCommand(command.clone()).into());
 
                                     self.sender.send(command).unwrap();
                                 }
@@ -197,21 +200,9 @@ impl UI {
 
         // padding 2: Up and Bottom Border
         let height = (chunks[0].height - 2) as usize;
-
-        let logs: Vec<ListItem> = self
-            .state
-            .ui_event_logs
-            .iter()
-            .flat_map(|event| event.to_spans())
-            .map(|span| ListItem::new(span))
-            .collect::<Vec<ListItem>>()
-            .into_iter()
-            .rev()
-            .take(height)
-            .rev()
-            .collect();
-
-        let logs = List::new(logs).block(Block::default().borders(Borders::ALL).title(" Logs "));
+        let event_list = self.state.render_event_list(height);
+        let logs =
+            List::new(event_list).block(Block::default().borders(Borders::ALL).title(" Logs "));
 
         frame.render_widget(logs, chunks[0]);
     }

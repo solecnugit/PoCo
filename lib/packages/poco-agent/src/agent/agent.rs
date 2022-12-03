@@ -2,6 +2,7 @@ use near_jsonrpc_client::errors::{JsonRpcError, JsonRpcServerError};
 use near_jsonrpc_client::methods::gas_price::RpcGasPriceError;
 use near_jsonrpc_client::methods::network_info::{RpcNetworkInfoError, RpcNetworkInfoResponse};
 use near_jsonrpc_client::methods::query::RpcQueryError;
+use near_jsonrpc_client::methods::status::{RpcStatusError, RpcStatusResponse};
 use near_jsonrpc_client::{methods, JsonRpcClient};
 use near_jsonrpc_primitives::types::query::QueryResponseKind;
 use near_primitives::types::{AccountId, Balance, BlockReference, Finality};
@@ -31,6 +32,13 @@ impl PocoAgent {
         &self,
     ) -> Result<RpcNetworkInfoResponse, JsonRpcError<RpcNetworkInfoError>> {
         let request = methods::network_info::RpcNetworkInfoRequest;
+        let response = self.rpc_client.call(request).await?;
+
+        Ok(response)
+    }
+
+    pub async fn status(&self) -> Result<RpcStatusResponse, JsonRpcError<RpcStatusError>> {
+        let request = methods::status::RpcStatusRequest;
         let response = self.rpc_client.call(request).await?;
 
         Ok(response)
