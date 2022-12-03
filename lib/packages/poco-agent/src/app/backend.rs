@@ -2,12 +2,16 @@ use std::sync::Arc;
 
 use crate::agent::agent::PocoAgent;
 use crate::app::backend::command::{
-    BackendCommand::{GasPriceCommand, HelpCommand, NetworkStatusCommand, ViewAccountCommand},
+    BackendCommand::{
+        GasPriceCommand, HelpCommand, NetworkStatusCommand, StatusCommand, ViewAccountCommand,
+    },
     ParseBackendCommandError::{MissingCommandParameter, UnknownCommand},
 };
 use crate::app::trace::TracingCategory;
 use crate::config::PocoAgentConfig;
-use crossbeam_channel::TryRecvError;
+use crossbeam_channel::{RecvError, TryRecvError};
+use near_primitives::hash::CryptoHash;
+use near_primitives::types::EpochReference::EpochId;
 use thread_local::ThreadLocal;
 use tracing::Level;
 
@@ -113,6 +117,58 @@ impl Backend {
                     }
                 });
             }
+            BackendCommand::StatusCommand => {
+                let sender = self.sender.clone();
+                let agent = self.agent.clone();
+                let config = self.config.clone();
+
+                self.async_runtime.spawn(async move {
+                    let agent =
+                        agent.get_or(|| PocoAgent::connect(config.near.rpc_endpoint.as_str()));
+                    let status = agent.status().await;
+
+                    if let Ok(status) = status {
+                        sender
+                            .send(
+                                UIAction::LogMultipleString(vec![
+                                    format!("Version: {}", status.version.version),
+                                    format!("Build: {}", status.version.build),
+                                    format!("Protocol Version: {}", status.protocol_version),
+                                    format!(
+                                        "Latest Protocol Version: {}",
+                                        status.latest_protocol_version
+                                    ),
+                                    format!("Rpc Address: {}", status.rpc_addr.unwrap_or_default()),
+                                    format!("Sync Info: "),
+                                    format!(
+                                        "  Latest Block Hash: {}",
+                                        status.sync_info.latest_block_hash
+                                    ),
+                                    format!(
+                                        "  Latest Block Height: {}",
+                                        status.sync_info.latest_block_height
+                                    ),
+                                    format!(
+                                        "  Latest State Root: {}",
+                                        status.sync_info.latest_state_root
+                                    ),
+                                    format!(
+                                        "  Latest Block Time: {}",
+                                        status.sync_info.latest_block_time
+                                    ),
+                                    format!("  Syncing: {}", status.sync_info.syncing),
+                                    format!("Uptime Sec: {}", status.uptime_sec),
+                                ])
+                                .into(),
+                            )
+                            .unwrap();
+                    } else {
+                        sender
+                            .send(UIAction::LogString("Failed to get status".to_string()).into())
+                            .unwrap();
+                    }
+                });
+            }
             BackendCommand::ViewAccountCommand(account_id) => {
                 let sender = self.sender.clone();
                 let agent = self.agent.clone();
@@ -185,6 +241,7 @@ impl Backend {
             }
             Some(("gas-price", _)) => Ok(GasPriceCommand),
             Some(("network-status", _)) => Ok(NetworkStatusCommand),
+            Some(("status", _)) => Ok(StatusCommand),
             Some(("view-account", args)) => {
                 if let Some(account) = args.get_one::<String>("account-id") {
                     Ok(ViewAccountCommand(account.to_string()))
@@ -202,7 +259,7 @@ impl Backend {
         builder
             .spawn(move || 'outer: loop {
                 loop {
-                    match self.receiver.try_recv() {
+                    match self.receiver.recv() {
                         Ok(command) => match self.parse_command(command.trim()) {
                             Ok(command) => self.execute_command(command),
                             Err(error) => match error {
@@ -223,18 +280,15 @@ impl Backend {
                                 }
                             },
                         },
-                        Err(error) => match error {
-                            TryRecvError::Empty => break,
-                            TryRecvError::Disconnected => {
-                                tracing::event!(
-                                    Level::ERROR,
-                                    message = "backend channel disconnected",
-                                    category = format!("{:?}", TracingCategory::Agent)
-                                );
+                        Err(error) => {
+                            tracing::event!(
+                                Level::ERROR,
+                                message = "backend channel disconnected",
+                                category = format!("{:?}", TracingCategory::Agent)
+                            );
 
-                                break 'outer;
-                            }
-                        },
+                            break 'outer;
+                        }
                     }
                 }
             })
