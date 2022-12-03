@@ -139,7 +139,7 @@ impl UI {
                     Constraint::Length(3),
                     Constraint::Length(1),
                 ]
-                    .as_ref(),
+                .as_ref(),
             )
             .split(frame.size());
 
@@ -181,7 +181,7 @@ impl UI {
 
         match self.state.mode {
             UIInputMode::Normal =>
-            // Hide the cursor. `Frame` does this by default, so we don't need to do anything here
+                // Hide the cursor. `Frame` does this by default, so we don't need to do anything here
                 {}
 
             UIInputMode::Edit => {
@@ -202,11 +202,13 @@ impl UI {
             .state
             .ui_event_logs
             .iter()
+            .flat_map(|event| event.to_spans())
+            .map(|span| ListItem::new(span))
+            .collect::<Vec<ListItem>>()
+            .into_iter()
             .rev()
             .take(height)
             .rev()
-            .flat_map(|event| event.to_spans())
-            .map(ListItem::new)
             .collect();
 
         let logs = List::new(logs).block(Block::default().borders(Borders::ALL).title(" Logs "));

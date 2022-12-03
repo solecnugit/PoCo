@@ -7,7 +7,9 @@ edition = "2021"
 
 [dependencies]
 strum = { version = "0.24", features = ["derive"] }
+
 lazy_static = "1.4.0"
+thread_local = "1.1.4"
 
 chrono = "0.4.23"
 
@@ -15,7 +17,7 @@ tracing = "0.1.37"
 tracing-subscriber = { version = "0.3.16", features = ["fmt", "env-filter" ,"local-time", "ansi"] }
 tracing-appender = "0.2.2"
 
-clap = { version = "4.0.23", features = ["derive"] }
+clap = { version = "4.0.23", features = ["derive", "color", "help"] }
 config = { version = "0.13.2", features = ["toml"] }
 serde = { version = "1.0.147", features = ["derive"] }
 

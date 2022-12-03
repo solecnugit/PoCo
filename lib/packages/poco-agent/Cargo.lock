@@ -1460,6 +1460,7 @@ dependencies = [
  "near-primitives",
  "serde",
  "strum",
+ "thread_local",
  "tokio",
  "tracing",
  "tracing-appender",

@@ -6,19 +6,21 @@ pub mod config;
 extern crate lazy_static;
 
 use std::io;
+use std::sync::Arc;
 
 use tracing::Level;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
 use crate::app::trace::TracingCategory;
-
 use crate::app::App;
 
 fn main() -> Result<(), io::Error> {
-    let config = config::parse().get_config().expect("Failed to load config");
-    let log_file_appender =
-        tracing_appender::rolling::daily(config.app.log_dir, config.app.log_prefix);
+    let config = Arc::new(config::parse().get_config().expect("Failed to load config"));
+    let log_file_appender = tracing_appender::rolling::daily(
+        config.app.log_dir.to_string(),
+        config.app.log_prefix.to_string(),
+    );
     let (non_blocking_appender, _guard) = tracing_appender::non_blocking(log_file_appender);
 
     let mut app = App::new();
@@ -48,7 +50,7 @@ fn main() -> Result<(), io::Error> {
         category = format!("{:?}", TracingCategory::Agent)
     );
 
-    app.run(config.near.rpc_endpoint)?;
+    app.run(config)?;
     app.join();
 
     Ok(())

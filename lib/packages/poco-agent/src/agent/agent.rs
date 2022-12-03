@@ -8,37 +8,20 @@ use near_primitives::types::{AccountId, Balance, BlockReference, Finality};
 use near_primitives::views::{AccountView, QueryRequest};
 
 pub struct PocoAgent {
-    near_client: Option<JsonRpcClient>,
-}
-
-impl Default for PocoAgent {
-    fn default() -> Self {
-        Self::new()
-    }
+    rpc_client: JsonRpcClient,
 }
 
 impl PocoAgent {
-    pub fn new() -> Self {
-        PocoAgent {
-            near_client: None,
-        }
-    }
+    pub fn connect(rpc_endpoint: &str) -> Self {
+        let rpc_client = JsonRpcClient::connect(rpc_endpoint);
 
-    pub fn connect(&mut self, rpc_endpoint: String) -> &Self {
-        let near_rpc_client = JsonRpcClient::connect(rpc_endpoint);
-        self.near_client = Some(near_rpc_client);
-        self
-    }
-
-    pub fn get_near_rpc_client(&self) -> &JsonRpcClient {
-        self.near_client.as_ref().unwrap()
+        PocoAgent { rpc_client }
     }
 
     pub async fn gas_price(&self) -> Result<Balance, JsonRpcError<RpcGasPriceError>> {
-        let client = self.get_near_rpc_client();
         let request = methods::gas_price::RpcGasPriceRequest { block_id: None };
 
-        let response = client.call(request).await?;
+        let response = self.rpc_client.call(request).await?;
         let gas_price = response.gas_price;
 
         Ok(gas_price)
@@ -47,10 +30,8 @@ impl PocoAgent {
     pub async fn network_status(
         &self,
     ) -> Result<RpcNetworkInfoResponse, JsonRpcError<RpcNetworkInfoError>> {
-        let client = self.get_near_rpc_client();
-
         let request = methods::network_info::RpcNetworkInfoRequest;
-        let response = client.call(request).await?;
+        let response = self.rpc_client.call(request).await?;
 
         Ok(response)
     }
@@ -59,14 +40,12 @@ impl PocoAgent {
         &self,
         account_id: AccountId,
     ) -> Result<AccountView, JsonRpcError<RpcQueryError>> {
-        let client = self.get_near_rpc_client();
-
         let request = methods::query::RpcQueryRequest {
             block_reference: BlockReference::Finality(Finality::Final),
             request: QueryRequest::ViewAccount { account_id },
         };
 
-        let response = client.call(request).await?;
+        let response = self.rpc_client.call(request).await?;
 
         if let QueryResponseKind::ViewAccount(account_view) = response.kind {
             Ok(account_view)

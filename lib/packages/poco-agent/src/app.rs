@@ -2,11 +2,11 @@ pub mod backend;
 pub mod trace;
 pub mod ui;
 
-use std::{io, thread::JoinHandle};
+use std::{io, sync::Arc, thread::JoinHandle};
 
 use tracing::Level;
 
-use crate::app::trace::TracingCategory;
+use crate::{app::trace::TracingCategory, config::PocoAgentConfig};
 
 use self::{
     backend::Backend,
@@ -41,7 +41,7 @@ impl App {
         }
     }
 
-    pub fn run(&mut self, _rpc_endpoint: String) -> Result<(), io::Error> {
+    pub fn run(&mut self, config: Arc<PocoAgentConfig>) -> Result<(), io::Error> {
         tracing::event!(
             Level::INFO,
             message = "start connecting to near node",
@@ -60,7 +60,11 @@ impl App {
             category = format!("{:?}", TracingCategory::Agent)
         );
 
-        let backend = Backend::new(self.backend_channel.1.clone(), self.ui_channel.0.clone());
+        let backend = Backend::new(
+            config,
+            self.backend_channel.1.clone(),
+            self.ui_channel.0.clone(),
+        );
 
         backend.run_backend_thread();
 

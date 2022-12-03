@@ -43,15 +43,16 @@ impl UIActionEvent {
                 Span::styled(string, Style::default().fg(Color::White)),
             ])],
 
-            UIAction::LogMultipleString(strings) => {
-                strings.iter().map(|e| {
+            UIAction::LogMultipleString(strings) => strings
+                .iter()
+                .map(|e| {
                     Spans::from(vec![
                         time_span.clone(),
                         Span::raw(" "),
                         Span::styled(e, Style::default().fg(Color::White)),
                     ])
-                }).collect()
-            }
+                })
+                .collect(),
 
             UIAction::LogTracingEvent(event) => {
                 let level_color = match event.level {

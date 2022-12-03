@@ -15,7 +15,7 @@ pub struct NearConfig {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Config {
+pub struct PocoAgentConfig {
     pub app: AppConfig,
     pub near: NearConfig,
 }
@@ -37,7 +37,7 @@ pub(crate) fn parse() -> CLI {
 }
 
 impl CLI {
-    pub(crate) fn get_config(&self) -> Result<Config, config::ConfigError> {
+    pub(crate) fn get_config(&self) -> Result<PocoAgentConfig, config::ConfigError> {
         let config_path = self.config_path.as_ref().unwrap().as_path();
 
         let config = config::Config::builder()
@@ -45,6 +45,6 @@ impl CLI {
             .add_source(config::Environment::with_prefix("POCO"))
             .build()?;
 
-        config.try_deserialize::<Config>()
+        config.try_deserialize::<PocoAgentConfig>()
     }
 }
