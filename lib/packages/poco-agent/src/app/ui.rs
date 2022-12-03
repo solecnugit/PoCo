@@ -1,7 +1,7 @@
 pub mod action;
 pub mod state;
 
-use std::collections::VecDeque;
+
 use std::io;
 use std::time;
 
@@ -14,7 +14,7 @@ use tui::backend::{Backend, CrosstermBackend};
 use tui::layout::{Constraint, Direction, Layout};
 use tui::style::{Color, Modifier, Style};
 use tui::text::{Span, Spans, Text};
-use tui::widgets::{Block, Borders, List, ListItem, Paragraph};
+use tui::widgets::{Block, Borders, List, Paragraph};
 use tui::{Frame, Terminal};
 use unicode_width::UnicodeWidthStr;
 

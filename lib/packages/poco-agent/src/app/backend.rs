@@ -9,9 +9,9 @@ use crate::app::backend::command::{
 };
 use crate::app::trace::TracingCategory;
 use crate::config::PocoAgentConfig;
-use crossbeam_channel::{RecvError, TryRecvError};
-use near_primitives::hash::CryptoHash;
-use near_primitives::types::EpochReference::EpochId;
+
+
+
 use thread_local::ThreadLocal;
 use tracing::Level;
 
@@ -280,7 +280,7 @@ impl Backend {
                                 }
                             },
                         },
-                        Err(error) => {
+                        Err(_error) => {
                             tracing::event!(
                                 Level::ERROR,
                                 message = "backend channel disconnected",

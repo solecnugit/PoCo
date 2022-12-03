@@ -1,8 +1,7 @@
-use std::{collections::VecDeque, marker::PhantomData};
+use std::{collections::VecDeque};
 
 use strum::Display;
 use tui::{
-    text::{Span, Spans},
     widgets::ListItem,
 };
 
@@ -51,7 +50,7 @@ impl UIState {
             .collect::<Vec<ListItem>>();
 
         self.offset = self.offset.min(items.len().saturating_sub(height));
-        
+
         items
             .into_iter()
             .rev()
