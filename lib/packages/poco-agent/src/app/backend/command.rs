@@ -1,12 +1,7 @@
-use crate::app::backend::command::BackendCommand::{
-    GasPriceCommand, HelpCommand, NetworkStatusCommand,
-};
-use crate::app::backend::command::ParseBackendCommandError::UnknownCommand;
-
 use clap::Command;
 use strum::Display;
 
-fn get_internal_command() -> Command {
+pub(crate) fn get_internal_command() -> Command {
     Command::new("poco")
         .about("Poco Agent")
         .version("0.0.1")
@@ -28,7 +23,9 @@ fn get_internal_command() -> Command {
             Command::new("help").about("Get help for poco-agent"),
             Command::new("gas-price").about("Get gas price"),
             Command::new("network-status").about("Get network status"),
-            Command::new("view-account").about("View account"),
+            Command::new("view-account")
+                .about("View account")
+                .arg(clap::Arg::new("account-id").required(true).index(1)),
         ])
 }
 
@@ -37,27 +34,11 @@ pub enum BackendCommand {
     HelpCommand(Vec<String>),
     GasPriceCommand,
     NetworkStatusCommand,
+    ViewAccountCommand(String),
 }
 
 #[derive(Debug, Display)]
 pub enum ParseBackendCommandError {
     UnknownCommand(String),
-}
-
-pub fn parse_command(command: &str) -> Result<BackendCommand, ParseBackendCommandError> {
-    let arg_matches = get_internal_command().get_matches_from(command.split_whitespace());
-
-    match arg_matches.subcommand() {
-        Some(("help", _)) => Ok(HelpCommand(
-            get_internal_command()
-                .render_help()
-                .to_string()
-                .lines()
-                .map(|e| e.to_string())
-                .collect(),
-        )),
-        Some(("gas-price", _)) => Ok(GasPriceCommand),
-        Some(("network-status", _)) => Ok(NetworkStatusCommand),
-        _ => Err(UnknownCommand(command.to_string())),
-    }
+    MissingCommandParameter(String),
 }
