@@ -1,6 +1,15 @@
 use clap::Command;
 use strum::Display;
 
+#[inline]
+fn subcommand(name: &'static str) -> Command {
+    Command::new(name)
+        .disable_help_subcommand(true)
+        .disable_help_flag(true)
+        .disable_colored_help(true)
+        .disable_version_flag(true)
+}
+
 pub(crate) fn get_internal_command() -> Command {
     Command::new("poco")
         .about("Poco Agent")
@@ -20,50 +29,22 @@ pub(crate) fn get_internal_command() -> Command {
         ",
         )
         .subcommands([
-            Command::new("help")
+            subcommand("help")
                 .about("Get help for poco-agent")
-                .arg(clap::Arg::new("command").required(false).index(1))
-                .disable_help_subcommand(true)
-                .disable_help_flag(true)
-                .disable_colored_help(true)
-                .disable_version_flag(true),
-            Command::new("gas-price")
-                .about("Get gas price")
-                .disable_help_subcommand(true)
-                .disable_help_flag(true)
-                .disable_colored_help(true)
-                .disable_version_flag(true),
-            Command::new("network-status")
-                .about("Get network status")
-                .disable_help_subcommand(true)
-                .disable_help_flag(true)
-                .disable_colored_help(true)
-                .disable_version_flag(true),
-            Command::new("status")
-                .about("Get Blockchain status")
-                .disable_help_subcommand(true)
-                .disable_help_flag(true)
-                .disable_colored_help(true)
-                .disable_version_flag(true),
-            Command::new("view-account")
+                .arg(clap::Arg::new("command").required(false).index(1)),
+            subcommand("gas-price")
+                .about("Get gas price"),
+            subcommand("network-status")
+                .about("Get network status"),
+            subcommand("status")
+                .about("Get Blockchain status"),
+            subcommand("view-account")
                 .about("View account")
-                .disable_help_subcommand(true)
-                .disable_help_flag(true)
-                .disable_colored_help(true)
-                .disable_version_flag(true)
                 .arg(clap::Arg::new("account-id").required(true).index(1)),
-            Command::new("round-status")
-                .about("Get round status")
-                .disable_help_subcommand(true)
-                .disable_help_flag(true)
-                .disable_colored_help(true)
-                .disable_version_flag(true),
-            Command::new("count-events")
-                .about("Count events")
-                .disable_help_subcommand(true)
-                .disable_help_flag(true)
-                .disable_colored_help(true)
-                .disable_version_flag(true),
+            subcommand("round-status")
+                .about("Get round status"),
+            subcommand("count-events")
+                .about("Count events"),
         ])
 }
 
