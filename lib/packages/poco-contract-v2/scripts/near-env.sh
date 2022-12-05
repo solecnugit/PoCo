@@ -5,7 +5,7 @@ if [ -z $NEAR_NETWORK_IP ]; then
 fi
 
 if [ -z $WORKSPACE_DIR ]; then
-    WORKSPACE_DIR=$(pwd)/..
+    WORKSPACE_DIR=$(pwd)
 fi
 
 echo "NEAR NETWORK IP: ${NEAR_NETWORK_IP}"
