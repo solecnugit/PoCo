@@ -86,8 +86,7 @@ impl Backend {
                         .unwrap();
                 }
             }),
-            NetworkStatusCommand => {
-                self.execute_command_block(async move |sender, agent, config| {
+            NetworkStatusCommand => self.execute_command_block(async move |sender, agent, config| {
                     let agent = agent.get_or(|| PocoAgent::new(config));
                     let network_status = agent.network_status().await;
 
@@ -119,8 +118,7 @@ impl Backend {
                             )
                             .unwrap();
                     }
-                })
-            }
+                }),
             StatusCommand => self.execute_command_block(async move |sender, agent, config| {
                 let agent = agent.get_or(|| PocoAgent::new(config));
                 let status = agent.status().await;
@@ -166,8 +164,7 @@ impl Backend {
                         .unwrap();
                 }
             }),
-            ViewAccountCommand(account_id) => {
-                self.execute_command_block(async move |sender, agent, config| {
+            ViewAccountCommand(account_id) => self.execute_command_block(async move |sender, agent, config| {
                     let agent = agent.get_or(|| PocoAgent::new(config));
                     if let Ok(account) = account_id.parse() {
                         let account = agent.view_account(account).await;
@@ -198,8 +195,7 @@ impl Backend {
                             .send(UIAction::LogString("Invalid account ID".to_string()).into())
                             .unwrap();
                     }
-                })
-            }
+                }),
             RoundStatusCommand => self.execute_command_block(async move |sender, agent, config| {
                 let agent = agent.get_or(|| PocoAgent::new(config));
 

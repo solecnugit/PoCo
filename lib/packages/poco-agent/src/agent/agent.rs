@@ -34,11 +34,20 @@ pub enum ArgsType {
 
 impl PocoAgent {
     pub fn new(config: Arc<PocoAgentConfig>) -> Self {
+        let mut headers = reqwest::header::HeaderMap::with_capacity(2);
+
+        headers.insert(
+            reqwest::header::CONTENT_TYPE,
+            reqwest::header::HeaderValue::from_static("application/json"),
+        );
+
         let client = reqwest::Client::builder()
-            .connection_verbose(true)
+            .connection_verbose(config.app.verbose)
             .connect_timeout(Duration::from_millis(config.app.connection_timeout))
+            .default_headers(headers)
             .build()
             .unwrap();
+
         let rpc_client = JsonRpcClient::with(client).connect(config.near.rpc_endpoint.as_str());
 
         PocoAgent { config, rpc_client }
