@@ -7,6 +7,7 @@ use std::{io, sync::Arc, thread::JoinHandle};
 use tracing::Level;
 
 use crate::{app::trace::TracingCategory, config::PocoAgentConfig};
+use crate::app::ui::action::UIAction;
 
 use self::{
     backend::Backend,
@@ -41,7 +42,23 @@ impl App {
         }
     }
 
+    fn setup_panic_hook(&self) {
+        let old_hook = std::panic::take_hook();
+        let old_hook = Box::leak(old_hook);
+        let sender = self.ui_channel.0.clone();
+
+        std::panic::set_hook(Box::new(move |panic_info| {
+            sender
+                .send(UIAction::Panic(panic_info.to_string()).into())
+                .unwrap();
+
+            old_hook.call((panic_info,));
+        }));
+    }
+
     pub fn run(&mut self, config: Arc<PocoAgentConfig>) -> Result<(), io::Error> {
+        self.setup_panic_hook();
+
         tracing::event!(
             Level::INFO,
             message = "start connecting to near node",

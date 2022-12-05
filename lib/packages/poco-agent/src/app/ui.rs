@@ -2,6 +2,8 @@ pub mod action;
 pub mod state;
 
 use std::io;
+use std::io::Write;
+use std::sync::atomic::AtomicBool;
 use std::time;
 
 use crossterm::{
@@ -41,14 +43,20 @@ impl UI {
         UI {
             state,
             receiver,
-            sender,
+            sender
         }
     }
 
-    pub fn retrieve_events(&mut self) {
+    pub fn retrieve_events(&mut self) -> bool {
         while let Ok(event) = self.receiver.try_recv() {
-            self.state.push_event(event);
+            if let UIAction::Panic(_) = event.1 {
+                return false;
+            } else {
+                self.state.push_event(event);
+            }
         }
+
+        true
     }
 
     pub fn run_ui(&mut self) -> Result<(), io::Error> {
@@ -77,7 +85,9 @@ impl UI {
 
     pub fn ui_loop<B: Backend>(&mut self, terminal: &mut Terminal<B>) -> io::Result<()> {
         loop {
-            self.retrieve_events();
+            if !self.retrieve_events() {
+                return Err(io::Error::new(io::ErrorKind::Other, "Panic"));
+            }
 
             terminal.draw(|frame| self.draw_ui(frame))?;
 
