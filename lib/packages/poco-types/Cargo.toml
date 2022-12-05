@@ -1,0 +1,13 @@
+[package]
+name = "poco-types"
+version = "0.0.1"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+near-sdk = { version = "4.1.1", features = ["abi"] }
+uint = { version = "0.9.3", default-features = false }
+schemars = "0.8.11"
+
+strum = { version = "0.24", features = ["derive"] }

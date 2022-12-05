@@ -881,8 +881,20 @@ name = "poco"
 version = "0.0.1"
 dependencies = [
  "near-sdk",
+ "poco-types",
  "rand 0.8.5",
  "rand_xorshift",
+ "schemars",
+ "uint",
+]
+
+[[package]]
+name = "poco-types"
+version = "0.0.1"
+dependencies = [
+ "near-sdk",
+ "schemars",
+ "strum",
  "uint",
 ]
 

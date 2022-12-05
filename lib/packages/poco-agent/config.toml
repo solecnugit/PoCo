@@ -1,0 +1,11 @@
+[app]
+verbose = true
+log_dir = "log/"
+log_prefix = "poco.log"
+connection_timeout = 1000
+
+[near]
+rpc_endpoint = "http://49.52.27.50:8332"
+
+[poco]
+poco_contract_account = "dev-1669615052604-46668178894901"

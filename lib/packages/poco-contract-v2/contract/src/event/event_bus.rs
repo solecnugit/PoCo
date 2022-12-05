@@ -1,19 +1,11 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::store::Vector;
 
-use crate::Events;
+use near_sdk::store::Vector;
+use poco_types::types::event::{Events, IndexedEvent};
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct EventBus {
     events: Vector<Events>,
-}
-
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
-#[serde(crate = "near_sdk::serde")]
-pub struct EventData {
-    event_id: u32,
-    payload: Events,
 }
 
 impl EventBus {
@@ -36,7 +28,7 @@ impl EventBus {
     }
 
     #[inline]
-    pub fn query_event(&self, from: u32, count: u32) -> Vec<EventData> {
+    pub fn query_event(&self, from: u32, count: u32) -> Vec<IndexedEvent> {
         let from = from as usize;
         let count = count as usize;
 
@@ -45,7 +37,7 @@ impl EventBus {
             .enumerate()
             .skip(from)
             .take(count)
-            .map(|e| EventData {
+            .map(|e| IndexedEvent {
                 event_id: e.0 as u32,
                 payload: e.1.clone(),
             })
