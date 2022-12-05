@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AppConfig {
+    pub verbose: bool,
     pub log_dir: String,
     pub log_prefix: String,
     pub connection_timeout: u64,
