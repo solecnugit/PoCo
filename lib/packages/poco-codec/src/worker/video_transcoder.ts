@@ -136,6 +136,7 @@ class VideoTranscoder {
 
     const decodeconfig = this.demuxer?.getDecoderConfig();
     const otherconfig = this.demuxer?.getOtherVideoConfig();
+    
     console.log('see see decodeconfig')
         console.log(decodeconfig);
     const encodeconfig = await this.muxer?.getEncoderConfig(decodeconfig, otherconfig.bitrate, Number(otherconfig.framerate));
@@ -193,8 +194,8 @@ class VideoTranscoder {
           
       let chunk = await this.demuxer?.getNextChunk();
 
-      // console.log('get chunk')
-      // console.log(chunk);
+      console.log('get chunk')
+      console.log(chunk);
       if(typeof chunk === 'number'){
         this.rest_number = chunk;
         this.over = true; 
@@ -204,6 +205,7 @@ class VideoTranscoder {
         chunkCount++;
         console.log('video chunk count')
         console.log(chunkCount)
+        console.log(chunk)
         this.decoder!.decode(chunk!);
       }
     }

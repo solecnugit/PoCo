@@ -98,7 +98,7 @@ export class MP4PullDemuxer extends PullDemuxerBase {
         description = this._getHvcDescription(this.source?.getHvccBox());
       else
         description = undefined;
-      console.log('current decoderconfig')
+      console.log('current video decoderconfig')
       console.log({
         codec: this.videoTrack!.codec,
         codedWidth: this.videoTrack?.track_width,
@@ -109,6 +109,8 @@ export class MP4PullDemuxer extends PullDemuxerBase {
           codec: this.videoTrack!.codec,
           codedWidth: this.videoTrack?.track_width,
           codedHeight: this.videoTrack?.track_height,
+          //测试，这里先注释
+          //注释后报错If you're using AVC formatted H.264 you must fill out the description field in the VideoDecoderConfig.
           description: description
         }
       
