@@ -15,11 +15,11 @@ use near_primitives::views::{AccessKeyView, AccountView, QueryRequest};
 use serde::de::DeserializeOwned;
 use serde::{Serialize};
 use strum::Display;
-use crate::agent::r#type::{QueryEventsRequest, QueryEventsResponse};
+use poco_types::types::round::RoundStatus;
+use poco_types::types::event::IndexedEvent;
+use map_macro::map;
 
 use crate::config::PocoAgentConfig;
-
-use super::r#type::RoundStatus;
 
 pub struct PocoAgent {
     config: Arc<PocoAgentConfig>,
@@ -260,18 +260,18 @@ impl PocoAgent {
         Ok(response)
     }
 
-    // pub async fn query_events(&self, from: u32, count: u32) -> Result<QueryEventsResponse, JsonRpcError<RpcQueryError>> {
-    //     let response = self
-    //         .call_view_function_json(
-    //             self.config.poco.poco_contract_account.parse().unwrap(),
-    //             "query_events".to_string(),
-    //             QueryEventsRequest {
-    //                 from,
-    //                 count,
-    //             },
-    //         )
-    //         .await?;
-    //
-    //     Ok(response)
-    // }
+    pub async fn query_events(&self, from: u32, count: u32) -> Result<Vec<IndexedEvent>, JsonRpcError<RpcQueryError>> {
+        let response = self
+            .call_view_function_json(
+                self.config.poco.poco_contract_account.parse().unwrap(),
+                "query_events".to_string(),
+                map! {
+                    "from" => from,
+                    "count" => count,
+                },
+            )
+            .await?;
+
+        Ok(response)
+    }
 }

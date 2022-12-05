@@ -894,6 +894,7 @@ version = "0.0.1"
 dependencies = [
  "near-sdk",
  "schemars",
+ "strum",
  "uint",
 ]
 

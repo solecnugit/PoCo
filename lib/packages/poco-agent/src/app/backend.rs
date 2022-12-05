@@ -5,7 +5,7 @@ use thread_local::ThreadLocal;
 use tracing::Level;
 
 use crate::agent::agent::PocoAgent;
-use crate::app::backend::command::BackendCommand::{CountEventsCommand, RoundStatusCommand};
+use crate::app::backend::command::BackendCommand::{CountEventsCommand, QueryEventsCommand, RoundStatusCommand};
 use crate::app::backend::command::{
     BackendCommand::{
         GasPriceCommand, HelpCommand, NetworkStatusCommand, StatusCommand, ViewAccountCommand,
@@ -18,6 +18,8 @@ use crate::config::PocoAgentConfig;
 use super::ui::action::{UIAction, UIActionEvent};
 
 use self::command::{get_internal_command, BackendCommand, ParseBackendCommandError};
+
+use poco_types::types::event::IndexedEvent;
 
 pub mod command;
 
@@ -229,6 +231,27 @@ impl Backend {
                         .unwrap();
                 }
             }),
+            QueryEventsCommand { from, count} => self.execute_command_block(async move |sender, agent, config| {
+                let agent = agent.get_or(|| PocoAgent::new(config));
+
+                if let Ok(events) = agent.query_events(from, count).await {
+                    if events.is_empty() {
+                        sender
+                            .send(UIAction::LogString("No events found".to_string()).into())
+                            .unwrap();
+                    } else {
+                        for event in events {
+                            sender
+                                .send(UIAction::LogString(format!("Event: {}", event)).into())
+                                .unwrap();
+                        }
+                    }
+                } else {
+                    sender
+                        .send(UIAction::LogString("Failed to query events".to_string()).into())
+                        .unwrap();
+                }
+            })
         }
     }
 
@@ -272,6 +295,15 @@ impl Backend {
             }
             Some(("round-status", _)) => Ok(RoundStatusCommand),
             Some(("count-events", _)) => Ok(CountEventsCommand),
+            Some(("query-events", args)) => {
+                if let Some(Ok(from)) = args.get_one::<String>("from").map(|e| e.parse()) {
+                    let count = args.get_one::<String>("count").map(|e| e.parse()).unwrap().unwrap();
+
+                    Ok(QueryEventsCommand { from, count })
+                } else {
+                    Err(MissingCommandParameter("from".to_string()))
+                }
+            },
             _ => Err(UnknownCommand(command.to_string())),
         }
     }

@@ -6,28 +6,28 @@ use schemars::JsonSchema;
 
 use self::media::{MediaTranscodingSourceConfig, MediaTranscodingTargetConfig};
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, JsonSchema, Clone)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, JsonSchema, Clone, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub enum TaskInputSource {
     Link { url: String },
     Ipfs { cid: String },
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, JsonSchema, Clone)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, JsonSchema, Clone, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub struct TaskInput {
     hash: String,
     source: TaskInputSource,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, JsonSchema, Clone)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, JsonSchema, Clone, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub enum TaskOutput {
     Link,
     Ipfs,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, JsonSchema, Clone)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, JsonSchema, Clone, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub enum TaskConfig {
     MediaTranscodingTask {

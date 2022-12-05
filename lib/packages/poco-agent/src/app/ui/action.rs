@@ -22,6 +22,7 @@ impl From<UIAction> for UIActionEvent {
 }
 
 pub enum UIAction {
+    Panic(String),
     LogString(String),
     LogMultipleString(Vec<String>),
     LogTracingEvent(TracingEvent),
@@ -136,6 +137,8 @@ impl UIActionEvent {
                 "Quitting app",
                 Style::default().fg(Color::White),
             ))],
+
+            UIAction::Panic(_) => unreachable!()
         }
     }
 }

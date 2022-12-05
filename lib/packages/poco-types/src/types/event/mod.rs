@@ -1,8 +1,10 @@
+use std::fmt::{Display, Formatter};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::near_bindgen;
-use near_sdk::serde::{Deserialize, Serialize};
+use near_sdk::serde::{Deserialize, Serialize, Serializer};
 use near_sdk::AccountId;
 use schemars::JsonSchema;
+use strum::Display;
 
 use crate::types::round::RoundId;
 use crate::types::task::config::TaskConfig;
@@ -17,8 +19,14 @@ pub struct IndexedEvent {
     pub payload: Events,
 }
 
+impl Display for IndexedEvent {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Event {{ event_id: {}, payload: {} }}", self.event_id, self.payload)
+    }
+}
+
 #[near_bindgen(event_json(standard = "nep297"))]
-#[derive(BorshDeserialize, BorshSerialize, Deserialize, JsonSchema, Clone)]
+#[derive(BorshDeserialize, BorshSerialize, Deserialize, JsonSchema, Clone, Debug, Display)]
 pub enum Events {
     #[event_version("0.0.1")]
     NewRoundEvent { round_id: RoundId },

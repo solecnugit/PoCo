@@ -45,6 +45,10 @@ pub(crate) fn get_internal_command() -> Command {
                 .about("Get round status"),
             subcommand("count-events")
                 .about("Count events"),
+            subcommand("query-events")
+                .about("Query events")
+                .arg(clap::Arg::new("from").required(true).index(1).allow_negative_numbers(false))
+                .arg(clap::Arg::new("count").required(false).index(2).allow_negative_numbers(false).default_value("10")),
         ])
 }
 
