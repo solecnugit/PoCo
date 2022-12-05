@@ -5,25 +5,25 @@ use schemars::JsonSchema;
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, JsonSchema, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct VideoConfig {
-    encoding: String
+    encoding: String,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, JsonSchema, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct AudioConfig {
-    encoding: String
+    encoding: String,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, JsonSchema, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct MediaTranscodingSourceConfig {
     video: VideoConfig,
-    audio: AudioConfig
+    audio: AudioConfig,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, JsonSchema, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct MediaTranscodingTargetConfig {
     video: VideoConfig,
-    audio: AudioConfig
+    audio: AudioConfig,
 }

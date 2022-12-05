@@ -1,12 +1,10 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::store::Vector;
 use near_sdk::AccountId;
-
-use crate::r#type::RoundId;
-
-use super::config::TaskConfig;
-use super::task::Task;
-use super::TaskId;
+use poco_types::types::round::RoundId;
+use poco_types::types::task::config::TaskConfig;
+use poco_types::types::task::id::TaskId;
+use poco_types::types::task::Task;
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct TaskManager {

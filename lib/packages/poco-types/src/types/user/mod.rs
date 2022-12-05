@@ -6,7 +6,7 @@ use near_sdk::AccountId;
 use schemars::JsonSchema;
 
 #[derive(BorshDeserialize, BorshSerialize)]
-pub(crate) struct InternalUserProfile {
+pub struct InternalUserProfile {
     qos: Vector<u64>,
     endpoint: LazyOption<String>,
 }

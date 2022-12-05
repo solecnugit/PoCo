@@ -1,13 +1,9 @@
+use crate::types::round::RoundId;
+use crate::types::task::TaskNonce;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-
 use near_sdk::serde::de::{Unexpected, Visitor};
 use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::AccountId;
 use schemars::JsonSchema;
-
-use crate::r#type::{RoundId, TaskNonce};
-
-use super::config::TaskConfig;
 
 #[derive(BorshDeserialize, BorshSerialize, JsonSchema, PartialEq, PartialOrd, Hash)]
 pub struct TaskId(RoundId, TaskNonce);
@@ -108,18 +104,5 @@ impl TaskId {
     #[inline]
     pub fn get_task_nonce(&self) -> u32 {
         self.1
-    }
-}
-
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
-#[serde(crate = "near_sdk::serde")]
-pub struct Task {
-    owner: AccountId,
-    config: TaskConfig,
-}
-
-impl Task {
-    pub fn new(owner: AccountId, config: TaskConfig) -> Self {
-        Task { owner, config }
     }
 }

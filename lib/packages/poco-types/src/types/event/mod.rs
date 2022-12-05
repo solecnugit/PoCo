@@ -1,10 +1,21 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::serde::Deserialize;
-use near_sdk::{near_bindgen, AccountId};
+use near_sdk::near_bindgen;
+use near_sdk::serde::{Deserialize, Serialize};
+use near_sdk::AccountId;
 use schemars::JsonSchema;
 
-use crate::r#type::{RoundId, TaskNonce};
-use crate::task::TaskConfig;
+use crate::types::round::RoundId;
+use crate::types::task::config::TaskConfig;
+use crate::types::task::TaskNonce;
+
+pub type EventNonce = u32;
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, JsonSchema)]
+#[serde(crate = "near_sdk::serde")]
+pub struct IndexedEvent {
+    pub event_id: u32,
+    pub payload: Events,
+}
 
 #[near_bindgen(event_json(standard = "nep297"))]
 #[derive(BorshDeserialize, BorshSerialize, Deserialize, JsonSchema, Clone)]

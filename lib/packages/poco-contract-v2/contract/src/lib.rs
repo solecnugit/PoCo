@@ -1,19 +1,21 @@
 pub mod event;
 pub mod round;
 pub mod task;
-pub mod r#type;
 pub mod user;
 pub mod util;
 
-use event::{EventBus, EventData, Events};
+use crate::round::RoundManager;
+use crate::task::TaskManager;
+use crate::user::UserManager;
+use event::EventBus;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::{log, near_bindgen, AccountId};
-use r#type::RoundId;
-use round::{RoundManager, RoundStatus};
-use task::{TaskConfig, TaskId, TaskManager};
-use user::{UserManager, UserProfile};
+use near_sdk::{near_bindgen, AccountId};
+use poco_types::types::event::{Events, IndexedEvent};
+use poco_types::types::round::{RoundId, RoundStatus};
+use poco_types::types::task::config::TaskConfig;
+use poco_types::types::task::id::TaskId;
+use poco_types::types::user::UserProfile;
 
-// Define the contract structure
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Contract {
@@ -69,11 +71,11 @@ impl Contract {
         self.event_bus.len()
     }
 
-    pub fn query_events(&self, from: u32, count: u32) -> Vec<EventData> {
+    pub fn query_events(&self, from: u32, count: u32) -> Vec<IndexedEvent> {
         self.event_bus.query_event(from, count)
     }
 
-    pub fn query_round_events(&self, round_offset: u32, count: u32) -> Vec<EventData> {
+    pub fn query_round_events(&self, round_offset: u32, count: u32) -> Vec<IndexedEvent> {
         let from = round_offset - self.round_manager.get_round_event_offset();
 
         self.event_bus.query_event(from, count)
@@ -127,6 +129,4 @@ impl Contract {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-}
+mod tests {}
