@@ -5,7 +5,7 @@ use thread_local::ThreadLocal;
 use tracing::Level;
 
 use crate::agent::agent::PocoAgent;
-use crate::app::backend::command::BackendCommand::RoundStatusCommand;
+use crate::app::backend::command::BackendCommand::{CountEventsCommand, RoundStatusCommand};
 use crate::app::backend::command::{
     BackendCommand::{
         GasPriceCommand, HelpCommand, NetworkStatusCommand, StatusCommand, ViewAccountCommand,
@@ -164,7 +164,7 @@ impl Backend {
                         .unwrap();
                 }
             }),
-            ViewAccountCommand(account_id) => self.execute_command_block(async move |sender, agent, config| {
+            ViewAccountCommand { account_id } => self.execute_command_block(async move |sender, agent, config| {
                     let agent = agent.get_or(|| PocoAgent::new(config));
                     if let Ok(account) = account_id.parse() {
                         let account = agent.view_account(account).await;
@@ -211,6 +211,24 @@ impl Backend {
                         .unwrap();
                 }
             }),
+            CountEventsCommand => self.execute_command_block(async move |sender, agent, config| {
+                let agent = agent.get_or(|| PocoAgent::new(config));
+
+                let event_count = agent.count_events().await;
+
+                if let Ok(event_count) = event_count {
+                    sender
+                        .send(
+                            UIAction::LogString(format!("Total Events: {}", event_count))
+                            .into(),
+                        )
+                        .unwrap();
+                } else {
+                    sender
+                        .send(UIAction::LogString("Failed to get count events".to_string()).into())
+                        .unwrap();
+                }
+            }),
         }
     }
 
@@ -246,13 +264,14 @@ impl Backend {
             Some(("network-status", _)) => Ok(NetworkStatusCommand),
             Some(("status", _)) => Ok(StatusCommand),
             Some(("view-account", args)) => {
-                if let Some(account) = args.get_one::<String>("account-id") {
-                    Ok(ViewAccountCommand(account.to_string()))
+                if let Some(account_id) = args.get_one::<String>("account-id") {
+                    Ok(ViewAccountCommand { account_id: account_id.to_string() })
                 } else {
                     Err(MissingCommandParameter("account-id".to_string()))
                 }
             }
             Some(("round-status", _)) => Ok(RoundStatusCommand),
+            Some(("count-events", _)) => Ok(CountEventsCommand),
             _ => Err(UnknownCommand(command.to_string())),
         }
     }

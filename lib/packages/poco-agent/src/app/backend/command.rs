@@ -58,6 +58,12 @@ pub(crate) fn get_internal_command() -> Command {
                 .disable_help_flag(true)
                 .disable_colored_help(true)
                 .disable_version_flag(true),
+            Command::new("count-events")
+                .about("Count events")
+                .disable_help_subcommand(true)
+                .disable_help_flag(true)
+                .disable_colored_help(true)
+                .disable_version_flag(true),
         ])
 }
 
@@ -67,8 +73,10 @@ pub enum BackendCommand {
     GasPriceCommand,
     NetworkStatusCommand,
     StatusCommand,
-    ViewAccountCommand(String),
+    ViewAccountCommand { account_id: String },
     RoundStatusCommand,
+    CountEventsCommand,
+    QueryEventsCommand { from: u32, count: u32 },
 }
 
 #[derive(Debug, Display)]

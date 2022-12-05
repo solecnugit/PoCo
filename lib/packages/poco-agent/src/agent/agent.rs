@@ -15,6 +15,7 @@ use near_primitives::views::{AccessKeyView, AccountView, QueryRequest};
 use serde::de::DeserializeOwned;
 use serde::{Serialize};
 use strum::Display;
+use crate::agent::r#type::{QueryEventsRequest, QueryEventsResponse};
 
 use crate::config::PocoAgentConfig;
 
@@ -246,4 +247,31 @@ impl PocoAgent {
 
         Ok(response)
     }
+
+    pub async fn count_events(&self) -> Result<u32, JsonRpcError<RpcQueryError>> {
+        let response = self
+            .call_view_function_json(
+                self.config.poco.poco_contract_account.parse().unwrap(),
+                "count_events".to_string(),
+                (),
+            )
+            .await?;
+
+        Ok(response)
+    }
+
+    // pub async fn query_events(&self, from: u32, count: u32) -> Result<QueryEventsResponse, JsonRpcError<RpcQueryError>> {
+    //     let response = self
+    //         .call_view_function_json(
+    //             self.config.poco.poco_contract_account.parse().unwrap(),
+    //             "query_events".to_string(),
+    //             QueryEventsRequest {
+    //                 from,
+    //                 count,
+    //             },
+    //         )
+    //         .await?;
+    //
+    //     Ok(response)
+    // }
 }
