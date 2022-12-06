@@ -8,7 +8,7 @@ pub type RoundId = u32;
 pub type RoundDuration = u64;
 
 #[derive(
-    BorshDeserialize, BorshSerialize, Serialize, Deserialize, JsonSchema, Debug, PartialEq, Display
+    BorshDeserialize, BorshSerialize, Serialize, Deserialize, JsonSchema, Debug, PartialEq, Display,
 )]
 #[serde(crate = "near_sdk::serde")]
 pub enum RoundStatus {

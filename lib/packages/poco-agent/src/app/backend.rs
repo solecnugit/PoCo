@@ -5,7 +5,9 @@ use thread_local::ThreadLocal;
 use tracing::Level;
 
 use crate::agent::agent::PocoAgent;
-use crate::app::backend::command::BackendCommand::{CountEventsCommand, QueryEventsCommand, RoundStatusCommand};
+use crate::app::backend::command::BackendCommand::{
+    CountEventsCommand, QueryEventsCommand, RoundStatusCommand,
+};
 use crate::app::backend::command::{
     BackendCommand::{
         GasPriceCommand, HelpCommand, NetworkStatusCommand, StatusCommand, ViewAccountCommand,
@@ -18,8 +20,6 @@ use crate::config::PocoAgentConfig;
 use super::ui::action::{UIAction, UIActionEvent};
 
 use self::command::{get_internal_command, BackendCommand, ParseBackendCommandError};
-
-use poco_types::types::event::IndexedEvent;
 
 pub mod command;
 
@@ -88,7 +88,8 @@ impl Backend {
                         .unwrap();
                 }
             }),
-            NetworkStatusCommand => self.execute_command_block(async move |sender, agent, config| {
+            NetworkStatusCommand => {
+                self.execute_command_block(async move |sender, agent, config| {
                     let agent = agent.get_or(|| PocoAgent::new(config));
                     let network_status = agent.network_status().await;
 
@@ -120,7 +121,8 @@ impl Backend {
                             )
                             .unwrap();
                     }
-                }),
+                })
+            }
             StatusCommand => self.execute_command_block(async move |sender, agent, config| {
                 let agent = agent.get_or(|| PocoAgent::new(config));
                 let status = agent.status().await;
@@ -166,7 +168,8 @@ impl Backend {
                         .unwrap();
                 }
             }),
-            ViewAccountCommand { account_id } => self.execute_command_block(async move |sender, agent, config| {
+            ViewAccountCommand { account_id } => {
+                self.execute_command_block(async move |sender, agent, config| {
                     let agent = agent.get_or(|| PocoAgent::new(config));
                     if let Ok(account) = account_id.parse() {
                         let account = agent.view_account(account).await;
@@ -197,7 +200,8 @@ impl Backend {
                             .send(UIAction::LogString("Invalid account ID".to_string()).into())
                             .unwrap();
                     }
-                }),
+                })
+            }
             RoundStatusCommand => self.execute_command_block(async move |sender, agent, config| {
                 let agent = agent.get_or(|| PocoAgent::new(config));
 
@@ -220,10 +224,7 @@ impl Backend {
 
                 if let Ok(event_count) = event_count {
                     sender
-                        .send(
-                            UIAction::LogString(format!("Total Events: {}", event_count))
-                            .into(),
-                        )
+                        .send(UIAction::LogString(format!("Total Events: {}", event_count)).into())
                         .unwrap();
                 } else {
                     sender
@@ -231,27 +232,29 @@ impl Backend {
                         .unwrap();
                 }
             }),
-            QueryEventsCommand { from, count} => self.execute_command_block(async move |sender, agent, config| {
-                let agent = agent.get_or(|| PocoAgent::new(config));
+            QueryEventsCommand { from, count } => {
+                self.execute_command_block(async move |sender, agent, config| {
+                    let agent = agent.get_or(|| PocoAgent::new(config));
 
-                if let Ok(events) = agent.query_events(from, count).await {
-                    if events.is_empty() {
-                        sender
-                            .send(UIAction::LogString("No events found".to_string()).into())
-                            .unwrap();
-                    } else {
-                        for event in events {
+                    if let Ok(events) = agent.query_events(from, count).await {
+                        if events.is_empty() {
                             sender
-                                .send(UIAction::LogString(format!("Event: {}", event)).into())
+                                .send(UIAction::LogString("No events found".to_string()).into())
                                 .unwrap();
+                        } else {
+                            for event in events {
+                                sender
+                                    .send(UIAction::LogString(format!("Event: {}", event)).into())
+                                    .unwrap();
+                            }
                         }
+                    } else {
+                        sender
+                            .send(UIAction::LogString("Failed to query events".to_string()).into())
+                            .unwrap();
                     }
-                } else {
-                    sender
-                        .send(UIAction::LogString("Failed to query events".to_string()).into())
-                        .unwrap();
-                }
-            })
+                })
+            }
         }
     }
 
@@ -288,7 +291,9 @@ impl Backend {
             Some(("status", _)) => Ok(StatusCommand),
             Some(("view-account", args)) => {
                 if let Some(account_id) = args.get_one::<String>("account-id") {
-                    Ok(ViewAccountCommand { account_id: account_id.to_string() })
+                    Ok(ViewAccountCommand {
+                        account_id: account_id.to_string(),
+                    })
                 } else {
                     Err(MissingCommandParameter("account-id".to_string()))
                 }
@@ -297,13 +302,17 @@ impl Backend {
             Some(("count-events", _)) => Ok(CountEventsCommand),
             Some(("query-events", args)) => {
                 if let Some(Ok(from)) = args.get_one::<String>("from").map(|e| e.parse()) {
-                    let count = args.get_one::<String>("count").map(|e| e.parse()).unwrap().unwrap();
+                    let count = args
+                        .get_one::<String>("count")
+                        .map(|e| e.parse())
+                        .unwrap()
+                        .unwrap();
 
                     Ok(QueryEventsCommand { from, count })
                 } else {
                     Err(MissingCommandParameter("from".to_string()))
                 }
-            },
+            }
             _ => Err(UnknownCommand(command.to_string())),
         }
     }

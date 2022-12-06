@@ -6,8 +6,8 @@ use std::{io, sync::Arc, thread::JoinHandle};
 
 use tracing::Level;
 
-use crate::{app::trace::TracingCategory, config::PocoAgentConfig};
 use crate::app::ui::action::UIAction;
+use crate::{app::trace::TracingCategory, config::PocoAgentConfig};
 
 use self::{
     backend::Backend,

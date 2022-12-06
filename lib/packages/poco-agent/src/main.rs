@@ -9,7 +9,7 @@ use std::io;
 use std::sync::Arc;
 
 use time::{format_description, UtcOffset};
-use tracing::{event, Level};
+use tracing::Level;
 use tracing_subscriber::fmt::time::OffsetTime;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;

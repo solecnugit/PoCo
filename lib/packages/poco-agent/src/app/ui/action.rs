@@ -138,7 +138,7 @@ impl UIActionEvent {
                 Style::default().fg(Color::White),
             ))],
 
-            UIAction::Panic(_) => unreachable!()
+            UIAction::Panic(_) => unreachable!(),
         }
     }
 }

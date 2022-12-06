@@ -32,23 +32,29 @@ pub(crate) fn get_internal_command() -> Command {
             subcommand("help")
                 .about("Get help for poco-agent")
                 .arg(clap::Arg::new("command").required(false).index(1)),
-            subcommand("gas-price")
-                .about("Get gas price"),
-            subcommand("network-status")
-                .about("Get network status"),
-            subcommand("status")
-                .about("Get Blockchain status"),
+            subcommand("gas-price").about("Get gas price"),
+            subcommand("network-status").about("Get network status"),
+            subcommand("status").about("Get Blockchain status"),
             subcommand("view-account")
                 .about("View account")
                 .arg(clap::Arg::new("account-id").required(true).index(1)),
-            subcommand("round-status")
-                .about("Get round status"),
-            subcommand("count-events")
-                .about("Count events"),
+            subcommand("round-status").about("Get round status"),
+            subcommand("count-events").about("Count events"),
             subcommand("query-events")
                 .about("Query events")
-                .arg(clap::Arg::new("from").required(true).index(1).allow_negative_numbers(false))
-                .arg(clap::Arg::new("count").required(false).index(2).allow_negative_numbers(false).default_value("10")),
+                .arg(
+                    clap::Arg::new("from")
+                        .required(true)
+                        .index(1)
+                        .allow_negative_numbers(false),
+                )
+                .arg(
+                    clap::Arg::new("count")
+                        .required(false)
+                        .index(2)
+                        .allow_negative_numbers(false)
+                        .default_value("10"),
+                ),
         ])
 }
 

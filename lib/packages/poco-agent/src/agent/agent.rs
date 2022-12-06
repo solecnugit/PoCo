@@ -2,6 +2,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 
+use map_macro::map;
 use near_crypto::PublicKey;
 use near_jsonrpc_client::errors::{JsonRpcError, JsonRpcServerError};
 use near_jsonrpc_client::methods::gas_price::RpcGasPriceError;
@@ -12,12 +13,11 @@ use near_jsonrpc_client::{methods, JsonRpcClient};
 use near_jsonrpc_primitives::types::query::{QueryResponseKind, RpcQueryResponse};
 use near_primitives::types::{AccountId, Balance, BlockReference, Finality};
 use near_primitives::views::{AccessKeyView, AccountView, QueryRequest};
-use serde::de::DeserializeOwned;
-use serde::{Serialize};
-use strum::Display;
-use poco_types::types::round::RoundStatus;
 use poco_types::types::event::IndexedEvent;
-use map_macro::map;
+use poco_types::types::round::RoundStatus;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
+use strum::Display;
 
 use crate::config::PocoAgentConfig;
 
@@ -260,7 +260,11 @@ impl PocoAgent {
         Ok(response)
     }
 
-    pub async fn query_events(&self, from: u32, count: u32) -> Result<Vec<IndexedEvent>, JsonRpcError<RpcQueryError>> {
+    pub async fn query_events(
+        &self,
+        from: u32,
+        count: u32,
+    ) -> Result<Vec<IndexedEvent>, JsonRpcError<RpcQueryError>> {
         let response = self
             .call_view_function_json(
                 self.config.poco.poco_contract_account.parse().unwrap(),

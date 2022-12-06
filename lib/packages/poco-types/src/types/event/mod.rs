@@ -1,9 +1,9 @@
-use std::fmt::{Display, Formatter};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::near_bindgen;
 use near_sdk::serde::{Deserialize, Serialize, Serializer};
 use near_sdk::AccountId;
 use schemars::JsonSchema;
+use std::fmt::{Display, Formatter};
 use strum::Display;
 
 use crate::types::round::RoundId;
@@ -21,7 +21,11 @@ pub struct IndexedEvent {
 
 impl Display for IndexedEvent {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Event {{ event_id: {}, payload: {} }}", self.event_id, self.payload)
+        write!(
+            f,
+            "Event {{ event_id: {}, payload: {} }}",
+            self.event_id, self.payload
+        )
     }
 }
 

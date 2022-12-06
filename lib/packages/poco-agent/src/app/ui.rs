@@ -3,7 +3,7 @@ pub mod state;
 
 use std::io;
 use std::io::Write;
-use std::sync::atomic::AtomicBool;
+
 use std::time;
 
 use crossterm::{
@@ -43,7 +43,7 @@ impl UI {
         UI {
             state,
             receiver,
-            sender
+            sender,
         }
     }
 
