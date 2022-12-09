@@ -46,7 +46,7 @@ pub(crate) fn get_internal_command() -> Command {
                     clap::Arg::new("from")
                         .required(true)
                         .index(1)
-                        .allow_negative_numbers(false),
+                        .allow_negative_numbers(false),                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
                 )
                 .arg(
                     clap::Arg::new("count")
@@ -55,12 +55,27 @@ pub(crate) fn get_internal_command() -> Command {
                         .allow_negative_numbers(false)
                         .default_value("10"),
                 ),
+            subcommand("ipfs")
+                .about("IPFS")
+                .subcommand_required(true)
+                .subcommands(vec![
+                    subcommand("add")
+                        .about("Add file to IPFS")
+                        .arg(clap::Arg::new("file").required(true).index(1)),
+                    subcommand("cat")
+                        .about("Cat file from IPFS")
+                        .arg(clap::Arg::new("hash").required(true).index(1)),
+                ]),
         ])
 }
 
 #[derive(Debug, Display)]
 pub enum BackendCommand {
     HelpCommand(Vec<String>),
+    // Ipfs Commands
+    IpfsAddFileCommand(String),
+    IpfsCatFileCommand(String),
+    // PoCo Contract Commands
     GasPriceCommand,
     NetworkStatusCommand,
     StatusCommand,
