@@ -23,7 +23,7 @@ use crate::config::PocoAgentConfig;
 
 pub struct PocoAgent {
     config: Arc<PocoAgentConfig>,
-    rpc_client: JsonRpcClient,
+    inner: JsonRpcClient,
 }
 
 #[derive(Debug, Display)]
@@ -51,13 +51,13 @@ impl PocoAgent {
 
         let rpc_client = JsonRpcClient::with(client).connect(config.near.rpc_endpoint.as_str());
 
-        PocoAgent { config, rpc_client }
+        PocoAgent { config, inner: rpc_client }
     }
 
     pub async fn gas_price(&self) -> Result<Balance, JsonRpcError<RpcGasPriceError>> {
         let request = methods::gas_price::RpcGasPriceRequest { block_id: None };
 
-        let response = self.rpc_client.call(request).await?;
+        let response = self.inner.call(request).await?;
         let gas_price = response.gas_price;
 
         Ok(gas_price)
@@ -67,14 +67,14 @@ impl PocoAgent {
         &self,
     ) -> Result<RpcNetworkInfoResponse, JsonRpcError<RpcNetworkInfoError>> {
         let request = methods::network_info::RpcNetworkInfoRequest;
-        let response = self.rpc_client.call(request).await?;
+        let response = self.inner.call(request).await?;
 
         Ok(response)
     }
 
     pub async fn status(&self) -> Result<RpcStatusResponse, JsonRpcError<RpcStatusError>> {
         let request = methods::status::RpcStatusRequest;
-        let response = self.rpc_client.call(request).await?;
+        let response = self.inner.call(request).await?;
 
         Ok(response)
     }
@@ -88,7 +88,7 @@ impl PocoAgent {
             request: QueryRequest::ViewAccount { account_id },
         };
 
-        let response = self.rpc_client.call(request).await?;
+        let response = self.inner.call(request).await?;
 
         if let QueryResponseKind::ViewAccount(account_view) = response.kind {
             Ok(account_view)
@@ -114,7 +114,7 @@ impl PocoAgent {
             },
         };
 
-        let response = self.rpc_client.call(request).await?;
+        let response = self.inner.call(request).await?;
 
         if let QueryResponseKind::AccessKey(access_key_view) = response.kind {
             Ok(access_key_view)
@@ -154,7 +154,7 @@ impl PocoAgent {
             },
         };
 
-        let response = self.rpc_client.call(request).await?;
+        let response = self.inner.call(request).await?;
 
         Self::get_buffer_from_call_response(response)
     }
@@ -189,7 +189,7 @@ impl PocoAgent {
             },
         };
 
-        let response = self.rpc_client.call(request).await?;
+        let response = self.inner.call(request).await?;
 
         Self::get_buffer_from_call_response(response)
     }

@@ -1,8 +1,8 @@
 pub mod action;
 pub mod state;
 
-use std::io;
 use std::io::Write;
+use std::{io, sync::Arc};
 
 use std::time;
 
@@ -19,6 +19,8 @@ use tui::widgets::{Block, Borders, List, Paragraph};
 use tui::{Frame, Terminal};
 use unicode_width::UnicodeWidthStr;
 
+use crate::config::PocoAgentConfig;
+
 use self::action::UIAction;
 use self::action::UIActionEvent;
 use self::state::UIInputMode;
@@ -28,6 +30,7 @@ use super::CommandString;
 
 pub struct UI {
     state: UIState,
+    config: Arc<PocoAgentConfig>,
 
     receiver: crossbeam_channel::Receiver<UIActionEvent>,
     sender: crossbeam_channel::Sender<String>,
@@ -37,6 +40,7 @@ impl UI {
     pub fn new(
         receiver: crossbeam_channel::Receiver<UIActionEvent>,
         sender: crossbeam_channel::Sender<String>,
+        config: Arc<PocoAgentConfig>,
     ) -> Self {
         let state = UIState::new(5001);
 
@@ -44,6 +48,7 @@ impl UI {
             state,
             receiver,
             sender,
+            config,
         }
     }
 
@@ -209,7 +214,9 @@ impl UI {
 
         // padding 2: Up and Bottom Border
         let height = (chunks[0].height - 2) as usize;
-        let event_list = self.state.render_event_list(height);
+        let event_list = self
+            .state
+            .render_event_list(self.config.ui.time_format.as_str(), height);
         let logs =
             List::new(event_list).block(Block::default().borders(Borders::ALL).title(" Logs "));
 

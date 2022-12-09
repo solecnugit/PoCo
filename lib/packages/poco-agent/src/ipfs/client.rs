@@ -1,12 +1,13 @@
+use futures::TryStreamExt;
 use ipfs_api_backend_hyper::{IpfsApi, TryFromUri};
 use std::sync::Arc;
-use tokio::io::AsyncReadExt;
 use tokio_util::compat::TokioAsyncReadCompatExt;
 
 pub struct IpfsClient {
     inner: Arc<ipfs_api_backend_hyper::IpfsClient>,
 }
 
+#[derive(Debug)]
 pub enum IpfsClientError {
     InvalidUrl(String),
     IoError(std::io::Error),
@@ -45,5 +46,32 @@ impl IpfsClient {
         let file = self.inner.add_async(file).await?;
 
         Ok(file.hash)
+    }
+
+    pub async fn cat_file(&self, hash: &str) -> Result<Vec<u8>, IpfsClientError> {
+        let buffer = self
+            .inner
+            .cat(hash)
+            .map_ok(|chunk| chunk.to_vec())
+            .try_concat()
+            .await?;
+
+        Ok(buffer)
+    }
+
+    pub async fn cat_file_range(
+        &self,
+        hash: &str,
+        offset: usize,
+        length: usize,
+    ) -> Result<Vec<u8>, IpfsClientError> {
+        let buffer = self
+            .inner
+            .cat_range(hash, offset, length)
+            .map_ok(|chunk| chunk.to_vec())
+            .try_concat()
+            .await?;
+
+        Ok(buffer)
     }
 }

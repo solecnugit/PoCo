@@ -19,8 +19,10 @@ pub struct TracingEvent {
 pub enum TracingCategory {
     Contract,
     Agent,
+    Ipfs,
     Config,
 }
+
 
 pub struct UITracingLayer {
     sender: crossbeam_channel::Sender<UIActionEvent>,
