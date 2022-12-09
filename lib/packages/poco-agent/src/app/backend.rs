@@ -1,4 +1,3 @@
-use std::fmt::format;
 use std::future::Future;
 use std::sync::Arc;
 
@@ -95,7 +94,7 @@ impl Backend {
     }
 
     fn execute_ipfs_cat_file_command(&mut self, file_hash: String) {
-        self.execute_command_block(async move |sender, agent, ipfs_client, config| {
+        self.execute_command_block(async move |sender, _agent, ipfs_client, config| {
             let ipfs_client = ipfs_client.get_or(|| {
                 IpfsClient::create_ipfs_client(config.ipfs.ipfs_endpoint.as_str())
                     .map_err(|e| {
@@ -124,7 +123,7 @@ impl Backend {
     }
 
     fn execute_ipfs_add_file_command(&mut self, file_path: String) {
-        self.execute_command_block(async move |sender, agent, ipfs_client, config| {
+        self.execute_command_block(async move |sender, _agent, ipfs_client, config| {
             let ipfs_client = ipfs_client.get_or(|| {
                 IpfsClient::create_ipfs_client(config.ipfs.ipfs_endpoint.as_str())
                     .map_err(|e| {
@@ -152,7 +151,7 @@ impl Backend {
     }
 
     fn execute_query_events_command(&mut self, from: u32, count: u32) {
-        self.execute_command_block(async move |sender, agent, ipfs_client, config| {
+        self.execute_command_block(async move |sender, agent, _ipfs_client, config| {
             let agent = agent.get_or(|| PocoAgent::new(config));
 
             if let Ok(events) = agent.query_events(from, count).await {
@@ -176,7 +175,7 @@ impl Backend {
     }
 
     fn execute_count_events_command(&mut self) {
-        self.execute_command_block(async move |sender, agent, ipfs_client, config| {
+        self.execute_command_block(async move |sender, agent, _ipfs_client, config| {
             let agent = agent.get_or(|| PocoAgent::new(config));
 
             let event_count = agent.count_events().await;
@@ -194,7 +193,7 @@ impl Backend {
     }
 
     fn execute_round_status_command(&mut self) {
-        self.execute_command_block(async move |sender, agent, ipfs_client, config| {
+        self.execute_command_block(async move |sender, agent, _ipfs_client, config| {
             let agent = agent.get_or(|| PocoAgent::new(config));
 
             let round_status = agent.get_round_status().await;
@@ -212,7 +211,7 @@ impl Backend {
     }
 
     fn execute_view_account_command(&mut self, account_id: String) {
-        self.execute_command_block(async move |sender, agent, ipfs_client, config| {
+        self.execute_command_block(async move |sender, agent, _ipfs_client, config| {
             let agent = agent.get_or(|| PocoAgent::new(config));
             if let Ok(account) = account_id.parse() {
                 let account = agent.view_account(account).await;
@@ -245,7 +244,7 @@ impl Backend {
     }
 
     fn execute_status_command(&mut self) {
-        self.execute_command_block(async move |sender, agent, ipfs_client, config| {
+        self.execute_command_block(async move |sender, agent, _ipfs_client, config| {
             let agent = agent.get_or(|| PocoAgent::new(config));
             let status = agent.status().await;
 
@@ -293,7 +292,7 @@ impl Backend {
     }
 
     fn execute_network_status_command(&mut self) {
-        self.execute_command_block(async move |sender, agent, ipfs_client, config| {
+        self.execute_command_block(async move |sender, agent, _ipfs_client, config| {
             let agent = agent.get_or(|| PocoAgent::new(config));
             let network_status = agent.network_status().await;
 
@@ -320,7 +319,7 @@ impl Backend {
     }
 
     fn execute_gas_price_command(&mut self) {
-        self.execute_command_block(async move |sender, agent, ipfs_client, config| {
+        self.execute_command_block(async move |sender, agent, _ipfs_client, config| {
             let agent = agent.get_or(|| PocoAgent::new(config.clone()));
             let gas_price = agent.gas_price().await;
 

@@ -51,7 +51,10 @@ impl PocoAgent {
 
         let rpc_client = JsonRpcClient::with(client).connect(config.near.rpc_endpoint.as_str());
 
-        PocoAgent { config, inner: rpc_client }
+        PocoAgent {
+            config,
+            inner: rpc_client,
+        }
     }
 
     pub async fn gas_price(&self) -> Result<Balance, JsonRpcError<RpcGasPriceError>> {

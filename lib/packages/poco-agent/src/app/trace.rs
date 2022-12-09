@@ -23,7 +23,6 @@ pub enum TracingCategory {
     Config,
 }
 
-
 pub struct UITracingLayer {
     sender: crossbeam_channel::Sender<UIActionEvent>,
 }

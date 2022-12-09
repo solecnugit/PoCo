@@ -7,9 +7,7 @@ pub mod config;
 pub mod ipfs;
 
 use std::io;
-use std::sync::Arc;
 
-use futures::task::UnsafeFutureObj;
 use time::{format_description, UtcOffset};
 use tracing::Level;
 use tracing_subscriber::fmt::time::OffsetTime;
