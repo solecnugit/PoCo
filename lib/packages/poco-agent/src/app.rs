@@ -18,6 +18,7 @@ use self::{
 type CommandString = String;
 
 pub struct App {
+    config: Arc<PocoAgentConfig>,
     ui: UI,
     ui_channel: (
         crossbeam_channel::Sender<UIActionEvent>,
@@ -31,14 +32,21 @@ pub struct App {
 }
 
 impl App {
-    pub fn new() -> App {
+    pub fn new(config: PocoAgentConfig) -> App {
         let (ui_action_sender, ui_action_receiver) = crossbeam_channel::unbounded();
         let (ui_command_sender, ui_command_receiver) = crossbeam_channel::unbounded();
+        let config = Arc::new(config);
+
         App {
-            ui: UI::new(ui_action_receiver.clone(), ui_command_sender.clone()),
+            ui: UI::new(
+                ui_action_receiver.clone(),
+                ui_command_sender.clone(),
+                config.clone(),
+            ),
             ui_channel: (ui_action_sender, ui_action_receiver),
             backend_channel: (ui_command_sender, ui_command_receiver),
             join_handles: Vec::new(),
+            config,
         }
     }
 
@@ -56,20 +64,8 @@ impl App {
         }));
     }
 
-    pub fn run(&mut self, config: Arc<PocoAgentConfig>) -> Result<(), io::Error> {
+    pub fn run(&mut self) -> Result<(), io::Error> {
         self.setup_panic_hook();
-
-        tracing::event!(
-            Level::INFO,
-            message = "start connecting to near node",
-            category = format!("{:?}", TracingCategory::Agent)
-        );
-
-        tracing::event!(
-            Level::INFO,
-            message = "finish connecting to near node",
-            category = format!("{:?}", TracingCategory::Agent)
-        );
 
         tracing::event!(
             Level::INFO,
@@ -78,7 +74,7 @@ impl App {
         );
 
         let backend = Backend::new(
-            config,
+            self.config.clone(),
             self.backend_channel.1.clone(),
             self.ui_channel.0.clone(),
         );

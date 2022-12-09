@@ -6,14 +6,29 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AppConfig {
     pub verbose: bool,
-    pub log_dir: String,
-    pub log_prefix: String,
     pub connection_timeout: u64,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct LogConfig {
+    pub directory: String,
+    pub prefix: String,
+    pub time_format: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct UIConfig {
+    pub time_format: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct NearConfig {
     pub rpc_endpoint: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct IpfsConfig {
+    pub ipfs_endpoint: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -24,6 +39,9 @@ pub struct PocoConfig {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PocoAgentConfig {
     pub app: AppConfig,
+    pub log: LogConfig,
+    pub ui: UIConfig,
+    pub ipfs: IpfsConfig,
     pub near: NearConfig,
     pub poco: PocoConfig,
 }

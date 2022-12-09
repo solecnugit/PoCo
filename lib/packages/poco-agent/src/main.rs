@@ -4,10 +4,12 @@
 pub mod agent;
 pub mod app;
 pub mod config;
+pub mod ipfs;
 
 use std::io;
 use std::sync::Arc;
 
+use futures::task::UnsafeFutureObj;
 use time::{format_description, UtcOffset};
 use tracing::Level;
 use tracing_subscriber::fmt::time::OffsetTime;
@@ -18,15 +20,15 @@ use crate::app::trace::TracingCategory;
 use crate::app::App;
 
 fn main() -> Result<(), io::Error> {
-    let config = Arc::new(config::parse().get_config().expect("Failed to load config"));
+    let config = config::parse().get_config().expect("Failed to load config");
     let log_file_appender = tracing_appender::rolling::daily(
-        config.app.log_dir.to_string(),
-        config.app.log_prefix.to_string(),
+        config.log.directory.to_string(),
+        config.log.prefix.to_string(),
     );
     let (non_blocking_appender, _guard) = tracing_appender::non_blocking(log_file_appender);
-    let format = "[year]-[month]-[day] [hour]:[minute]:[second].[subsecond digits:3]";
+    let format = Box::leak(Box::new(config.log.time_format.to_string()));
 
-    let mut app = App::new();
+    let mut app = App::new(config);
     // Init Tracing
     tracing_subscriber::registry()
         .with(
@@ -38,7 +40,7 @@ fn main() -> Result<(), io::Error> {
                 .with_writer(non_blocking_appender)
                 .with_timer(OffsetTime::new(
                     UtcOffset::current_local_offset().unwrap(),
-                    format_description::parse(format).unwrap(),
+                    format_description::parse(format.as_str()).unwrap(),
                 )),
         )
         // .with(tracing_subscriber::EnvFilter::from_default_env())
@@ -48,16 +50,16 @@ fn main() -> Result<(), io::Error> {
     tracing::event!(
         Level::INFO,
         message = "start loading poco-agent config",
-        category = format!("{:?}", TracingCategory::Agent)
+        category = TracingCategory::Agent.to_string()
     );
 
     tracing::event!(
         Level::INFO,
         message = "finish loading poco-agent config",
-        category = format!("{:?}", TracingCategory::Agent)
+        category = TracingCategory::Agent.to_string()
     );
 
-    app.run(config)?;
+    app.run()?;
     app.join();
 
     Ok(())

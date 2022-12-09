@@ -31,9 +31,9 @@ pub enum UIAction {
 }
 
 impl UIActionEvent {
-    pub fn to_spans(&self) -> Vec<Spans> {
+    pub fn render_spans(&self, time_format: &str) -> Vec<Spans> {
         let time_span = Span::styled(
-            self.0.format("%Y-%m-%d %H:%M:%S").to_string(),
+            self.0.format(time_format).to_string(),
             Style::default().fg(Color::White),
         );
 
@@ -71,6 +71,7 @@ impl UIActionEvent {
                     TracingCategory::Contract => Color::LightYellow,
                     TracingCategory::Agent => Color::LightBlue,
                     TracingCategory::Config => Color::LightMagenta,
+                    TracingCategory::Ipfs => Color::LightCyan,
                 };
 
                 let category_span = Span::styled(

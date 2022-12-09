@@ -1,8 +1,14 @@
 [app]
 verbose = true
-log_dir = "log/"
-log_prefix = "poco.log"
 connection_timeout = 1000
+
+[log]
+directory = "log/"
+prefix = "poco.log"
+time_format = "[year]-[month]-[day] [hour]:[minute]:[second].[subsecond digits:3]"
+
+[ui]
+time_format = "%H:%M:%S"
 
 [near]
 rpc_endpoint = "http://49.52.27.50:8332"
