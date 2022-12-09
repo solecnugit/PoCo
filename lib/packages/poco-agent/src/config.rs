@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AppConfig {
     pub verbose: bool,
+    pub database_path: String,
     pub connection_timeout: u64,
 }
 

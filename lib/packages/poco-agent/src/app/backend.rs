@@ -1,6 +1,7 @@
 use std::future::Future;
 use std::sync::Arc;
 
+use futures::lock::Mutex;
 use thread_local::ThreadLocal;
 use tracing::Level;
 
@@ -30,6 +31,7 @@ pub struct Backend {
     receiver: crossbeam_channel::Receiver<String>,
     sender: crossbeam_channel::Sender<UIActionEvent>,
     async_runtime: Box<tokio::runtime::Runtime>,
+    db_connection: Arc<Mutex<rusqlite::Connection>>,
     agent: Arc<ThreadLocal<PocoAgent>>,
     ipfs_client: Arc<ThreadLocal<IpfsClient>>,
 }
@@ -45,11 +47,17 @@ impl Backend {
             .build()
             .unwrap();
 
+        let db_connection = Arc::new(Mutex::new(
+            rusqlite::Connection::open(config.app.database_path.clone())
+                .expect("Failed to open database connection"),
+        ));
+
         Backend {
             config,
             receiver,
             sender,
             async_runtime: Box::new(runtime),
+            db_connection,
             agent: Arc::new(ThreadLocal::new()),
             ipfs_client: Arc::new(ThreadLocal::new()),
         }

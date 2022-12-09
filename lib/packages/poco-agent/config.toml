@@ -1,5 +1,6 @@
 [app]
 verbose = true
+database_path = "poco.db"
 connection_timeout = 1000
 
 [log]
