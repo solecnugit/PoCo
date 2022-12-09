@@ -73,8 +73,8 @@ pub(crate) fn get_internal_command() -> Command {
 pub enum BackendCommand {
     HelpCommand(Vec<String>),
     // Ipfs Commands
-    IpfsAddFileCommand(String),
-    IpfsCatFileCommand(String),
+    IpfsAddFileCommand { file_path: String },
+    IpfsCatFileCommand { file_hash: String },
     // PoCo Contract Commands
     GasPriceCommand,
     NetworkStatusCommand,

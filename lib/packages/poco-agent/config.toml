@@ -7,5 +7,8 @@ connection_timeout = 1000
 [near]
 rpc_endpoint = "http://49.52.27.50:8332"
 
+[ipfs]
+ipfs_endpoint = "http://49.52.27.50:5001"
+
 [poco]
 poco_contract_account = "dev-1669615052604-46668178894901"

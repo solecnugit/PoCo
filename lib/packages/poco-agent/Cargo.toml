@@ -30,7 +30,9 @@ tui = "0.19.0"
 crossterm = "0.25"
 unicode-width = "0.1"
 
-tokio = { version = "1.21.2", features = ["rt-multi-thread", "time", "sync", "signal"] }
+tokio = { version = "1.21.2", features = ["rt-multi-thread", "time", "sync", "signal", "fs", "io-util"] }
+tokio-util = { version = "0.7.4", features = ["compat"] }
+futures = "0.3.25"
 
 reqwest = "0.11.13"
 
@@ -38,6 +40,8 @@ near-jsonrpc-client = "0.4.1"
 near-jsonrpc-primitives = "0.15.0"
 near-crypto = "0.15.0"
 near-primitives = "0.15.0"
+
+ipfs-api-backend-hyper = { version = "0.5.0", features = ["with-send-sync"] }
 
 crossbeam-channel = "0.5.6"
 
