@@ -1,0 +1,41 @@
+{
+  "input": {
+    "type": "IPFS",
+    "hash": "xxxxxxxx"
+  },
+  "output":{
+    "type": "IPFS"
+  },
+  "requirements": [
+    {
+      "property": "stake",
+      "operator": "GREATER_THAN",
+      "value": 100
+    }
+  ],
+  "offer": [
+    {
+      "bounty": 100,
+      "requirements": []
+    }
+  ],
+  "config": {
+    "type": "MEDIA_TRANSCODING",
+    "source": {
+      "video": {
+        "codec": "H.264"
+      },
+      "audio": {
+        "codec": "AAC"
+      }
+    },
+    "target": {
+      "video": {
+        "codec": "H.265"
+      },
+      "audio": {
+        "codec": "AAC"
+      }
+    }
+  }
+}
