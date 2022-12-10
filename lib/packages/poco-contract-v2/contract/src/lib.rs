@@ -12,8 +12,8 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{near_bindgen, AccountId};
 use poco_types::types::event::{Events, IndexedEvent};
 use poco_types::types::round::{RoundId, RoundStatus};
-use poco_types::types::task::config::TaskConfig;
 use poco_types::types::task::id::TaskId;
+use poco_types::types::task::TaskConfig;
 use poco_types::types::user::UserProfile;
 
 #[near_bindgen]
@@ -94,7 +94,8 @@ impl Contract {
     pub fn set_user_endpoint(&mut self, endpoint: String) {
         let account = near_sdk::env::signer_account_id();
 
-        self.user_manager.set_user_endpoint(&account, &endpoint);
+        self.user_manager
+            .set_user_endpoint(&account, endpoint.clone());
         self.event_bus.emit(Events::UserProfileFieldUpdateEvent {
             user_id: account,
             field: "endpoint".to_string(),
@@ -103,7 +104,9 @@ impl Contract {
     }
 
     pub fn get_user_endpoint(&self, account: AccountId) -> Option<String> {
-        self.user_manager.get_user_endpoint(&account)
+        self.user_manager
+            .get_user_endpoint(&account)
+            .map(|e| e.to_string())
     }
 
     pub fn publish_task(&mut self, config: TaskConfig) -> TaskId {
@@ -114,13 +117,14 @@ impl Contract {
         );
 
         let owner = near_sdk::env::signer_account_id();
-        let task_id = self
-            .task_manager
-            .publish_task(self.get_round_id(), owner, config.clone());
+        let current_round_id = self.get_round_id();
+
+        let (task_id, config) =
+            self.task_manager
+                .publish_task(current_round_id, owner, config.clone());
 
         self.event_bus.emit(Events::NewTaskEvent {
-            round_id: self.round_manager.get_round_id(),
-            task_nonce: task_id.get_task_nonce(),
+            task_id: task_id.clone(),
             task_config: config,
         });
 

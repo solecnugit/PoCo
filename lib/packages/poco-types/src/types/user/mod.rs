@@ -1,85 +1,73 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::LazyOption;
 use near_sdk::serde::Serialize;
-use near_sdk::store::Vector;
+use near_sdk::store::{LazyOption, UnorderedMap};
 use near_sdk::AccountId;
 use schemars::JsonSchema;
 
+use crate::types::uint::U256;
+
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct InternalUserProfile {
-    qos: Vector<u64>,
+    props: UnorderedMap<String, U256>,
     endpoint: LazyOption<String>,
 }
 
 #[derive(Serialize, JsonSchema)]
 #[serde(crate = "near_sdk::serde")]
-pub struct UserProfile {
-    qos: Vec<u64>,
-    endpoint: Option<String>,
+pub struct UserProperty<'a> {
+    pub key: &'a str,
+    pub value: &'a U256,
+}
+
+#[derive(Serialize, JsonSchema)]
+#[serde(crate = "near_sdk::serde")]
+pub struct UserProfile<'a> {
+    props: Vec<UserProperty<'a>>,
+    endpoint: &'a Option<String>,
 }
 
 impl InternalUserProfile {
     #[inline]
     pub fn new(account: &AccountId) -> Self {
         let prefix = account.to_string();
-        let mut qos = Vector::new(format!("{}-qos-vec", prefix).as_bytes().to_vec());
-
-        for _ in 0..64 {
-            qos.push(0u64);
-        }
+        let props = UnorderedMap::new(format!("{}:props", prefix).as_bytes().to_vec());
 
         InternalUserProfile {
-            qos,
-            endpoint: LazyOption::new(format!("{}-endpoint", prefix).as_bytes().to_vec(), None),
+            props,
+            endpoint: LazyOption::new(format!("{}:endpoint", prefix).as_bytes().to_vec(), None),
         }
     }
 
     #[inline]
-    pub fn get_endpoint(&self) -> Option<String> {
+    pub fn get_endpoint(&self) -> &Option<String> {
         self.endpoint.get()
     }
 
     #[inline]
-    pub fn set_endpoint(&mut self, endpoint: &String) {
+    pub fn set_endpoint(&mut self, endpoint: String) {
         self.endpoint.replace(endpoint);
     }
 
     #[inline]
-    pub fn get_qos_vec(&self) -> &Vector<u64> {
-        &self.qos
+    pub fn get_prop(&self, name: &str) -> Option<&U256> {
+        self.props.get(name)
     }
 
     #[inline]
-    pub fn get_qos_slot(&self, slot: u32) -> Option<u64> {
-        self.qos.get(slot).cloned()
-    }
-
-    #[inline]
-    pub fn set_qos_slot(&mut self, slot: u32, value: u64) {
-        self.qos.replace(slot, value);
+    pub fn set_prop(&mut self, name: &str, value: &U256) {
+        self.props.insert(name.to_string(), *value);
     }
 }
 
-impl Default for UserProfile {
-    fn default() -> Self {
-        Self {
-            qos: Default::default(),
-            endpoint: Default::default(),
-        }
-    }
-}
-
-impl From<&InternalUserProfile> for UserProfile {
-    fn from(profile: &InternalUserProfile) -> Self {
+impl<'a, 'b: 'a> From<&'b InternalUserProfile> for UserProfile<'a> {
+    fn from(profile: &'b InternalUserProfile) -> Self {
         UserProfile {
-            qos: profile.qos.iter().map(|e| e.clone()).collect(),
+            props: profile
+                .props
+                .iter()
+                .map(|(key, value)| UserProperty { key, value })
+                .collect(),
             endpoint: profile.endpoint.get(),
         }
-    }
-}
-
-impl From<InternalUserProfile> for UserProfile {
-    fn from(profile: InternalUserProfile) -> Self {
-        (&profile).into()
     }
 }

@@ -1,18 +1,18 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::near_bindgen;
-use near_sdk::serde::{Deserialize, Serialize, Serializer};
+use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::AccountId;
 use schemars::JsonSchema;
 use std::fmt::{Display, Formatter};
 use strum::Display;
 
 use crate::types::round::RoundId;
-use crate::types::task::config::TaskConfig;
-use crate::types::task::TaskNonce;
+use crate::types::task::id::TaskId;
+use crate::types::task::InternalTaskConfig;
 
 pub type EventNonce = u32;
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, JsonSchema)]
+#[derive(Serialize, Deserialize, JsonSchema)]
 #[serde(crate = "near_sdk::serde")]
 pub struct IndexedEvent {
     pub event_id: u32,
@@ -37,9 +37,8 @@ pub enum Events {
 
     #[event_version("0.0.1")]
     NewTaskEvent {
-        round_id: RoundId,
-        task_nonce: TaskNonce,
-        task_config: TaskConfig,
+        task_id: TaskId,
+        task_config: InternalTaskConfig,
     },
 
     #[event_version("0.0.1")]

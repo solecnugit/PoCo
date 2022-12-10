@@ -11,6 +11,7 @@ pub type RoundDuration = u64;
     BorshDeserialize, BorshSerialize, Serialize, Deserialize, JsonSchema, Debug, PartialEq, Display,
 )]
 #[serde(crate = "near_sdk::serde")]
+#[serde(rename_all = "UPPERCASE")]
 pub enum RoundStatus {
     Running,
     Pending,

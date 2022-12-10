@@ -11,20 +11,17 @@ pub struct UserManager {
 impl UserManager {
     pub fn new() -> Self {
         UserManager {
-            user_map: LookupMap::new(b"usermanager-usermap".to_vec()),
+            user_map: LookupMap::new(b"user-manager:usermap".to_vec()),
         }
     }
 
     #[inline]
     pub fn get_user_profile(&self, account: &AccountId) -> UserProfile {
-        self.user_map
-            .get(account)
-            .map(|e| e.into())
-            .unwrap_or_default()
+        self.user_map.get(account).map(|e| e.into()).unwrap()
     }
 
     #[inline]
-    pub fn set_user_endpoint(&mut self, account: &AccountId, endpoint: &String) {
+    pub fn set_user_endpoint(&mut self, account: &AccountId, endpoint: String) {
         if self.user_map.contains_key(&account) {
             self.user_map
                 .get_mut(&account)
@@ -40,10 +37,9 @@ impl UserManager {
     }
 
     #[inline]
-    pub fn get_user_endpoint(&self, account: &AccountId) -> Option<String> {
+    pub fn get_user_endpoint(&self, account: &AccountId) -> Option<&str> {
         self.user_map
             .get(account)
-            .map(|e| e.get_endpoint())
-            .flatten()
+            .and_then(|e| e.get_endpoint().as_ref().map(|e| e.as_str()))
     }
 }

@@ -5,7 +5,9 @@ use near_sdk::serde::de::{Unexpected, Visitor};
 use near_sdk::serde::{Deserialize, Serialize};
 use schemars::JsonSchema;
 
-#[derive(BorshDeserialize, BorshSerialize, JsonSchema, PartialEq, PartialOrd, Hash)]
+#[derive(
+    BorshDeserialize, BorshSerialize, JsonSchema, PartialEq, PartialOrd, Hash, Clone, Debug,
+)]
 pub struct TaskId(RoundId, TaskNonce);
 
 impl Serialize for TaskId {
@@ -52,7 +54,7 @@ impl TryFrom<&str> for TaskId {
     type Error = &'static str;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let index = value.find("/");
+        let index = value.find('/');
 
         if let Some(index) = index {
             let (round_id, task_id) = value.split_at(index);

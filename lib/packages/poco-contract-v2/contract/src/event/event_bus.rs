@@ -11,7 +11,7 @@ pub struct EventBus {
 impl EventBus {
     pub fn new() -> Self {
         EventBus {
-            events: Vector::new(b"events".to_vec()),
+            events: Vector::new(b"event-bus:events".to_vec()),
         }
     }
 
@@ -25,6 +25,11 @@ impl EventBus {
     #[inline]
     pub fn len(&self) -> u32 {
         self.events.len()
+    }
+
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.events.is_empty()
     }
 
     #[inline]
