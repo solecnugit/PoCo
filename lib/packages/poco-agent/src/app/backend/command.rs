@@ -1,4 +1,5 @@
 use clap::Command;
+use near_primitives::types::AccountId;
 use strum::Display;
 
 #[inline]
@@ -55,6 +56,12 @@ pub(crate) fn get_internal_command() -> Command {
                         .allow_negative_numbers(false)
                         .default_value("10"),
                 ),
+            subcommand("get-user-endpoint")
+                .about("Get User Endpoint")
+                .arg(clap::Arg::new("account-id").required(false).index(1)),
+            subcommand("set-user-endpoint")
+                .about("Set User Endpoint")
+                .arg(clap::Arg::new("endpoint").required(true).index(1)),
             subcommand("ipfs")
                 .about("IPFS")
                 .subcommand_required(true)
@@ -75,18 +82,22 @@ pub enum BackendCommand {
     // Ipfs Commands
     IpfsAddFileCommand { file_path: String },
     IpfsCatFileCommand { file_hash: String },
-    // PoCo Contract Commands
+    // Near Network
     GasPriceCommand,
     NetworkStatusCommand,
     StatusCommand,
-    ViewAccountCommand { account_id: String },
+    ViewAccountCommand { account_id: AccountId },
+    // PoCo Contract Commands
     RoundStatusCommand,
     CountEventsCommand,
     QueryEventsCommand { from: u32, count: u32 },
+    GetUserEndpointCommand { account_id: Option<AccountId> },
+    SetUserEndpointCommand { endpoint: String },
 }
 
 #[derive(Debug, Display)]
 pub enum ParseBackendCommandError {
     UnknownCommand(String),
     MissingCommandParameter(String),
+    InvalidCommandParameter(String),
 }

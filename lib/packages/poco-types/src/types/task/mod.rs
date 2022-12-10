@@ -5,12 +5,12 @@ use crate::types::task::config::media::{
     MediaTranscodingSourceConfig, MediaTranscodingTargetConfig,
 };
 use crate::types::task::id::TaskId;
+use crate::types::uint::U256;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::AccountId;
 use schemars::JsonSchema;
 use std::fmt::Debug;
-use crate::types::uint::U256;
 
 pub type TaskNonce = u32;
 

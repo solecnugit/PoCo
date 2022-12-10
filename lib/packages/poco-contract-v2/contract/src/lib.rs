@@ -103,7 +103,9 @@ impl Contract {
         })
     }
 
-    pub fn get_user_endpoint(&self, account: AccountId) -> Option<String> {
+    pub fn get_user_endpoint(&self, account_id: Option<AccountId>) -> Option<String> {
+        let account = account_id.unwrap_or(near_sdk::env::signer_account_id());
+
         self.user_manager
             .get_user_endpoint(&account)
             .map(|e| e.to_string())

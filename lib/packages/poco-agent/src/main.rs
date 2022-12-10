@@ -37,7 +37,8 @@ fn main() -> Result<(), io::Error> {
                 .with_ansi(false)
                 .with_writer(non_blocking_appender)
                 .with_timer(OffsetTime::new(
-                    UtcOffset::current_local_offset().unwrap_or(UtcOffset::from_hms(8, 0, 0).unwrap()),
+                    UtcOffset::current_local_offset()
+                        .unwrap_or(UtcOffset::from_hms(8, 0, 0).unwrap()),
                     format_description::parse(format.as_str()).unwrap(),
                 )),
         )
