@@ -214,9 +214,10 @@ impl UI {
 
         // padding 2: Up and Bottom Border
         let height = (chunks[0].height - 2) as usize;
+        let width = (chunks[0].width - 2) as usize;
         let event_list = self
             .state
-            .render_event_list(self.config.ui.time_format.as_str(), height);
+            .render_event_list(self.config.ui.time_format.as_str(), width, height);
         let logs =
             List::new(event_list).block(Block::default().borders(Borders::ALL).title(" Logs "));
 

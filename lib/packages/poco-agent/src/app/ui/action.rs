@@ -4,6 +4,7 @@ use tui::{
     style::{Color, Style},
     text::{Span, Spans},
 };
+use unicode_width::UnicodeWidthStr;
 
 use crate::app::trace::{TracingCategory, TracingEvent};
 
@@ -31,27 +32,58 @@ pub enum UIAction {
 }
 
 impl UIActionEvent {
-    pub fn render_spans(&self, time_format: &str) -> Vec<Spans> {
-        let time_span = Span::styled(
-            self.0.format(time_format).to_string(),
-            Style::default().fg(Color::White),
-        );
+    fn render_wrapped_string<'a>(
+        &'a self,
+        time_string: String,
+        max_width: usize,
+        string: &'a str,
+    ) -> Vec<Spans<'a>> {
+        let padding_width = time_string.width();
+
+        let mut spans = vec![vec![]];
+
+        spans[0].push(Span::styled(time_string, Style::default().fg(Color::White)));
+        spans[0].push(Span::raw(" "));
+
+        let max_width = max_width - padding_width - 1;
+        let mut current_width = 0;
+
+        for word in string.split_whitespace() {
+            if current_width + word.width() > max_width {
+                spans.push(vec![Span::styled(
+                    " ".repeat(padding_width + 1),
+                    Style::default().fg(Color::White),
+                )]);
+
+                current_width = 0;
+            }
+
+            let idx = spans.len() - 1;
+
+            spans[idx].push(Span::raw(word));
+            spans[idx].push(Span::raw(" "));
+
+            current_width += word.width() + 1;
+        }
+
+        spans.into_iter().map(|e| Spans::from(e)).collect()
+    }
+
+    pub fn render_spans(&self, max_width: usize, time_format: &str) -> Vec<Spans> {
+        let time_string = self.0.format(time_format).to_string();
+        let max_width = max_width - time_string.width() - 1;
+
+        let time_span = Span::styled(time_string.clone(), Style::default().fg(Color::White));
 
         match &self.1 {
-            UIAction::LogString(string) => vec![Spans::from(vec![
-                time_span,
-                Span::raw(" "),
-                Span::styled(string, Style::default().fg(Color::White)),
-            ])],
+            UIAction::LogString(string) => {
+                self.render_wrapped_string(time_string, max_width, string.as_str())
+            }
 
             UIAction::LogMultipleString(strings) => strings
                 .iter()
-                .map(|e| {
-                    Spans::from(vec![
-                        time_span.clone(),
-                        Span::raw(" "),
-                        Span::styled(e, Style::default().fg(Color::White)),
-                    ])
+                .flat_map(|e| {
+                    self.render_wrapped_string(time_string.clone(), max_width, e.as_str())
                 })
                 .collect(),
 
