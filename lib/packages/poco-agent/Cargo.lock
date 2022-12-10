@@ -2073,6 +2073,7 @@ dependencies = [
  "serde",
  "serde_json",
  "strum",
+ "thiserror",
  "thread_local",
  "time 0.3.17",
  "tokio",
