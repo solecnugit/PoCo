@@ -39,11 +39,11 @@ impl UIState {
         }
     }
 
-    pub fn render_event_list(&mut self, time_format: &str, height: usize) -> Vec<ListItem> {
+    pub fn render_event_list(&mut self, time_format: &str, width: usize, height: usize) -> Vec<ListItem> {
         let items = self
             .internal_event
             .iter()
-            .flat_map(|e| e.render_spans(time_format))
+            .flat_map(|e| e.render_spans(width, time_format))
             .map(|e| ListItem::new(e))
             .collect::<Vec<ListItem>>();
 

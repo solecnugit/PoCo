@@ -25,6 +25,8 @@ pub struct UIConfig {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct NearConfig {
     pub rpc_endpoint: String,
+    pub signer_account_id: String,
+    pub signer_secret_key: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

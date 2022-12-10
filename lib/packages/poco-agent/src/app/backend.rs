@@ -2,6 +2,7 @@ use std::future::Future;
 use std::sync::Arc;
 
 use futures::lock::Mutex;
+use near_primitives::types::AccountId;
 use thread_local::ThreadLocal;
 use tracing::Level;
 
@@ -11,10 +12,11 @@ use crate::app::backend::command::BackendCommand::{
 };
 use crate::app::backend::command::{
     BackendCommand::{
-        GasPriceCommand, HelpCommand, IpfsAddFileCommand, IpfsCatFileCommand, NetworkStatusCommand,
-        StatusCommand, ViewAccountCommand,
+        GasPriceCommand, GetUserEndpointCommand, HelpCommand, IpfsAddFileCommand,
+        IpfsCatFileCommand, NetworkStatusCommand, SetUserEndpointCommand, StatusCommand,
+        ViewAccountCommand,
     },
-    ParseBackendCommandError::{MissingCommandParameter, UnknownCommand},
+    ParseBackendCommandError::{InvalidCommandParameter, MissingCommandParameter, UnknownCommand},
 };
 use crate::app::trace::TracingCategory;
 use crate::config::PocoAgentConfig;
@@ -96,6 +98,10 @@ impl Backend {
             RoundStatusCommand => self.execute_round_status_command(),
             CountEventsCommand => self.execute_count_events_command(),
             QueryEventsCommand { from, count } => self.execute_query_events_command(from, count),
+            GetUserEndpointCommand { account_id } => {
+                self.execute_get_user_endpoint_command(account_id)
+            }
+            SetUserEndpointCommand { endpoint } => self.execute_set_user_endpoint_command(endpoint),
             IpfsAddFileCommand { file_path } => self.execute_ipfs_add_file_command(file_path),
             IpfsCatFileCommand { file_hash } => self.execute_ipfs_cat_file_command(file_hash),
         }
@@ -158,26 +164,81 @@ impl Backend {
         });
     }
 
+    fn execute_set_user_endpoint_command(&mut self, endpoint: String) {
+        self.execute_command_block(async move |sender, agent, _ipfs_client, config| {
+            let agent = agent.get_or(|| PocoAgent::new(config));
+
+            match agent.set_user_endpoint(endpoint.as_str()).await {
+                Ok(_) => {
+                    sender
+                        .send(
+                            UIAction::LogString(format!("Set user endpoint to {}", endpoint))
+                                .into(),
+                        )
+                        .unwrap();
+                }
+                Err(e) => {
+                    sender
+                        .send(
+                            UIAction::LogString(format!("Failed to set user endpoint: {:?}", e))
+                                .into(),
+                        )
+                        .unwrap();
+                }
+            }
+        })
+    }
+
+    fn execute_get_user_endpoint_command(&mut self, account_id: Option<AccountId>) {
+        self.execute_command_block(async move |sender, agent, _ipfs_client, config| {
+            let agent = agent.get_or(|| PocoAgent::new(config));
+
+            match agent.get_user_endpoint(account_id).await {
+                Ok(endpoint) => {
+                    sender
+                        .send(UIAction::LogString(format!("Endpoint: {}", endpoint)).into())
+                        .unwrap();
+                }
+                Err(e) => {
+                    sender
+                        .send(UIAction::LogString("Failed to get user endpoint".to_string()).into())
+                        .unwrap();
+
+                    sender
+                        .send(UIAction::LogString(format!("Error: {}", e)).into())
+                        .unwrap();
+                }
+            }
+        })
+    }
+
     fn execute_query_events_command(&mut self, from: u32, count: u32) {
         self.execute_command_block(async move |sender, agent, _ipfs_client, config| {
             let agent = agent.get_or(|| PocoAgent::new(config));
 
-            if let Ok(events) = agent.query_events(from, count).await {
-                if events.is_empty() {
-                    sender
-                        .send(UIAction::LogString("No events found".to_string()).into())
-                        .unwrap();
-                } else {
-                    for event in events {
+            match agent.query_events(from, count).await {
+                Ok(events) => {
+                    if events.is_empty() {
                         sender
-                            .send(UIAction::LogString(format!("Event: {}", event)).into())
+                            .send(UIAction::LogString("No events found".to_string()).into())
                             .unwrap();
+                    } else {
+                        for event in events {
+                            sender
+                                .send(UIAction::LogString(format!("Event: {}", event)).into())
+                                .unwrap();
+                        }
                     }
                 }
-            } else {
-                sender
-                    .send(UIAction::LogString("Failed to query events".to_string()).into())
-                    .unwrap();
+                Err(e) => {
+                    sender
+                        .send(UIAction::LogString("Failed to query events".to_string()).into())
+                        .unwrap();
+
+                    sender
+                        .send(UIAction::LogString(format!("Error: {}", e)).into())
+                        .unwrap();
+                }
             }
         })
     }
@@ -186,16 +247,21 @@ impl Backend {
         self.execute_command_block(async move |sender, agent, _ipfs_client, config| {
             let agent = agent.get_or(|| PocoAgent::new(config));
 
-            let event_count = agent.count_events().await;
+            match agent.count_events().await {
+                Ok(event_count) => {
+                    sender
+                        .send(UIAction::LogString(format!("Total Events: {}", event_count)).into())
+                        .unwrap();
+                }
+                Err(e) => {
+                    sender
+                        .send(UIAction::LogString("Failed to get count events".to_string()).into())
+                        .unwrap();
 
-            if let Ok(event_count) = event_count {
-                sender
-                    .send(UIAction::LogString(format!("Total Events: {}", event_count)).into())
-                    .unwrap();
-            } else {
-                sender
-                    .send(UIAction::LogString("Failed to get count events".to_string()).into())
-                    .unwrap();
+                    sender
+                        .send(UIAction::LogString(format!("Error: {}", e)).into())
+                        .unwrap();
+                }
             }
         })
     }
@@ -204,31 +270,36 @@ impl Backend {
         self.execute_command_block(async move |sender, agent, _ipfs_client, config| {
             let agent = agent.get_or(|| PocoAgent::new(config));
 
-            let round_status = agent.get_round_status().await;
+            match agent.get_round_status().await {
+                Ok(round_status) => {
+                    sender
+                        .send(UIAction::LogString(format!("Round Status: {}", round_status)).into())
+                        .unwrap();
+                }
+                Err(e) => {
+                    sender
+                        .send(UIAction::LogString("Failed to get round status".to_string()).into())
+                        .unwrap();
 
-            if let Ok(round_status) = round_status {
-                sender
-                    .send(UIAction::LogString(format!("Round Status: {}", round_status)).into())
-                    .unwrap();
-            } else {
-                sender
-                    .send(UIAction::LogString("Failed to get round status".to_string()).into())
-                    .unwrap();
+                    sender
+                        .send(UIAction::LogString(format!("Error: {}", e)).into())
+                        .unwrap();
+                }
             }
         })
     }
 
-    fn execute_view_account_command(&mut self, account_id: String) {
+    fn execute_view_account_command(&mut self, account_id: AccountId) {
         self.execute_command_block(async move |sender, agent, _ipfs_client, config| {
             let agent = agent.get_or(|| PocoAgent::new(config));
-            if let Ok(account) = account_id.parse() {
-                let account = agent.view_account(account).await;
+            let account_id_in_string = account_id.to_string();
 
-                if let Ok(account) = account {
+            match agent.view_account(account_id).await {
+                Ok(account) => {
                     sender
                         .send(
                             UIAction::LogMultipleString(vec![
-                                format!("Account ID: {}", account_id),
+                                format!("Account ID: {}", account_id_in_string),
                                 format!("Amount: {}", account.amount),
                                 format!("Locked: {}", account.locked),
                                 format!("Code Hash: {}", account.code_hash),
@@ -238,15 +309,16 @@ impl Backend {
                             .into(),
                         )
                         .unwrap();
-                } else {
+                }
+                Err(e) => {
                     sender
                         .send(UIAction::LogString("Failed to get account".to_string()).into())
                         .unwrap();
+
+                    sender
+                        .send(UIAction::LogString(format!("Error: {}", e)).into())
+                        .unwrap();
                 }
-            } else {
-                sender
-                    .send(UIAction::LogString("Invalid account ID".to_string()).into())
-                    .unwrap();
             }
         })
     }
@@ -254,47 +326,48 @@ impl Backend {
     fn execute_status_command(&mut self) {
         self.execute_command_block(async move |sender, agent, _ipfs_client, config| {
             let agent = agent.get_or(|| PocoAgent::new(config));
-            let status = agent.status().await;
 
-            if let Ok(status) = status {
-                sender
-                    .send(
-                        UIAction::LogMultipleString(vec![
-                            format!("Version: {}", status.version.version),
-                            format!("Build: {}", status.version.build),
-                            format!("Protocol Version: {}", status.protocol_version),
-                            format!(
-                                "Latest Protocol Version: {}",
-                                status.latest_protocol_version
-                            ),
-                            format!("Rpc Address: {}", status.rpc_addr.unwrap_or_default()),
-                            format!("Sync Info: "),
-                            format!(
-                                "  Latest Block Hash: {}",
-                                status.sync_info.latest_block_hash
-                            ),
-                            format!(
-                                "  Latest Block Height: {}",
-                                status.sync_info.latest_block_height
-                            ),
-                            format!(
-                                "  Latest State Root: {}",
-                                status.sync_info.latest_state_root
-                            ),
-                            format!(
-                                "  Latest Block Time: {}",
-                                status.sync_info.latest_block_time
-                            ),
-                            format!("  Syncing: {}", status.sync_info.syncing),
-                            format!("Uptime Sec: {}", status.uptime_sec),
-                        ])
-                        .into(),
-                    )
-                    .unwrap();
-            } else {
-                sender
-                    .send(UIAction::LogString("Failed to get status".to_string()).into())
-                    .unwrap();
+            match agent.status().await {
+                Ok(status) => {
+                    sender
+                        .send(
+                            UIAction::LogMultipleString(vec![
+                                format!("Version: {}", status.version.version),
+                                format!("Build: {}", status.version.build),
+                                format!("Protocol Version: {}", status.protocol_version),
+                                format!(
+                                    "Latest Protocol Version: {}",
+                                    status.latest_protocol_version
+                                ),
+                                format!("Rpc Address: {}", status.rpc_addr.unwrap_or_default()),
+                                format!("Sync Info: "),
+                                format!(
+                                    "  Latest Block Hash: {}",
+                                    status.sync_info.latest_block_hash
+                                ),
+                                format!(
+                                    "  Latest Block Height: {}",
+                                    status.sync_info.latest_block_height
+                                ),
+                                format!(
+                                    "  Latest State Root: {}",
+                                    status.sync_info.latest_state_root
+                                ),
+                                format!("  Syncing: {}", status.sync_info.syncing),
+                            ])
+                            .into(),
+                        )
+                        .unwrap();
+                }
+                Err(e) => {
+                    sender
+                        .send(UIAction::LogString("Failed to get status".to_string()).into())
+                        .unwrap();
+
+                    sender
+                        .send(UIAction::LogString(format!("Error: {}", e)).into())
+                        .unwrap();
+                }
             }
         })
     }
@@ -302,43 +375,60 @@ impl Backend {
     fn execute_network_status_command(&mut self) {
         self.execute_command_block(async move |sender, agent, _ipfs_client, config| {
             let agent = agent.get_or(|| PocoAgent::new(config));
-            let network_status = agent.network_status().await;
 
-            if let Ok(network_status) = network_status {
-                sender
-                    .send(
-                        UIAction::LogMultipleString(vec![
-                            format!("Num Active Peers: {}", network_status.num_active_peers),
-                            format!("Sent Bytes Per Sec: {}", network_status.sent_bytes_per_sec),
-                            format!(
-                                "Received Bytes Per Sec: {}",
-                                network_status.received_bytes_per_sec
-                            ),
-                        ])
-                        .into(),
-                    )
-                    .unwrap();
-            } else {
-                sender
-                    .send(UIAction::LogString("Failed to get network status".to_string()).into())
-                    .unwrap();
+            match agent.network_status().await {
+                Ok(network_status) => {
+                    sender
+                        .send(
+                            UIAction::LogMultipleString(vec![
+                                format!("Num Active Peers: {}", network_status.num_active_peers),
+                                format!(
+                                    "Sent Bytes Per Sec: {}",
+                                    network_status.sent_bytes_per_sec
+                                ),
+                                format!(
+                                    "Received Bytes Per Sec: {}",
+                                    network_status.received_bytes_per_sec
+                                ),
+                            ])
+                            .into(),
+                        )
+                        .unwrap();
+                }
+                Err(e) => {
+                    sender
+                        .send(
+                            UIAction::LogString("Failed to get network status".to_string()).into(),
+                        )
+                        .unwrap();
+
+                    sender
+                        .send(UIAction::LogString(format!("Error: {}", e)).into())
+                        .unwrap();
+                }
             }
-        })
+        });
     }
 
     fn execute_gas_price_command(&mut self) {
         self.execute_command_block(async move |sender, agent, _ipfs_client, config| {
             let agent = agent.get_or(|| PocoAgent::new(config.clone()));
-            let gas_price = agent.gas_price().await;
 
-            if let Ok(gas_price) = gas_price {
-                sender
-                    .send(UIAction::LogString(format!("Gas Price: {}", gas_price)).into())
-                    .unwrap();
-            } else {
-                sender
-                    .send(UIAction::LogString("Failed to get gas price".to_string()).into())
-                    .unwrap();
+            match agent.gas_price().await {
+                Ok(gas_price) => {
+                    sender
+                        .send(UIAction::LogString(format!("Gas Price: {}", gas_price)).into())
+                        .unwrap();
+                }
+                Err(e) => {
+                    sender
+                        .send(UIAction::LogString("Failed to get gas price".to_string()).into())
+                        .unwrap();
+
+                    sender
+                        .send(UIAction::LogString(format!("Error: {}", e)).into())
+                        .unwrap();
+                }
             }
         })
     }
@@ -376,9 +466,11 @@ impl Backend {
             Some(("status", _)) => Ok(StatusCommand),
             Some(("view-account", args)) => {
                 if let Some(account_id) = args.get_one::<String>("account-id") {
-                    Ok(ViewAccountCommand {
-                        account_id: account_id.to_string(),
-                    })
+                    if let Ok(account_id) = account_id.parse() {
+                        Ok(ViewAccountCommand { account_id })
+                    } else {
+                        Err(InvalidCommandParameter("account-id".to_string()))
+                    }
                 } else {
                     Err(MissingCommandParameter("account-id".to_string()))
                 }
@@ -396,6 +488,32 @@ impl Backend {
                     Ok(QueryEventsCommand { from, count })
                 } else {
                     Err(MissingCommandParameter("from".to_string()))
+                }
+            }
+            Some(("get-user-endpoint", args)) => {
+                let account_id = args.get_one::<String>("account-id");
+
+                if let Some(account_id) = account_id {
+                    let account_id = account_id.parse();
+
+                    if let Ok(account_id) = account_id {
+                        Ok(GetUserEndpointCommand {
+                            account_id: Some(account_id),
+                        })
+                    } else {
+                        Err(InvalidCommandParameter("account-id".to_string()))
+                    }
+                } else {
+                    Ok(GetUserEndpointCommand { account_id: None })
+                }
+            }
+            Some(("set-user-endpoint", args)) => {
+                let endpoint = args.get_one::<String>("endpoint").cloned();
+
+                if let Some(endpoint) = endpoint {
+                    Ok(SetUserEndpointCommand { endpoint })
+                } else {
+                    Err(MissingCommandParameter("endpoint".to_string()))
                 }
             }
             Some(("ipfs", args)) => match args.subcommand() {
@@ -446,6 +564,14 @@ impl Backend {
                                         Level::ERROR,
                                         message =
                                             format!("missing command parameter: {}", parameter),
+                                        category = format!("{:?}", TracingCategory::Agent)
+                                    );
+                                }
+                                InvalidCommandParameter(parameter) => {
+                                    tracing::event!(
+                                        Level::ERROR,
+                                        message =
+                                            format!("invalid command parameter: {}", parameter),
                                         category = format!("{:?}", TracingCategory::Agent)
                                     );
                                 }

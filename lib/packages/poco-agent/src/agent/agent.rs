@@ -20,6 +20,7 @@ use poco_types::types::event::IndexedEvent;
 use poco_types::types::round::RoundStatus;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
+use serde_json::json;
 use strum::Display;
 
 use crate::config::PocoAgentConfig;
@@ -28,6 +29,7 @@ pub struct PocoAgent {
     config: Arc<PocoAgentConfig>,
     inner: JsonRpcClient,
     signer: InMemorySigner,
+    contract_id: AccountId,
 }
 
 #[derive(Debug, Display)]
@@ -56,14 +58,17 @@ impl PocoAgent {
         let rpc_client = JsonRpcClient::with(client).connect(config.near.rpc_endpoint.as_str());
 
         let signer = InMemorySigner::from_secret_key(
-            config.near.singer_account_id.parse().unwrap(),
+            config.near.signer_account_id.parse().unwrap(),
             config.near.signer_secret_key.parse().unwrap(),
         );
+
+        let contract_id = config.poco.poco_contract_account.parse().unwrap();
 
         PocoAgent {
             config,
             inner: rpc_client,
             signer,
+            contract_id,
         }
     }
 
@@ -127,13 +132,13 @@ impl PocoAgent {
         }
     }
 
-    fn encode_args(&self, args: String, r#type: ArgsType) -> Vec<u8> {
+    fn encode_args(&self, args: &str, r#type: ArgsType) -> Vec<u8> {
         match r#type {
             ArgsType::JSON => serde_json::Value::from_str(&args)
                 .unwrap()
                 .to_string()
                 .into_bytes(),
-            ArgsType::TEXT => args.into_bytes(),
+            ArgsType::TEXT => args.to_string().into_bytes(),
             ArgsType::BASE64 => base64::decode(&args.as_bytes()).unwrap(),
         }
     }
@@ -150,16 +155,15 @@ impl PocoAgent {
 
     async fn call_view_function(
         &self,
-        account_id: AccountId,
-        method_name: String,
-        args: String,
+        method_name: &str,
+        args: &str,
         r#type: ArgsType,
     ) -> Result<Vec<u8>, Box<dyn Error>> {
         let request = methods::query::RpcQueryRequest {
             block_reference: BlockReference::Finality(Finality::Final),
             request: QueryRequest::CallFunction {
-                account_id,
-                method_name,
+                account_id: self.contract_id.clone(),
+                method_name: method_name.to_string(),
                 args: self.encode_args(args, r#type).into(),
             },
         };
@@ -171,9 +175,8 @@ impl PocoAgent {
 
     async fn call_change_function(
         &self,
-        account_id: AccountId,
-        method_name: String,
-        args: String,
+        method_name: &str,
+        args: &str,
         r#type: ArgsType,
         gas: u64,
         deposit: u128,
@@ -198,10 +201,10 @@ impl PocoAgent {
             signer_id: self.signer.account_id.clone(),
             public_key: self.signer.public_key.clone(),
             nonce: current_nonce + 1,
-            receiver_id: account_id,
+            receiver_id: self.contract_id.clone(),
             block_hash: access_key_response.block_hash,
             actions: vec![Action::FunctionCall(FunctionCallAction {
-                method_name,
+                method_name: method_name.to_string(),
                 args: self.encode_args(args, r#type),
                 gas,
                 deposit,
@@ -223,18 +226,17 @@ impl PocoAgent {
 
     pub async fn call_view_function_json<T, R>(
         &self,
-        account_id: AccountId,
-        method_name: String,
-        args: T,
+        method_name: &str,
+        args: &T,
     ) -> Result<R, Box<dyn Error>>
     where
         T: Serialize,
         R: DeserializeOwned,
     {
-        let args = serde_json::to_string(&args).unwrap();
+        let args = serde_json::to_string(args).unwrap();
 
         let buffer = self
-            .call_view_function(account_id, method_name, args, ArgsType::JSON)
+            .call_view_function(method_name, args.as_str(), ArgsType::JSON)
             .await?;
 
         let result = serde_json::from_slice(buffer.as_slice()).unwrap();
@@ -244,9 +246,8 @@ impl PocoAgent {
 
     pub async fn call_change_function_json<T, R>(
         &self,
-        account_id: AccountId,
-        method_name: String,
-        args: T,
+        method_name: &str,
+        args: &T,
         gas: u64,
         deposit: u128,
     ) -> Result<R, Box<dyn Error>>
@@ -254,10 +255,10 @@ impl PocoAgent {
         T: Serialize,
         R: DeserializeOwned,
     {
-        let args = serde_json::to_string(&args).unwrap();
+        let args = serde_json::to_string(args).unwrap();
 
         let buffer = self
-            .call_change_function(account_id, method_name, args, ArgsType::JSON, gas, deposit)
+            .call_change_function(method_name, args.as_str(), ArgsType::JSON, gas, deposit)
             .await?;
 
         let result = serde_json::from_slice(buffer.as_slice()).unwrap();
@@ -267,11 +268,7 @@ impl PocoAgent {
 
     pub async fn get_round_status(&self) -> Result<RoundStatus, Box<dyn Error>> {
         let response = self
-            .call_view_function_json(
-                self.config.poco.poco_contract_account.parse().unwrap(),
-                "get_round_status".to_string(),
-                (),
-            )
+            .call_view_function_json("get_round_status", &json!({}))
             .await?;
 
         Ok(response)
@@ -279,11 +276,7 @@ impl PocoAgent {
 
     pub async fn count_events(&self) -> Result<u32, Box<dyn Error>> {
         let response = self
-            .call_view_function_json(
-                self.config.poco.poco_contract_account.parse().unwrap(),
-                "count_events".to_string(),
-                (),
-            )
+            .call_view_function_json("count_events", &json!({}))
             .await?;
 
         Ok(response)
@@ -296,15 +289,32 @@ impl PocoAgent {
     ) -> Result<Vec<IndexedEvent>, Box<dyn Error>> {
         let response = self
             .call_view_function_json(
-                self.config.poco.poco_contract_account.parse().unwrap(),
-                "query_events".to_string(),
-                map! {
-                    "from" => from,
-                    "count" => count,
-                },
+                "query_events",
+                &json! ({
+                    "from" : from,
+                    "count" : count
+                }),
             )
             .await?;
 
         Ok(response)
+    }
+
+    pub async fn get_user_endpoint(
+        &self,
+        account_id: Option<AccountId>,
+    ) -> Result<String, Box<dyn Error>> {
+        self.call_view_function_json("get_user_endpoint", &json!({ "account_id": account_id }))
+            .await
+    }
+
+    pub async fn set_user_endpoint(&self, endpoint: &str) -> Result<(), Box<dyn Error>> {
+        self.call_change_function_json(
+            "set_user_endpoint",
+            &json!({ "endpoint": endpoint }),
+            10_000_000_000_000,
+            0,
+        )
+        .await
     }
 }
