@@ -303,7 +303,7 @@ impl PocoAgent {
     pub async fn get_user_endpoint(
         &self,
         account_id: Option<AccountId>,
-    ) -> Result<String, Box<dyn Error>> {
+    ) -> Result<Option<String>, Box<dyn Error>> {
         self.call_view_function_json("get_user_endpoint", &json!({ "account_id": account_id }))
             .await
     }

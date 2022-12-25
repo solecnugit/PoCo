@@ -194,9 +194,14 @@ impl Backend {
             let agent = agent.get_or(|| PocoAgent::new(config));
 
             match agent.get_user_endpoint(account_id).await {
-                Ok(endpoint) => {
+                Ok(Some(endpoint)) => {
                     sender
                         .send(UIAction::LogString(format!("Endpoint: {}", endpoint)).into())
+                        .unwrap();
+                }
+                Ok(None) => {
+                    sender
+                        .send(UIAction::LogString("No endpoint found".to_string()).into())
                         .unwrap();
                 }
                 Err(e) => {
