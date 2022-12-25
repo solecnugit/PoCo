@@ -20,4 +20,4 @@ signer_secret_key = "ed25519:2ykcMLiM7vCmsSECcgfmUzihBtNdBv7v2CxNi94sNt4R8ar4xsr
 ipfs_endpoint = "http://49.52.27.50:5001"
 
 [poco]
-poco_contract_account = "dev-1669615052604-46668178894901"
+poco_contract_account = "test.near"

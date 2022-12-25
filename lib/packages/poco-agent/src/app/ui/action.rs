@@ -71,7 +71,10 @@ impl UIActionEvent {
 
     pub fn render_spans(&self, max_width: usize, time_format: &str) -> Vec<Spans> {
         let time_string = self.0.format(time_format).to_string();
-        let max_width = max_width - time_string.width() - 1;
+        let max_width = match max_width.overflowing_sub(time_string.width() + 1) {
+            (v, false) => v,
+            _ => 0,
+        };
 
         let time_span = Span::styled(time_string.clone(), Style::default().fg(Color::White));
 

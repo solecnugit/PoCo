@@ -213,8 +213,16 @@ impl UI {
         }
 
         // padding 2: Up and Bottom Border
-        let height = (chunks[0].height - 2) as usize;
-        let width = (chunks[0].width - 2) as usize;
+        let height = match chunks[0].height.overflowing_sub(2) {
+            (x, false) => x as usize,
+            _ => 0,
+        };
+
+        let width = match chunks[0].width.overflowing_sub(2) {
+            (x, false) => x as usize,
+            _ => 0,
+        };
+
         let event_list = self
             .state
             .render_event_list(self.config.ui.time_format.as_str(), width, height);
