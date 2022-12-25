@@ -1,12 +1,12 @@
 #!/bin/bash
 
 if [ -z $WORKSPACE_DIR ]; then
-    WORKSPACE_DIR=$(pwd)/..
+    WORKSPACE_DIR=$(pwd)
 fi
 
 create_account() {
     NEAR_MODE="env"
-    source ./near-env.sh
+    source ${WORKSPACE_DIR}/scripts/near-env.sh
 
     for num in $(seq 1 $1);
     do
@@ -24,7 +24,7 @@ create_account() {
 
 delete_account() {
     NEAR_MODE="env"
-    source ./near-env.sh
+    source ${WORKSPACE_DIR}/scripts/near-env.sh
 
     echo "Delete account $1"
 
