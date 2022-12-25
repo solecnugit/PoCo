@@ -169,10 +169,10 @@ impl Backend {
             let agent = agent.get_or(|| PocoAgent::new(config));
 
             match agent.set_user_endpoint(endpoint.as_str()).await {
-                Ok(_) => {
+                Ok(gas) => {
                     sender
                         .send(
-                            UIAction::LogString(format!("Set user endpoint to {}", endpoint))
+                            UIAction::LogString(format!("Set user endpoint to {} ({} Gas Burnt)", endpoint, gas))
                                 .into(),
                         )
                         .unwrap();

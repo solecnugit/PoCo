@@ -14,7 +14,7 @@ use near_jsonrpc_client::{methods, JsonRpcClient};
 use near_jsonrpc_primitives::types::query::{QueryResponseKind, RpcQueryResponse};
 use near_primitives::transaction::FunctionCallAction;
 use near_primitives::transaction::{Action, Transaction};
-use near_primitives::types::{AccountId, Balance, BlockReference, Finality};
+use near_primitives::types::{AccountId, Balance, BlockReference, Finality, Gas};
 use near_primitives::views::{AccessKeyView, AccountView, FinalExecutionStatus, QueryRequest};
 use poco_types::types::event::IndexedEvent;
 use poco_types::types::round::RoundStatus;
@@ -180,7 +180,7 @@ impl PocoAgent {
         r#type: ArgsType,
         gas: u64,
         deposit: u128,
-    ) -> Result<Vec<u8>, Box<dyn Error>> {
+    ) -> Result<(Gas, Vec<u8>), Box<dyn Error>> {
         let access_key_response = self
             .inner
             .call(methods::query::RpcQueryRequest {
@@ -217,8 +217,16 @@ impl PocoAgent {
 
         let response = self.inner.call(request).await?;
 
+        let mut gas_burnt = response
+            .receipts_outcome
+            .iter()
+            .map(|e| e.outcome.gas_burnt)
+            .sum();
+
+        gas_burnt += response.transaction_outcome.outcome.gas_burnt;
+
         match response.status {
-            FinalExecutionStatus::SuccessValue(buffer) => Ok(buffer),
+            FinalExecutionStatus::SuccessValue(buffer) => Ok((gas_burnt, buffer)),
             FinalExecutionStatus::Failure(error) => Err(error)?,
             _ => Err("transaction not finished yet")?,
         }
@@ -250,20 +258,39 @@ impl PocoAgent {
         args: &T,
         gas: u64,
         deposit: u128,
-    ) -> Result<R, Box<dyn Error>>
+    ) -> Result<(Gas, R), Box<dyn Error>>
     where
         T: Serialize,
         R: DeserializeOwned,
     {
         let args = serde_json::to_string(args).unwrap();
 
-        let buffer = self
+        let (gas, buffer) = self
             .call_change_function(method_name, args.as_str(), ArgsType::JSON, gas, deposit)
             .await?;
 
-        let result = serde_json::from_slice(buffer.as_slice()).unwrap();
+        match serde_json::from_slice(buffer.as_slice()) {
+            Ok(result) => Ok((gas, result)),
+            Err(_) => Err("Unexpected response")?,
+        }
+    }
 
-        Ok(result)
+    pub async fn call_change_function_json_no_response<T>(
+        &self,
+        method_name: &str,
+        args: &T,
+        gas: u64,
+        deposit: u128,
+    ) -> Result<Gas, Box<dyn Error>>
+    where
+        T: Serialize,
+    {
+        let args = serde_json::to_string(args).unwrap();
+
+        let (gas, _) = self.call_change_function(method_name, args.as_str(), ArgsType::JSON, gas, deposit)
+            .await?;
+
+        Ok(gas)
     }
 
     pub async fn get_round_status(&self) -> Result<RoundStatus, Box<dyn Error>> {
@@ -308,8 +335,8 @@ impl PocoAgent {
             .await
     }
 
-    pub async fn set_user_endpoint(&self, endpoint: &str) -> Result<(), Box<dyn Error>> {
-        self.call_change_function_json(
+    pub async fn set_user_endpoint(&self, endpoint: &str) -> Result<Gas, Box<dyn Error>> {
+        self.call_change_function_json_no_response(
             "set_user_endpoint",
             &json!({ "endpoint": endpoint }),
             10_000_000_000_000,
