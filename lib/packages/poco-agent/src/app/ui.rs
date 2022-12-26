@@ -3,6 +3,7 @@ pub mod state;
 
 use std::io::Write;
 use std::{io, sync::Arc};
+use std::error::Error;
 
 use std::time;
 
@@ -64,6 +65,23 @@ impl UI {
         true
     }
 
+    fn reset_terminal() -> Result<(), Box<dyn Error>> {
+        disable_raw_mode()?;
+        execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture)?;
+
+        Ok(())
+    }
+
+    fn panic_hook(&self) {
+        let original_hook = std::panic::take_hook();
+
+        std::panic::set_hook(Box::new(move |panic_info| {
+            Self::reset_terminal().unwrap();
+
+            original_hook(panic_info);
+        }));
+    }
+
     pub fn run_ui(&mut self) -> Result<(), io::Error> {
         // Init Terminal UI State
         enable_raw_mode()?;
@@ -72,6 +90,8 @@ impl UI {
 
         let backend = CrosstermBackend::new(stdout);
         let mut terminal = Terminal::new(backend)?;
+
+        self.panic_hook();
 
         self.ui_loop(&mut terminal)?;
 
