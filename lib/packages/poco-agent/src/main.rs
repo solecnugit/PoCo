@@ -18,7 +18,8 @@ use crate::app::trace::TracingCategory;
 use crate::app::App;
 
 fn main() -> Result<(), io::Error> {
-    let config = config::parse().get_config().expect("Failed to load config");
+    let app_run_config = config::parse();
+    let config = app_run_config.get_config().expect("Failed to load config");
     let log_file_appender = tracing_appender::rolling::daily(
         config.log.directory.to_string(),
         config.log.prefix.to_string(),
@@ -58,8 +59,9 @@ fn main() -> Result<(), io::Error> {
         category = TracingCategory::Agent.to_string()
     );
 
-    app.run()?;
-    app.join();
+    let direct_command_flag = !app_run_config.in_ui_mode;
+
+    app.run(direct_command_flag)?;
 
     Ok(())
 }

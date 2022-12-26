@@ -1,7 +1,8 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use clap::Parser;
 use serde::{Deserialize, Serialize};
+use crate::app::backend::command::get_command_instance;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AppConfig {
@@ -49,25 +50,48 @@ pub struct PocoAgentConfig {
     pub poco: PocoConfig,
 }
 
-#[derive(Parser)]
-#[command(name = "poco-agent")]
-#[command(author = "Twiliness")]
-#[command(version = "0.0.1")]
-pub struct CLI {
-    #[arg(short = 'f')]
-    #[arg(long = "config")]
-    #[arg(value_name = "CONFIG_FILE")]
-    #[arg(default_value = "config.toml")]
-    pub config_path: Option<PathBuf>,
+// #[derive(Parser)]
+// #[command(name = "poco-agent")]
+// #[command(author = "Twiliness")]
+// #[command(version = "0.0.1")]
+// pub struct CLI {
+//     #[arg(short = 'f')]
+//     #[arg(long = "config")]
+//     #[arg(value_name = "CONFIG_FILE")]
+//     #[arg(default_value = "config.toml")]
+//     pub config_path: Option<PathBuf>,
+// }
+
+pub struct AppRunConfig {
+    pub in_ui_mode: bool,
+    pub config_path: String
 }
 
-pub(crate) fn parse() -> CLI {
-    CLI::parse()
+pub(crate) fn parse() -> AppRunConfig {
+    let commands = get_command_instance(false);
+
+    let arg_matches = commands.get_matches_from(std::env::args());
+    let config_path = arg_matches.get_one::<String>("config").map(|s| s.to_string()).unwrap_or("config.toml".to_string());
+
+    match arg_matches.subcommand() {
+        Some(("ui", _)) => {
+            AppRunConfig {
+                in_ui_mode: true,
+                config_path
+            }
+        },
+        _ => {
+            AppRunConfig {
+                in_ui_mode: false,
+                config_path
+            }
+        }
+    }
 }
 
-impl CLI {
+impl AppRunConfig {
     pub(crate) fn get_config(&self) -> Result<PocoAgentConfig, config::ConfigError> {
-        let config_path = self.config_path.as_ref().unwrap().as_path();
+        let config_path = Path::new(self.config_path.as_str());
 
         let config = config::Config::builder()
             .add_source(config::File::from(config_path))

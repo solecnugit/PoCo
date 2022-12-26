@@ -1,38 +1,39 @@
-use clap::Command;
+use std::path::Path;
+
+use clap::{Arg, ArgAction, Command};
 use near_primitives::types::AccountId;
 use strum::Display;
 
-#[inline]
-fn subcommand(name: &'static str) -> Command {
-    Command::new(name)
-        .disable_help_subcommand(true)
-        .disable_help_flag(true)
-        .disable_colored_help(true)
-        .disable_version_flag(true)
-}
+// #[inline]
+// fn subcommand(name: &'static str) -> Command {
+//     Command::new(name)
+//         .disable_help_subcommand(true)
+//         .disable_help_flag(true)
+//         .disable_colored_help(true)
+//         .disable_version_flag(true)
+// }
 
-pub(crate) fn get_internal_command() -> Command {
-    Command::new("poco")
-        .about("Poco Agent")
-        .version("0.0.1")
-        .ignore_errors(true)
-        .no_binary_name(true)
-        .subcommand_required(true)
-        .arg_required_else_help(false)
-        .disable_help_subcommand(true)
-        .disable_help_flag(true)
-        .disable_colored_help(true)
-        .disable_version_flag(true)
-        .help_template(
-            "
-{name} {version}
-{subcommands}
-        ",
-        )
-        .subcommands([
-            subcommand("help")
-                .about("Get help for poco-agent")
-                .arg(clap::Arg::new("command").required(false).index(1)),
+pub fn get_command_instance(in_ui_mode: bool) -> Command {
+    let subcommand = if in_ui_mode {
+        |name: &'static str| {
+            Command::new(name)
+                .disable_help_subcommand(true)
+                .disable_help_flag(true)
+                .disable_colored_help(true)
+                .disable_version_flag(true)
+        }
+    } else {
+        |name: &'static str| {
+            Command::new(name)
+                .disable_help_subcommand(false)
+                .disable_help_flag(false)
+                .disable_colored_help(false)
+                .disable_version_flag(false)
+        }
+    };
+
+    let mut subcommands =
+        [
             subcommand("gas-price").about("Get gas price"),
             subcommand("network-status").about("Get network status"),
             subcommand("status").about("Get Blockchain status"),
@@ -73,7 +74,63 @@ pub(crate) fn get_internal_command() -> Command {
                         .about("Cat file from IPFS")
                         .arg(clap::Arg::new("hash").required(true).index(1)),
                 ]),
-        ])
+            subcommand("publish-task")
+                .about("Publish task")
+                .arg(clap::Arg::new("task-config-path").required(true).index(1)),
+        ];
+
+    let command = if in_ui_mode {
+        Command::new("poco")
+            .about("Poco Agent")
+            .version("0.0.1")
+            .ignore_errors(true)
+            .no_binary_name(true)
+            .subcommand_required(true)
+            .arg_required_else_help(false)
+            .disable_help_subcommand(true)
+            .disable_help_flag(true)
+            .disable_colored_help(true)
+            .disable_version_flag(true)
+            .help_template(
+                "
+{name} {version}
+{subcommands}
+        ",
+            )
+            .subcommand(subcommand("help")
+                .about("Get help for poco-agent")
+                .arg(clap::Arg::new("command").required(false).index(1)))
+    } else {
+        Command::new("poco")
+            .about("Poco Agent")
+            .version("0.0.1")
+            .ignore_errors(true)
+            .no_binary_name(false)
+            .subcommand_required(false)
+            .arg_required_else_help(true)
+            .disable_help_subcommand(false)
+            .disable_help_flag(false)
+            .disable_colored_help(false)
+            .disable_version_flag(false)
+            .arg(
+                Arg::new("config")
+                    .short('f')
+                    .long("config")
+                    .value_name("CONFIG_FILE")
+                    .default_value("config.toml")
+                    .required(false),
+            )
+            .subcommand(
+                subcommand("ui")
+                    .about("Start UI")
+            )
+    };
+
+    command.subcommands(subcommands)
+}
+
+pub(crate) fn get_internal_command() -> Command {
+    get_command_instance(true)
 }
 
 #[derive(Debug, Display)]
@@ -93,6 +150,14 @@ pub enum BackendCommand {
     QueryEventsCommand { from: u32, count: u32 },
     GetUserEndpointCommand { account_id: Option<AccountId> },
     SetUserEndpointCommand { endpoint: String },
+    // Task Related Commands
+    PublishTaskCommand { task_config_path: String },
+}
+
+#[derive(Debug, Clone)]
+pub struct CommandSource {
+    pub id: String,
+    pub source: String
 }
 
 #[derive(Debug, Display)]
