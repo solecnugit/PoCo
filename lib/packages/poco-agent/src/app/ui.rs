@@ -19,6 +19,7 @@ use tui::text::{Span, Spans, Text};
 use tui::widgets::{Block, Borders, List, Paragraph};
 use tui::{Frame, Terminal};
 use unicode_width::UnicodeWidthStr;
+use crate::app::backend::command::CommandSource;
 
 use crate::config::PocoAgentConfig;
 
@@ -34,13 +35,15 @@ pub struct UI {
     config: Arc<PocoAgentConfig>,
 
     receiver: crossbeam_channel::Receiver<UIActionEvent>,
-    sender: crossbeam_channel::Sender<String>,
+    sender: crossbeam_channel::Sender<CommandSource>,
+
+    command_counter: u64
 }
 
 impl UI {
     pub fn new(
         receiver: crossbeam_channel::Receiver<UIActionEvent>,
-        sender: crossbeam_channel::Sender<String>,
+        sender: crossbeam_channel::Sender<CommandSource>,
         config: Arc<PocoAgentConfig>,
     ) -> Self {
         let state = UIState::new(5001);
@@ -50,6 +53,7 @@ impl UI {
             receiver,
             sender,
             config,
+            command_counter: 0
         }
     }
 
@@ -65,23 +69,6 @@ impl UI {
         true
     }
 
-    fn reset_terminal() -> Result<(), Box<dyn Error>> {
-        disable_raw_mode()?;
-        execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture)?;
-
-        Ok(())
-    }
-
-    fn panic_hook(&self) {
-        let original_hook = std::panic::take_hook();
-
-        std::panic::set_hook(Box::new(move |panic_info| {
-            Self::reset_terminal().unwrap();
-
-            original_hook(panic_info);
-        }));
-    }
-
     pub fn run_ui(&mut self) -> Result<(), io::Error> {
         // Init Terminal UI State
         enable_raw_mode()?;
@@ -90,8 +77,6 @@ impl UI {
 
         let backend = CrosstermBackend::new(stdout);
         let mut terminal = Terminal::new(backend)?;
-
-        self.panic_hook();
 
         self.ui_loop(&mut terminal)?;
 
@@ -142,10 +127,19 @@ impl UI {
                                     let command =
                                         self.state.input.drain(..).collect::<CommandString>();
 
-                                    self.state
-                                        .push_event(UIAction::LogCommand(command.clone()).into());
+                                    let command_id = format!("#{}", self.command_counter);
 
-                                    self.sender.send(command).unwrap();
+                                    self.state
+                                        .push_event(UIAction::LogCommand(command_id.clone(), command.clone()).into());
+
+                                    let source = CommandSource {
+                                        source: command,
+                                        id: command_id
+                                    };
+
+                                    self.command_counter += 1;
+
+                                    self.sender.send(source).unwrap();
                                 }
                                 self.state.input.clear();
                             }

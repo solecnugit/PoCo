@@ -27,7 +27,8 @@ pub enum UIAction {
     LogString(String),
     LogMultipleString(Vec<String>),
     LogTracingEvent(TracingEvent),
-    LogCommand(String),
+    LogCommand(String, String),
+    CommandExecutionDone(String),
     QuitApp,
 }
 
@@ -160,11 +161,13 @@ impl UIActionEvent {
                 }
             }
 
-            UIAction::LogCommand(command) => {
+            UIAction::LogCommand(command_id, command) => {
                 vec![Spans::from(vec![
                     time_span,
                     Span::raw(" "),
                     Span::styled(">>", Style::default().fg(Color::Yellow)),
+                    Span::raw(" "),
+                    Span::styled(command_id, Style::default().fg(Color::Green)),
                     Span::raw(" "),
                     Span::styled(command, Style::default().fg(Color::White)),
                 ])]
@@ -173,7 +176,10 @@ impl UIActionEvent {
                 "Quitting app",
                 Style::default().fg(Color::White),
             ))],
-
+            UIAction::CommandExecutionDone(id) => vec![Spans::from(Span::styled(
+                format!("Command {} execution done", id),
+                Style::default().fg(Color::White),
+            ))],
             UIAction::Panic(_) => unreachable!(),
         }
     }

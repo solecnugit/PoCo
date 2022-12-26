@@ -1,36 +1,34 @@
 use std::future::Future;
+use std::path::Path;
 use std::sync::Arc;
+use futures::FutureExt;
 
 use futures::lock::Mutex;
 use near_primitives::types::AccountId;
+use poco_types::types::task::TaskConfig;
 use thread_local::ThreadLocal;
 use tracing::Level;
 
 use crate::agent::agent::PocoAgent;
-use crate::app::backend::command::BackendCommand::{
-    CountEventsCommand, QueryEventsCommand, RoundStatusCommand,
-};
-use crate::app::backend::command::{
-    BackendCommand::{
-        GasPriceCommand, GetUserEndpointCommand, HelpCommand, IpfsAddFileCommand,
-        IpfsCatFileCommand, NetworkStatusCommand, SetUserEndpointCommand, StatusCommand,
-        ViewAccountCommand,
-    },
-    ParseBackendCommandError::{InvalidCommandParameter, MissingCommandParameter, UnknownCommand},
-};
+use crate::app::backend::command::{BackendCommand::{
+    GasPriceCommand, GetUserEndpointCommand, HelpCommand, IpfsAddFileCommand,
+    IpfsCatFileCommand, NetworkStatusCommand, SetUserEndpointCommand, StatusCommand,
+    ViewAccountCommand,
+}, CommandSource, ParseBackendCommandError::{InvalidCommandParameter, MissingCommandParameter, UnknownCommand}};
+use crate::app::backend::command::BackendCommand::{CountEventsCommand, PublishTaskCommand, QueryEventsCommand, RoundStatusCommand};
 use crate::app::trace::TracingCategory;
 use crate::config::PocoAgentConfig;
 use crate::ipfs::client::IpfsClient;
 
 use super::ui::action::{UIAction, UIActionEvent};
 
-use self::command::{get_internal_command, BackendCommand, ParseBackendCommandError};
+use self::command::{BackendCommand, get_internal_command, ParseBackendCommandError};
 
 pub mod command;
 
 pub struct Backend {
     config: Arc<PocoAgentConfig>,
-    receiver: crossbeam_channel::Receiver<String>,
+    receiver: crossbeam_channel::Receiver<CommandSource>,
     sender: crossbeam_channel::Sender<UIActionEvent>,
     async_runtime: Box<tokio::runtime::Runtime>,
     db_connection: Arc<Mutex<rusqlite::Connection>>,
@@ -41,7 +39,7 @@ pub struct Backend {
 impl Backend {
     pub fn new(
         config: Arc<PocoAgentConfig>,
-        receiver: crossbeam_channel::Receiver<String>,
+        receiver: crossbeam_channel::Receiver<CommandSource>,
         sender: crossbeam_channel::Sender<UIActionEvent>,
     ) -> Self {
         let runtime = tokio::runtime::Builder::new_multi_thread()
@@ -65,50 +63,83 @@ impl Backend {
         }
     }
 
-    fn execute_command_block<F, R>(&mut self, f: F)
-    where
-        F: FnOnce(
-            crossbeam_channel::Sender<UIActionEvent>,
-            Arc<ThreadLocal<PocoAgent>>,
-            Arc<ThreadLocal<IpfsClient>>,
-            Arc<PocoAgentConfig>,
-        ) -> R,
-        R: Future<Output = ()> + Send + 'static,
+    fn execute_command_block<F, R>(&mut self, command_id: String, f: F)
+        where
+            F: FnOnce(
+                crossbeam_channel::Sender<UIActionEvent>,
+                Arc<ThreadLocal<PocoAgent>>,
+                Arc<ThreadLocal<IpfsClient>>,
+                Arc<PocoAgentConfig>,
+            ) -> R,
+            R: Future<Output=()> + Send + 'static,
     {
-        let sender = self.sender.clone();
+        let sender1 = self.sender.clone();
+        let sender2 = self.sender.clone();
+
         let agent = self.agent.clone();
         let ipfs_client = self.ipfs_client.clone();
         let config = self.config.clone();
 
         self.async_runtime
-            .spawn(f(sender, agent, ipfs_client, config));
+            .spawn(f(sender1, agent, ipfs_client, config).then(async move |_| {
+                sender2
+                    .send(UIAction::CommandExecutionDone(command_id).into())
+                    .unwrap();
+            }));
     }
 
-    fn execute_command(&mut self, command: BackendCommand) {
+    fn execute_command(&mut self, command_id: String, command: BackendCommand) {
         match command {
             HelpCommand(help) => {
                 self.sender
                     .send(UIAction::LogMultipleString(help).into())
                     .unwrap();
+
+                self.sender
+                    .send(UIAction::CommandExecutionDone(command_id).into())
+                    .unwrap();
             }
-            GasPriceCommand => self.execute_gas_price_command(),
-            NetworkStatusCommand => self.execute_network_status_command(),
-            StatusCommand => self.execute_status_command(),
-            ViewAccountCommand { account_id } => self.execute_view_account_command(account_id),
-            RoundStatusCommand => self.execute_round_status_command(),
-            CountEventsCommand => self.execute_count_events_command(),
-            QueryEventsCommand { from, count } => self.execute_query_events_command(from, count),
-            GetUserEndpointCommand { account_id } => {
-                self.execute_get_user_endpoint_command(account_id)
-            }
-            SetUserEndpointCommand { endpoint } => self.execute_set_user_endpoint_command(endpoint),
-            IpfsAddFileCommand { file_path } => self.execute_ipfs_add_file_command(file_path),
-            IpfsCatFileCommand { file_hash } => self.execute_ipfs_cat_file_command(file_hash),
+            GasPriceCommand => self.execute_gas_price_command(command_id),
+            NetworkStatusCommand => self.execute_network_status_command(command_id),
+            StatusCommand => self.execute_status_command(command_id),
+            ViewAccountCommand { account_id } => self.execute_view_account_command(command_id, account_id),
+            RoundStatusCommand => self.execute_round_status_command(command_id),
+            CountEventsCommand => self.execute_count_events_command(command_id),
+            QueryEventsCommand { from, count } => self.execute_query_events_command(command_id, from, count),
+            GetUserEndpointCommand { account_id } =>
+                self.execute_get_user_endpoint_command(command_id, account_id),
+            SetUserEndpointCommand { endpoint } => self.execute_set_user_endpoint_command(command_id, endpoint),
+            IpfsAddFileCommand { file_path } => self.execute_ipfs_add_file_command(command_id, file_path),
+            IpfsCatFileCommand { file_hash } => self.execute_ipfs_cat_file_command(command_id, file_hash),
+            PublishTaskCommand { task_config_path } => self.execute_publish_task_command(command_id, task_config_path),
         }
     }
 
-    fn execute_ipfs_cat_file_command(&mut self, file_hash: String) {
-        self.execute_command_block(async move |sender, _agent, ipfs_client, config| {
+    fn execute_publish_task_command(&mut self, command_id: String, task_config_path: String) {
+        self.execute_command_block(command_id, async move |sender, agent, ipfs_client, config| {
+            // let task_config_path = Path::new(&task_config_path);
+            //
+            // match task_config_path.try_exists() {
+            //     Ok(true) => {}
+            //     _ => {
+            //         sender
+            //             .send(UIAction::LogString(format!("Task config file not found: {}", task_config_path.display())).into())
+            //             .unwrap();
+            //         return;
+            //     }
+            // }
+            //
+            // ()
+
+            // let task_config = tokio::fs::read_to_string(task_config_path).await?;
+            // let task_config = serde_json::from_str::<TaskConfig>(&task_config)?;
+            //
+            // let agent = agent.get_or(|| PocoAgent::new(config));
+        });
+    }
+
+    fn execute_ipfs_cat_file_command(&mut self, command_id: String, file_hash: String) {
+        self.execute_command_block(command_id, async move |sender, _agent, ipfs_client, config| {
             let ipfs_client = ipfs_client.get_or(|| {
                 IpfsClient::create_ipfs_client(config.ipfs.ipfs_endpoint.as_str())
                     .map_err(|e| {
@@ -130,14 +161,14 @@ impl Backend {
                     UIAction::LogMultipleString(
                         buffer.lines().into_iter().map(|e| e.to_string()).collect(),
                     )
-                    .into(),
+                        .into(),
                 )
                 .unwrap();
         });
     }
 
-    fn execute_ipfs_add_file_command(&mut self, file_path: String) {
-        self.execute_command_block(async move |sender, _agent, ipfs_client, config| {
+    fn execute_ipfs_add_file_command(&mut self, command_id: String, file_path: String) {
+        self.execute_command_block(command_id, async move |sender, _agent, ipfs_client, config| {
             let ipfs_client = ipfs_client.get_or(|| {
                 IpfsClient::create_ipfs_client(config.ipfs.ipfs_endpoint.as_str())
                     .map_err(|e| {
@@ -164,8 +195,8 @@ impl Backend {
         });
     }
 
-    fn execute_set_user_endpoint_command(&mut self, endpoint: String) {
-        self.execute_command_block(async move |sender, agent, _ipfs_client, config| {
+    fn execute_set_user_endpoint_command(&mut self, command_id: String, endpoint: String) {
+        self.execute_command_block(command_id, async move |sender, agent, _ipfs_client, config| {
             let agent = agent.get_or(|| PocoAgent::new(config));
 
             match agent.set_user_endpoint(endpoint.as_str()).await {
@@ -189,8 +220,8 @@ impl Backend {
         })
     }
 
-    fn execute_get_user_endpoint_command(&mut self, account_id: Option<AccountId>) {
-        self.execute_command_block(async move |sender, agent, _ipfs_client, config| {
+    fn execute_get_user_endpoint_command(&mut self, command_id: String, account_id: Option<AccountId>) {
+        self.execute_command_block(command_id, async move |sender, agent, _ipfs_client, config| {
             let agent = agent.get_or(|| PocoAgent::new(config));
 
             match agent.get_user_endpoint(account_id).await {
@@ -217,8 +248,8 @@ impl Backend {
         })
     }
 
-    fn execute_query_events_command(&mut self, from: u32, count: u32) {
-        self.execute_command_block(async move |sender, agent, _ipfs_client, config| {
+    fn execute_query_events_command(&mut self, command_id: String, from: u32, count: u32) {
+        self.execute_command_block(command_id, async move |sender, agent, _ipfs_client, config| {
             let agent = agent.get_or(|| PocoAgent::new(config));
 
             match agent.query_events(from, count).await {
@@ -248,8 +279,8 @@ impl Backend {
         })
     }
 
-    fn execute_count_events_command(&mut self) {
-        self.execute_command_block(async move |sender, agent, _ipfs_client, config| {
+    fn execute_count_events_command(&mut self, command_id: String) {
+        self.execute_command_block(command_id, async move |sender, agent, _ipfs_client, config| {
             let agent = agent.get_or(|| PocoAgent::new(config));
 
             match agent.count_events().await {
@@ -271,8 +302,8 @@ impl Backend {
         })
     }
 
-    fn execute_round_status_command(&mut self) {
-        self.execute_command_block(async move |sender, agent, _ipfs_client, config| {
+    fn execute_round_status_command(&mut self, command_id: String) {
+        self.execute_command_block(command_id, async move |sender, agent, _ipfs_client, config| {
             let agent = agent.get_or(|| PocoAgent::new(config));
 
             match agent.get_round_status().await {
@@ -294,8 +325,8 @@ impl Backend {
         })
     }
 
-    fn execute_view_account_command(&mut self, account_id: AccountId) {
-        self.execute_command_block(async move |sender, agent, _ipfs_client, config| {
+    fn execute_view_account_command(&mut self, command_id: String, account_id: AccountId) {
+        self.execute_command_block(command_id, async move |sender, agent, _ipfs_client, config| {
             let agent = agent.get_or(|| PocoAgent::new(config));
             let account_id_in_string = account_id.to_string();
 
@@ -311,7 +342,7 @@ impl Backend {
                                 format!("Storage Usage: {}", account.storage_usage),
                                 format!("Storage Paid At: {}", account.storage_paid_at),
                             ])
-                            .into(),
+                                .into(),
                         )
                         .unwrap();
                 }
@@ -328,8 +359,8 @@ impl Backend {
         })
     }
 
-    fn execute_status_command(&mut self) {
-        self.execute_command_block(async move |sender, agent, _ipfs_client, config| {
+    fn execute_status_command(&mut self, command_id: String) {
+        self.execute_command_block(command_id, async move |sender, agent, _ipfs_client, config| {
             let agent = agent.get_or(|| PocoAgent::new(config));
 
             match agent.status().await {
@@ -360,7 +391,7 @@ impl Backend {
                                 ),
                                 format!("  Syncing: {}", status.sync_info.syncing),
                             ])
-                            .into(),
+                                .into(),
                         )
                         .unwrap();
                 }
@@ -377,8 +408,8 @@ impl Backend {
         })
     }
 
-    fn execute_network_status_command(&mut self) {
-        self.execute_command_block(async move |sender, agent, _ipfs_client, config| {
+    fn execute_network_status_command(&mut self, command_id: String) {
+        self.execute_command_block(command_id, async move |sender, agent, _ipfs_client, config| {
             let agent = agent.get_or(|| PocoAgent::new(config));
 
             match agent.network_status().await {
@@ -396,7 +427,7 @@ impl Backend {
                                     network_status.received_bytes_per_sec
                                 ),
                             ])
-                            .into(),
+                                .into(),
                         )
                         .unwrap();
                 }
@@ -415,8 +446,8 @@ impl Backend {
         });
     }
 
-    fn execute_gas_price_command(&mut self) {
-        self.execute_command_block(async move |sender, agent, _ipfs_client, config| {
+    fn execute_gas_price_command(&mut self, command_id: String) {
+        self.execute_command_block(command_id, async move |sender, agent, _ipfs_client, config| {
             let agent = agent.get_or(|| PocoAgent::new(config.clone()));
 
             match agent.gas_price().await {
@@ -543,6 +574,17 @@ impl Backend {
                 Some((command, _)) => Err(UnknownCommand(format!("ipfs {}", command))),
                 None => Err(UnknownCommand("ipfs".to_string())),
             },
+            Some(("publish-task", args)) => {
+                let task_config_path = args.get_one::<String>("task-config-path");
+
+                if let Some(task_config_path) = task_config_path {
+                    Ok(PublishTaskCommand {
+                        task_config_path: task_config_path.to_string(),
+                    })
+                } else {
+                    Err(MissingCommandParameter("task-config-path".to_string()))
+                }
+            }
             _ => Err(UnknownCommand(command.to_string())),
         }
     }
@@ -554,8 +596,8 @@ impl Backend {
             .spawn(move || 'outer: loop {
                 loop {
                     match self.receiver.recv() {
-                        Ok(command) => match self.parse_command(command.trim()) {
-                            Ok(command) => self.execute_command(command),
+                        Ok(command_source) => match self.parse_command(command_source.source.trim()) {
+                            Ok(command) => self.execute_command(command_source.id, command),
                             Err(error) => match error {
                                 UnknownCommand(command) => {
                                     tracing::event!(

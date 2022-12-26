@@ -8,6 +8,7 @@ use tracing::Level;
 
 use crate::app::ui::action::UIAction;
 use crate::{app::trace::TracingCategory, config::PocoAgentConfig};
+use crate::app::backend::command::CommandSource;
 
 use self::{
     backend::Backend,
@@ -25,8 +26,8 @@ pub struct App {
         crossbeam_channel::Receiver<UIActionEvent>,
     ),
     backend_channel: (
-        crossbeam_channel::Sender<CommandString>,
-        crossbeam_channel::Receiver<CommandString>,
+        crossbeam_channel::Sender<CommandSource>,
+        crossbeam_channel::Receiver<CommandSource>,
     ),
     join_handles: Vec<JoinHandle<()>>,
 }
@@ -50,7 +51,7 @@ impl App {
         }
     }
 
-    pub fn run(&mut self) -> Result<(), io::Error> {
+    pub fn run(mut self, direct_command_flag: bool) -> Result<(), io::Error> {
         tracing::event!(
             Level::INFO,
             message = "start initializing terminal ui",
@@ -65,13 +66,55 @@ impl App {
 
         backend.run_backend_thread();
 
-        self.ui.run_ui()
-    }
+        if direct_command_flag {
+            let command = std::env::args().skip(1).reduce(|a, b| a + " " + &b).unwrap();
+            let command_source = CommandSource {
+                source: command,
+                id: "#1".to_string()
+            };
 
-    pub fn join(&mut self) {
+            self.backend_channel.0.send(command_source).unwrap();
+
+            loop {
+                if let Ok(event) = self.ui_channel.1.try_recv() {
+                    match event.1 {
+                        UIAction::LogCommand(command_id, command) => {
+                            println!("{} {}", command_id, command);
+                        }
+                        UIAction::LogString(string) => {
+                            println!("{}", string);
+                        }
+                        UIAction::LogMultipleString(strings) => {
+                            for string in strings {
+                                println!("{}", string);
+                            }
+                        }
+                        UIAction::LogTracingEvent(event) => {
+                            println!("{}", event);
+                        }
+                        UIAction::Panic(string) => {
+                            println!("{}", string);
+                            return Ok(());
+                        }
+                        UIAction::CommandExecutionDone(command_id) => {
+                            println!("{} done", command_id);
+                            return Ok(());
+                        }
+                        UIAction::QuitApp => {
+                            return Ok(());
+                        }
+                    }
+                }
+            }
+        } else {
+            self.ui.run_ui()?;
+        }
+
         for handle in self.join_handles.drain(..) {
             handle.join().unwrap();
         }
+
+        Ok(())
     }
 
     pub fn get_tracing_layer(&self) -> UITracingLayer {
