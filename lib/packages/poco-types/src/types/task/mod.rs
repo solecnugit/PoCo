@@ -10,7 +10,7 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::AccountId;
 use schemars::JsonSchema;
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 
 pub type TaskNonce = u32;
 
@@ -116,5 +116,15 @@ impl TaskRequirement {
             TaskRequirementOperator::LessThan => self.value < *rhs,
             TaskRequirementOperator::LessThanOrEqual => self.value <= *rhs,
         }
+    }
+}
+
+impl Display for InternalTaskConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "TaskConfig {{ owner: {}, id: {}, input: {:?}, output: {:?}, requirements: {:?}, offer: {:?}, config: {:?} }}",
+            self.owner, self.id, self.input, self.output, self.requirements, self.offer, self.config
+        )
     }
 }

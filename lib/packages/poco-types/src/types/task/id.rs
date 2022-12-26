@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use crate::types::round::RoundId;
 use crate::types::task::TaskNonce;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
@@ -106,5 +107,11 @@ impl TaskId {
     #[inline]
     pub fn get_task_nonce(&self) -> u32 {
         self.1
+    }
+}
+
+impl Display for TaskId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}/{}", self.0, self.1)
     }
 }

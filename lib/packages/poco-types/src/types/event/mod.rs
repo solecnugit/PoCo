@@ -4,7 +4,6 @@ use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::AccountId;
 use schemars::JsonSchema;
 use std::fmt::{Display, Formatter};
-use strum::Display;
 
 use crate::types::round::RoundId;
 use crate::types::task::id::TaskId;
@@ -30,7 +29,7 @@ impl Display for IndexedEvent {
 }
 
 #[near_bindgen(event_json(standard = "nep297"))]
-#[derive(BorshDeserialize, BorshSerialize, Deserialize, JsonSchema, Clone, Debug, Display)]
+#[derive(BorshDeserialize, BorshSerialize, Deserialize, JsonSchema, Clone, Debug)]
 pub enum Events {
     #[event_version("0.0.1")]
     NewRoundEvent { round_id: RoundId },
@@ -53,5 +52,29 @@ impl Events {
     #[inline]
     pub fn log_event(&self) {
         self.emit()
+    }
+}
+
+impl Display for Events {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Events::NewRoundEvent { round_id } => {
+                write!(f, "NewRoundEvent {{ round_id: {} }}", round_id)
+            }
+            Events::NewTaskEvent { task_id, task_config } => write!(
+                f,
+                "NewTaskEvent {{ task_id: {}, task_config: {} }}",
+                task_id, task_config
+            ),
+            Events::UserProfileFieldUpdateEvent {
+                user_id,
+                field,
+                value,
+            } => write!(
+                f,
+                "UserProfileFieldUpdateEvent {{ user_id: {}, field: {}, value: {} }}",
+                user_id, field, value
+            ),
+        }
     }
 }
