@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt::{Display, Formatter};
 
 use chrono::{DateTime, Local};
 use strum::Display;
@@ -105,5 +106,27 @@ impl TracingEvent {
             message,
             fields,
         }
+    }
+}
+
+impl Display for TracingEvent {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut message = String::new();
+
+        if let Some(msg) = &self.message {
+            message.push_str(msg);
+        }
+
+        for (key, value) in &self.fields {
+            message.push_str(&format!("{}: {}, ", key, value));
+        }
+
+        write!(
+            f,
+            "{} {} {}",
+            self.timestamp.format("%H:%M:%S%.3f"),
+            self.level,
+            message
+        )
     }
 }
