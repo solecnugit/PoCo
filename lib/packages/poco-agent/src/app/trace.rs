@@ -85,9 +85,16 @@ impl<S: Subscriber> Layer<S> for UITracingLayer {
 
             let event = TracingEvent::new(category, timestamp, level.clone(), message, fields);
 
-            self.sender
-                .send(UIAction::LogTracingEvent(event).into())
-                .unwrap();
+            match self.sender
+                .send(UIAction::LogTracingEvent(event).into()) {
+                Ok(_) => {}
+                Err(err) => {
+                    tracing::error!(
+                        message = "failed to send tracing event to ui",
+                        error = format!("{:?}", err)
+                    );
+                }
+            }
         }
     }
 }

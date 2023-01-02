@@ -18,7 +18,7 @@ pub mod app;
 pub mod config;
 pub mod ipfs;
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> anyhow::Result<()> {
     let app_run_config = config::parse();
     let config = app_run_config.get_config().expect("Failed to load config");
     let log_file_appender = tracing_appender::rolling::daily(
@@ -62,7 +62,5 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let direct_command_flag = !app_run_config.in_ui_mode;
 
-    app.run(direct_command_flag)?;
-
-    Ok(())
+    app.run(direct_command_flag)
 }

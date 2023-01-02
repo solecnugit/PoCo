@@ -5,6 +5,7 @@ pub mod ui;
 
 use std::error::Error;
 use std::{sync::Arc, thread::JoinHandle};
+use anyhow::anyhow;
 
 use tracing::Level;
 
@@ -53,7 +54,7 @@ impl App {
         }
     }
 
-    pub fn run(mut self, direct_command_flag: bool) -> Result<(), Box<dyn Error>> {
+    pub fn run(mut self, direct_command_flag: bool) -> anyhow::Result<()> {
         tracing::event!(
             Level::INFO,
             message = "start initializing terminal ui",
@@ -68,7 +69,7 @@ impl App {
 
         backend.run_backend_thread();
 
-        if direct_command_flag {
+        let result = if direct_command_flag {
             let command = std::env::args()
                 .skip(1)
                 .reduce(|a, b| a + " " + &b)
@@ -80,7 +81,7 @@ impl App {
 
             self.backend_channel.0.send(command_source).unwrap();
 
-            loop {
+            'main:loop {
                 match self.ui_channel.1.recv() {
                     Ok(event) => match event.1 {
                         UIAction::LogCommand(command_id, command) => {
@@ -97,33 +98,34 @@ impl App {
                         UIAction::LogTracingEvent(event) => {
                             println!("{}", event);
                         }
-                        UIAction::Panic(string) => {
-                            println!("{}", string);
-                            return Ok(());
+                        UIAction::Panic(error) => {
+                            println!("{}", error);
+                            break 'main Err(anyhow::anyhow!(error));
                         }
                         UIAction::CommandExecutionDone(command_id, _stage) => {
                             println!("{} done", command_id);
-                            return Ok(());
+                            break 'main Ok(());
                         }
                         UIAction::QuitApp => {
-                            return Ok(());
+                            break 'main Ok(());
                         }
                     },
                     Err(error) => {
                         println!("error: {}", error);
-                        return Err(Box::new(error));
+
+                        break 'main Err(error.into());
                     }
                 }
             }
         } else {
-            self.ui.run_ui()?;
-        }
+            self.ui.run_ui()
+        };
 
         for handle in self.join_handles.drain(..) {
             handle.join().unwrap();
         }
 
-        Ok(())
+        result
     }
 
     pub fn get_tracing_layer(&self) -> UITracingLayer {

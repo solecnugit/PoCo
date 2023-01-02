@@ -68,7 +68,7 @@ impl UI {
         true
     }
 
-    pub fn run_ui(&mut self) -> Result<(), io::Error> {
+    pub fn run_ui(&mut self) -> anyhow::Result<()> {
         // Init Terminal UI State
         enable_raw_mode()?;
         let mut stdout = io::stdout();
@@ -92,10 +92,10 @@ impl UI {
         Ok(())
     }
 
-    pub fn ui_loop<B: Backend>(&mut self, terminal: &mut Terminal<B>) -> io::Result<()> {
+    pub fn ui_loop<B: Backend>(&mut self, terminal: &mut Terminal<B>) -> anyhow::Result<()> {
         loop {
             if !self.retrieve_events() {
-                return Err(io::Error::new(io::ErrorKind::Other, "Panic"));
+                return Err(anyhow::anyhow!("UI panicked"));
             }
 
             terminal.draw(|frame| self.draw_ui(frame))?;
