@@ -1,11 +1,11 @@
-use futures::FutureExt;
 use std::future::Future;
-
+use std::path::Path;
 use std::sync::Arc;
 
+use futures::FutureExt;
 use futures::lock::Mutex;
 use near_primitives::types::AccountId;
-
+use poco_types::types::task::TaskConfig;
 use thread_local::ThreadLocal;
 use tracing::Level;
 
@@ -26,7 +26,7 @@ use crate::ipfs::client::IpfsClient;
 
 use super::ui::action::{UIAction, UIActionEvent};
 
-use self::command::{get_internal_command, BackendCommand, ParseBackendCommandError};
+use self::command::{BackendCommand, get_internal_command, ParseBackendCommandError};
 
 pub mod command;
 
@@ -36,8 +36,8 @@ pub struct Backend {
     sender: crossbeam_channel::Sender<UIActionEvent>,
     async_runtime: Box<tokio::runtime::Runtime>,
     db_connection: Arc<Mutex<rusqlite::Connection>>,
-    agent: Arc<ThreadLocal<PocoAgent>>,
-    ipfs_client: Arc<ThreadLocal<IpfsClient>>,
+    agent: Arc<PocoAgent>,
+    ipfs_client: Arc<IpfsClient>,
 }
 
 impl Backend {
@@ -56,26 +56,29 @@ impl Backend {
                 .expect("Failed to open database connection"),
         ));
 
+        let ipfs_client = Arc::new(IpfsClient::create_ipfs_client(&config.ipfs.ipfs_endpoint)
+            .expect("Failed to create ipfs client"));
+
         Backend {
-            config,
             receiver,
             sender,
             async_runtime: Box::new(runtime),
             db_connection,
-            agent: Arc::new(ThreadLocal::new()),
-            ipfs_client: Arc::new(ThreadLocal::new()),
+            agent: Arc::new(PocoAgent::new(config.clone())),
+            ipfs_client,
+            config,
         }
     }
 
     fn execute_command_block<F, R>(&mut self, command_id: String, f: F)
-    where
-        F: FnOnce(
-            crossbeam_channel::Sender<UIActionEvent>,
-            Arc<ThreadLocal<PocoAgent>>,
-            Arc<ThreadLocal<IpfsClient>>,
-            Arc<PocoAgentConfig>,
-        ) -> R,
-        R: Future<Output = ()> + Send + 'static,
+        where
+            F: FnOnce(
+                crossbeam_channel::Sender<UIActionEvent>,
+                Arc<PocoAgent>,
+                Arc<IpfsClient>,
+                Arc<PocoAgentConfig>,
+            ) -> R,
+            R: Future<Output=()> + Send + 'static,
     {
         let sender1 = self.sender.clone();
         let sender2 = self.sender.clone();
@@ -132,7 +135,7 @@ impl Backend {
         }
     }
 
-    fn execute_publish_task_command(&mut self, command_id: String, _task_config_path: String) {
+    fn execute_publish_task_command(&mut self, command_id: String, task_config_path: String) {
         self.execute_command_block(
             command_id,
             async move |_sender, _agent, _ipfs_client, _config| {
@@ -148,8 +151,6 @@ impl Backend {
                 //     }
                 // }
                 //
-                // ()
-
                 // let task_config = tokio::fs::read_to_string(task_config_path).await?;
                 // let task_config = serde_json::from_str::<TaskConfig>(&task_config)?;
                 //
@@ -162,19 +163,6 @@ impl Backend {
         self.execute_command_block(
             command_id,
             async move |sender, _agent, ipfs_client, config| {
-                let ipfs_client = ipfs_client.get_or(|| {
-                    IpfsClient::create_ipfs_client(config.ipfs.ipfs_endpoint.as_str())
-                        .map_err(|e| {
-                            tracing::error!(
-                                category = TracingCategory::Ipfs.to_string(),
-                                message = format!("Failed to create IPFS client: {:?}", e)
-                            );
-
-                            panic!("Failed to create IPFS client: {:?}", e);
-                        })
-                        .unwrap()
-                });
-
                 let buffer = ipfs_client.cat_file(file_hash.as_str()).await.unwrap();
                 let buffer = String::from_utf8(buffer).unwrap();
 
@@ -183,7 +171,7 @@ impl Backend {
                         UIAction::LogMultipleString(
                             buffer.lines().into_iter().map(|e| e.to_string()).collect(),
                         )
-                        .into(),
+                            .into(),
                     )
                     .unwrap();
             },
@@ -194,19 +182,6 @@ impl Backend {
         self.execute_command_block(
             command_id,
             async move |sender, _agent, ipfs_client, config| {
-                let ipfs_client = ipfs_client.get_or(|| {
-                    IpfsClient::create_ipfs_client(config.ipfs.ipfs_endpoint.as_str())
-                        .map_err(|e| {
-                            tracing::error!(
-                                category = TracingCategory::Ipfs.to_string(),
-                                message = format!("Failed to create IPFS client: {:?}", e)
-                            );
-
-                            panic!("Failed to create IPFS client: {:?}", e);
-                        })
-                        .unwrap()
-                });
-
                 let file_hash = ipfs_client.add_file(file_path.as_str()).await.unwrap();
 
                 tracing::info!(
@@ -225,8 +200,6 @@ impl Backend {
         self.execute_command_block(
             command_id,
             async move |sender, agent, _ipfs_client, config| {
-                let agent = agent.get_or(|| PocoAgent::new(config));
-
                 match agent.set_user_endpoint(endpoint.as_str()).await {
                     Ok(gas) => {
                         sender
@@ -235,7 +208,7 @@ impl Backend {
                                     "Set user endpoint to {} ({} Gas Burnt)",
                                     endpoint, gas
                                 ))
-                                .into(),
+                                    .into(),
                             )
                             .unwrap();
                     }
@@ -246,7 +219,7 @@ impl Backend {
                                     "Failed to set user endpoint: {:?}",
                                     e
                                 ))
-                                .into(),
+                                    .into(),
                             )
                             .unwrap();
                     }
@@ -263,8 +236,6 @@ impl Backend {
         self.execute_command_block(
             command_id,
             async move |sender, agent, _ipfs_client, config| {
-                let agent = agent.get_or(|| PocoAgent::new(config));
-
                 match agent.get_user_endpoint(account_id).await {
                     Ok(Some(endpoint)) => {
                         sender
@@ -297,8 +268,6 @@ impl Backend {
         self.execute_command_block(
             command_id,
             async move |sender, agent, _ipfs_client, config| {
-                let agent = agent.get_or(|| PocoAgent::new(config));
-
                 match agent.query_events(from, count).await {
                     Ok(events) => {
                         if events.is_empty() {
@@ -331,8 +300,6 @@ impl Backend {
         self.execute_command_block(
             command_id,
             async move |sender, agent, _ipfs_client, config| {
-                let agent = agent.get_or(|| PocoAgent::new(config));
-
                 match agent.count_events().await {
                     Ok(event_count) => {
                         sender
@@ -363,8 +330,6 @@ impl Backend {
         self.execute_command_block(
             command_id,
             async move |sender, agent, _ipfs_client, config| {
-                let agent = agent.get_or(|| PocoAgent::new(config));
-
                 match agent.get_round_status().await {
                     Ok(round_status) => {
                         sender
@@ -395,7 +360,6 @@ impl Backend {
         self.execute_command_block(
             command_id,
             async move |sender, agent, _ipfs_client, config| {
-                let agent = agent.get_or(|| PocoAgent::new(config));
                 let account_id_in_string = account_id.to_string();
 
                 match agent.view_account(account_id).await {
@@ -410,7 +374,7 @@ impl Backend {
                                     format!("Storage Usage: {}", account.storage_usage),
                                     format!("Storage Paid At: {}", account.storage_paid_at),
                                 ])
-                                .into(),
+                                    .into(),
                             )
                             .unwrap();
                     }
@@ -432,8 +396,6 @@ impl Backend {
         self.execute_command_block(
             command_id,
             async move |sender, agent, _ipfs_client, config| {
-                let agent = agent.get_or(|| PocoAgent::new(config));
-
                 match agent.status().await {
                     Ok(status) => {
                         sender
@@ -462,7 +424,7 @@ impl Backend {
                                     ),
                                     format!("  Syncing: {}", status.sync_info.syncing),
                                 ])
-                                .into(),
+                                    .into(),
                             )
                             .unwrap();
                     }
@@ -484,8 +446,6 @@ impl Backend {
         self.execute_command_block(
             command_id,
             async move |sender, agent, _ipfs_client, config| {
-                let agent = agent.get_or(|| PocoAgent::new(config));
-
                 match agent.network_status().await {
                     Ok(network_status) => {
                         sender
@@ -504,7 +464,7 @@ impl Backend {
                                         network_status.received_bytes_per_sec
                                     ),
                                 ])
-                                .into(),
+                                    .into(),
                             )
                             .unwrap();
                     }
@@ -529,8 +489,6 @@ impl Backend {
         self.execute_command_block(
             command_id,
             async move |sender, agent, _ipfs_client, config| {
-                let agent = agent.get_or(|| PocoAgent::new(config.clone()));
-
                 match agent.gas_price().await {
                     Ok(gas_price) => {
                         sender
