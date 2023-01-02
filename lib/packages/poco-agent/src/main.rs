@@ -1,11 +1,7 @@
 #![feature(async_closure)]
 #![feature(fn_traits)]
 
-pub mod agent;
-pub mod app;
-pub mod config;
-pub mod ipfs;
-
+use std::error::Error;
 use std::io;
 
 use time::{format_description, UtcOffset};
@@ -14,10 +10,15 @@ use tracing_subscriber::fmt::time::OffsetTime;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
-use crate::app::trace::TracingCategory;
 use crate::app::App;
+use crate::app::trace::TracingCategory;
 
-fn main() -> Result<(), io::Error> {
+pub mod agent;
+pub mod app;
+pub mod config;
+pub mod ipfs;
+
+fn main() -> Result<(), Box<dyn Error>> {
     let app_run_config = config::parse();
     let config = app_run_config.get_config().expect("Failed to load config");
     let log_file_appender = tracing_appender::rolling::daily(

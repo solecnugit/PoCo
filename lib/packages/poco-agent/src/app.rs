@@ -3,6 +3,8 @@ pub mod trace;
 pub mod ui;
 
 use std::{io, sync::Arc, thread::JoinHandle};
+use std::error::Error;
+use futures::future::err;
 
 use tracing::Level;
 
@@ -51,7 +53,7 @@ impl App {
         }
     }
 
-    pub fn run(mut self, direct_command_flag: bool) -> Result<(), io::Error> {
+    pub fn run(mut self, direct_command_flag: bool) -> Result<(), Box<dyn Error>> {
         tracing::event!(
             Level::INFO,
             message = "start initializing terminal ui",
@@ -79,8 +81,9 @@ impl App {
             self.backend_channel.0.send(command_source).unwrap();
 
             loop {
-                if let Ok(event) = self.ui_channel.1.try_recv() {
-                    match event.1 {
+                match self.ui_channel.1.recv() {
+                    Ok(event) => {
+                        match event.1 {
                         UIAction::LogCommand(command_id, command) => {
                             println!("{} {}", command_id, command);
                         }
@@ -99,13 +102,18 @@ impl App {
                             println!("{}", string);
                             return Ok(());
                         }
-                        UIAction::CommandExecutionDone(command_id) => {
+                        UIAction::CommandExecutionDone(command_id, stage) => {
                             println!("{} done", command_id);
                             return Ok(());
                         }
                         UIAction::QuitApp => {
                             return Ok(());
                         }
+                    }
+                    }
+                    Err(error) => {
+                        println!("error: {}", error);
+                        return Err(Box::new(error));
                     }
                 }
             }
