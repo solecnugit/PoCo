@@ -2,13 +2,11 @@ use std::error::Error;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
+use anyhow::anyhow;
 
 use near_crypto::{InMemorySigner, PublicKey};
-
 use near_jsonrpc_client::methods::network_info::RpcNetworkInfoResponse;
-
 use near_jsonrpc_client::methods::status::RpcStatusResponse;
-
 use near_jsonrpc_client::{methods, JsonRpcClient};
 use near_jsonrpc_primitives::types::query::{QueryResponseKind, RpcQueryResponse};
 use near_primitives::transaction::FunctionCallAction;
@@ -71,7 +69,7 @@ impl PocoAgent {
         }
     }
 
-    pub async fn gas_price(&self) -> Result<Balance, Box<dyn Error>> {
+    pub async fn gas_price(&self) -> anyhow::Result<Balance> {
         let request = methods::gas_price::RpcGasPriceRequest { block_id: None };
 
         let response = self.inner.call(request).await?;
@@ -80,21 +78,21 @@ impl PocoAgent {
         Ok(gas_price)
     }
 
-    pub async fn network_status(&self) -> Result<RpcNetworkInfoResponse, Box<dyn Error>> {
+    pub async fn network_status(&self) -> anyhow::Result<RpcNetworkInfoResponse> {
         let request = methods::network_info::RpcNetworkInfoRequest;
         let response = self.inner.call(request).await?;
 
         Ok(response)
     }
 
-    pub async fn status(&self) -> Result<RpcStatusResponse, Box<dyn Error>> {
+    pub async fn status(&self) -> anyhow::Result<RpcStatusResponse> {
         let request = methods::status::RpcStatusRequest;
         let response = self.inner.call(request).await?;
 
         Ok(response)
     }
 
-    pub async fn view_account(&self, account_id: AccountId) -> Result<AccountView, Box<dyn Error>> {
+    pub async fn view_account(&self, account_id: AccountId) -> anyhow::Result<AccountView> {
         let request = methods::query::RpcQueryRequest {
             block_reference: BlockReference::Finality(Finality::Final),
             request: QueryRequest::ViewAccount { account_id },
@@ -105,7 +103,7 @@ impl PocoAgent {
         if let QueryResponseKind::ViewAccount(account_view) = response.kind {
             Ok(account_view)
         } else {
-            Err("Unexpected response")?
+            Err(anyhow!("Unexpected response kind: {:?}", response.kind))
         }
     }
 
@@ -113,7 +111,7 @@ impl PocoAgent {
         &self,
         account_id: AccountId,
         public_key: PublicKey,
-    ) -> Result<AccessKeyView, Box<dyn Error>> {
+    ) -> anyhow::Result<AccessKeyView> {
         let request = methods::query::RpcQueryRequest {
             block_reference: BlockReference::Finality(Finality::Final),
             request: QueryRequest::ViewAccessKey {
@@ -127,7 +125,7 @@ impl PocoAgent {
         if let QueryResponseKind::AccessKey(access_key_view) = response.kind {
             Ok(access_key_view)
         } else {
-            Err("Unexpected response")?
+            Err(anyhow!("Unexpected response kind: {:?}", response.kind))
         }
     }
 
@@ -144,11 +142,11 @@ impl PocoAgent {
 
     fn get_buffer_from_call_response(
         response: RpcQueryResponse,
-    ) -> Result<Vec<u8>, Box<dyn Error>> {
+    ) -> anyhow::Result<Vec<u8>> {
         if let QueryResponseKind::CallResult(call_result) = response.kind {
             Ok(call_result.result)
         } else {
-            Err("Unexpected response")?
+            Err(anyhow!("Unexpected response"))
         }
     }
 
@@ -157,7 +155,7 @@ impl PocoAgent {
         method_name: &str,
         args: &str,
         r#type: ArgsType,
-    ) -> Result<Vec<u8>, Box<dyn Error>> {
+    ) -> anyhow::Result<Vec<u8>> {
         let request = methods::query::RpcQueryRequest {
             block_reference: BlockReference::Finality(Finality::Final),
             request: QueryRequest::CallFunction {
@@ -179,7 +177,7 @@ impl PocoAgent {
         r#type: ArgsType,
         gas: u64,
         deposit: u128,
-    ) -> Result<(Gas, Vec<u8>), Box<dyn Error>> {
+    ) -> anyhow::Result<(Gas, Vec<u8>)> {
         let access_key_response = self
             .inner
             .call(methods::query::RpcQueryRequest {
@@ -193,7 +191,7 @@ impl PocoAgent {
 
         let current_nonce = match access_key_response.kind {
             QueryResponseKind::AccessKey(access_key) => access_key.nonce,
-            _ => Err("unexpected response kind")?,
+            _ => Err(anyhow!("Unexpected response"))?,
         };
 
         let transaction = Transaction {
@@ -227,7 +225,7 @@ impl PocoAgent {
         match response.status {
             FinalExecutionStatus::SuccessValue(buffer) => Ok((gas_burnt, buffer)),
             FinalExecutionStatus::Failure(error) => Err(error)?,
-            _ => Err("transaction not finished yet")?,
+            _ => Err(anyhow!("transaction not finished yet"))?,
         }
     }
 
@@ -235,7 +233,7 @@ impl PocoAgent {
         &self,
         method_name: &str,
         args: &T,
-    ) -> Result<R, Box<dyn Error>>
+    ) -> anyhow::Result<R>
     where
         T: Serialize,
         R: DeserializeOwned,
@@ -257,7 +255,7 @@ impl PocoAgent {
         args: &T,
         gas: u64,
         deposit: u128,
-    ) -> Result<(Gas, R), Box<dyn Error>>
+    ) -> anyhow::Result<(Gas, R)>
     where
         T: Serialize,
         R: DeserializeOwned,
@@ -270,7 +268,7 @@ impl PocoAgent {
 
         match serde_json::from_slice(buffer.as_slice()) {
             Ok(result) => Ok((gas, result)),
-            Err(_) => Err("Unexpected response")?,
+            Err(_) => Err(anyhow!("Unexpected response"))?,
         }
     }
 
@@ -280,7 +278,7 @@ impl PocoAgent {
         args: &T,
         gas: u64,
         deposit: u128,
-    ) -> Result<Gas, Box<dyn Error>>
+    ) -> anyhow::Result<Gas>
     where
         T: Serialize,
     {
@@ -293,7 +291,7 @@ impl PocoAgent {
         Ok(gas)
     }
 
-    pub async fn get_round_status(&self) -> Result<RoundStatus, Box<dyn Error>> {
+    pub async fn get_round_status(&self) -> anyhow::Result<RoundStatus> {
         let response = self
             .call_view_function_json("get_round_status", &json!({}))
             .await?;
@@ -301,7 +299,7 @@ impl PocoAgent {
         Ok(response)
     }
 
-    pub async fn count_events(&self) -> Result<u32, Box<dyn Error>> {
+    pub async fn count_events(&self) -> anyhow::Result<u32> {
         let response = self
             .call_view_function_json("count_events", &json!({}))
             .await?;
@@ -313,11 +311,11 @@ impl PocoAgent {
         &self,
         from: u32,
         count: u32,
-    ) -> Result<Vec<IndexedEvent>, Box<dyn Error>> {
+    ) -> anyhow::Result<Vec<IndexedEvent>> {
         let response = self
             .call_view_function_json(
                 "query_events",
-                &json! ({
+                &json!({
                     "from" : from,
                     "count" : count
                 }),
@@ -330,12 +328,12 @@ impl PocoAgent {
     pub async fn get_user_endpoint(
         &self,
         account_id: Option<AccountId>,
-    ) -> Result<Option<String>, Box<dyn Error>> {
+    ) -> anyhow::Result<Option<String>> {
         self.call_view_function_json("get_user_endpoint", &json!({ "account_id": account_id }))
             .await
     }
 
-    pub async fn set_user_endpoint(&self, endpoint: &str) -> Result<Gas, Box<dyn Error>> {
+    pub async fn set_user_endpoint(&self, endpoint: &str) -> anyhow::Result<Gas> {
         self.call_change_function_json_no_response(
             "set_user_endpoint",
             &json!({ "endpoint": endpoint }),
