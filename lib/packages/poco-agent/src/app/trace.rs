@@ -8,6 +8,7 @@ use tracing_subscriber::Layer;
 
 use super::ui::action::{UIAction, UIActionEvent};
 
+#[derive(Debug, Clone)]
 pub struct TracingEvent {
     pub category: TracingCategory,
     pub timestamp: DateTime<Local>,
@@ -16,7 +17,7 @@ pub struct TracingEvent {
     pub fields: Vec<(String, String)>,
 }
 
-#[derive(Debug, Display)]
+#[derive(Debug, Display, Clone)]
 pub enum TracingCategory {
     Contract,
     Agent,

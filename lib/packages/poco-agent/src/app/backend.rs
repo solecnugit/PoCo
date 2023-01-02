@@ -21,6 +21,8 @@ use crate::app::backend::command::{
     ParseBackendCommandError::{InvalidCommandParameter, MissingCommandParameter, UnknownCommand},
 };
 use crate::app::trace::TracingCategory;
+use crate::app::ui::action::CommandExecutionStage;
+use crate::app::ui::action::UIAction::CommandExecutionDone;
 use crate::config::PocoAgentConfig;
 use crate::ipfs::client::IpfsClient;
 
@@ -88,11 +90,12 @@ impl Backend {
         let config = self.config.clone();
 
         self.async_runtime
-            .spawn(f(sender1, agent, ipfs_client, config).then(async move |_| {
-                sender2
-                    .send(UIAction::CommandExecutionDone(command_id).into())
-                    .unwrap();
-            }));
+            .spawn(f(sender1, agent, ipfs_client, config)
+                .then(async move |_| {
+                    sender2
+                        .send(UIAction::CommandExecutionDone(command_id, CommandExecutionStage::Executed).into())
+                        .unwrap();
+                }));
     }
 
     fn execute_command(&mut self, command_id: String, command: BackendCommand) {
@@ -103,7 +106,7 @@ impl Backend {
                     .unwrap();
 
                 self.sender
-                    .send(UIAction::CommandExecutionDone(command_id).into())
+                    .send(UIAction::CommandExecutionDone(command_id, CommandExecutionStage::Executed).into())
                     .unwrap();
             }
             GasPriceCommand => self.execute_gas_price_command(command_id),
@@ -639,31 +642,35 @@ impl Backend {
                         Ok(command_source) => {
                             match self.parse_command(command_source.source.trim()) {
                                 Ok(command) => self.execute_command(command_source.id, command),
-                                Err(error) => match error {
-                                    UnknownCommand(command) => {
-                                        tracing::event!(
+                                Err(error) => {
+                                    match error {
+                                        UnknownCommand(command) => {
+                                            tracing::event!(
                                             Level::ERROR,
                                             message = format!("unknown command: {}", command),
                                             category = format!("{:?}", TracingCategory::Agent)
                                         );
-                                    }
-                                    MissingCommandParameter(parameter) => {
-                                        tracing::event!(
+                                        }
+                                        MissingCommandParameter(parameter) => {
+                                            tracing::event!(
                                             Level::ERROR,
                                             message =
                                                 format!("missing command parameter: {}", parameter),
                                             category = format!("{:?}", TracingCategory::Agent)
                                         );
-                                    }
-                                    InvalidCommandParameter(parameter) => {
-                                        tracing::event!(
+                                        }
+                                        InvalidCommandParameter(parameter) => {
+                                            tracing::event!(
                                             Level::ERROR,
                                             message =
                                                 format!("invalid command parameter: {}", parameter),
                                             category = format!("{:?}", TracingCategory::Agent)
                                         );
+                                        }
                                     }
-                                },
+
+                                    self.sender.send(CommandExecutionDone(command_source.id, CommandExecutionStage::Parsing).into()).unwrap();
+                                }
                             }
                         }
                         Err(_error) => {

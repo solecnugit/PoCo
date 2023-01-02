@@ -22,13 +22,20 @@ impl From<UIAction> for UIActionEvent {
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum CommandExecutionStage {
+    Parsing,
+    Executed
+}
+
+#[derive(Debug, Clone)]
 pub enum UIAction {
     Panic(String),
     LogString(String),
     LogMultipleString(Vec<String>),
     LogTracingEvent(TracingEvent),
     LogCommand(String, String),
-    CommandExecutionDone(String),
+    CommandExecutionDone(String, CommandExecutionStage),
     QuitApp,
 }
 
@@ -176,7 +183,7 @@ impl UIActionEvent {
                 "Quitting app",
                 Style::default().fg(Color::White),
             ))],
-            UIAction::CommandExecutionDone(id) => vec![Spans::from(Span::styled(
+            UIAction::CommandExecutionDone(id, stage) => vec![Spans::from(Span::styled(
                 format!("Command {} execution done", id),
                 Style::default().fg(Color::White),
             ))],
