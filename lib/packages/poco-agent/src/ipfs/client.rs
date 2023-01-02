@@ -1,7 +1,7 @@
+use std::sync::Arc;
+
 use futures::TryStreamExt;
 use ipfs_api_backend_hyper::{IpfsApi, TryFromUri};
-
-use std::sync::Arc;
 use tokio_util::compat::TokioAsyncReadCompatExt;
 
 pub struct IpfsClient {

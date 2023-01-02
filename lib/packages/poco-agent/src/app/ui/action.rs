@@ -6,7 +6,10 @@ use tui::{
 };
 use unicode_width::UnicodeWidthStr;
 
-use crate::app::trace::{TracingCategory, TracingEvent};
+use crate::app::{
+    backend::command::CommandSource,
+    trace::{TracingCategory, TracingEvent},
+};
 
 pub struct UIActionEvent(pub DateTime<Local>, pub UIAction);
 
@@ -29,13 +32,19 @@ pub enum CommandExecutionStage {
 }
 
 #[derive(Debug, Clone)]
+pub enum CommandExecutionStatus {
+    Success,
+    Failure,
+}
+
+#[derive(Debug, Clone)]
 pub enum UIAction {
     Panic(String),
     LogString(String),
     LogMultipleString(Vec<String>),
     LogTracingEvent(TracingEvent),
     LogCommand(String, String),
-    CommandExecutionDone(String, CommandExecutionStage),
+    CommandExecutionDone(CommandSource, CommandExecutionStage, CommandExecutionStatus),
     QuitApp,
 }
 
@@ -115,6 +124,7 @@ impl UIActionEvent {
                     TracingCategory::Agent => Color::LightBlue,
                     TracingCategory::Config => Color::LightMagenta,
                     TracingCategory::Ipfs => Color::LightCyan,
+                    TracingCategory::Backend => Color::LightBlue,
                 };
 
                 let category_span = Span::styled(
@@ -183,10 +193,22 @@ impl UIActionEvent {
                 "Quitting app",
                 Style::default().fg(Color::White),
             ))],
-            UIAction::CommandExecutionDone(id, _stage) => vec![Spans::from(Span::styled(
-                format!("Command {} execution done", id),
-                Style::default().fg(Color::White),
-            ))],
+            UIAction::CommandExecutionDone(source, _stage, status) => vec![Spans::from(vec![
+                time_span,
+                Span::raw(" "),
+                Span::styled(
+                    match status {
+                        CommandExecutionStatus::Success => {
+                            format!("Command {} executed successfully", source)
+                        }
+                        CommandExecutionStatus::Failure => format!("Command {} failed", source),
+                    },
+                    Style::default().fg(match status {
+                        CommandExecutionStatus::Success => Color::Green,
+                        CommandExecutionStatus::Failure => Color::Red,
+                    }),
+                ),
+            ])],
             UIAction::Panic(_) => unreachable!(),
         }
     }

@@ -5,7 +5,7 @@ use anyhow::anyhow;
 use tracing::Level;
 
 use crate::app::backend::command::CommandSource;
-use crate::app::ui::action::UIAction;
+use crate::app::ui::action::{CommandExecutionStatus, UIAction};
 use crate::{app::trace::TracingCategory, config::PocoAgentConfig};
 
 use self::{
@@ -95,8 +95,16 @@ impl App {
                             println!("{}", error);
                             break 'main Err(anyhow::anyhow!(error));
                         }
-                        UIAction::CommandExecutionDone(command_id, _stage) => {
-                            println!("{} done", command_id);
+                        UIAction::CommandExecutionDone(command_source, _stage, status) => {
+                            match status {
+                                CommandExecutionStatus::Success => {
+                                    println!("Command {} executed successfully", command_source.id);
+                                }
+                                CommandExecutionStatus::Failure => {
+                                    println!("Command {} failed", command_source.id);
+                                }
+                            }
+
                             break 'main Ok(());
                         }
                         UIAction::QuitApp => {

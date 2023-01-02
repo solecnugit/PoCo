@@ -23,6 +23,7 @@ pub enum TracingCategory {
     Agent,
     Ipfs,
     Config,
+    Backend,
 }
 
 pub struct UITracingLayer {
@@ -85,8 +86,7 @@ impl<S: Subscriber> Layer<S> for UITracingLayer {
 
             let event = TracingEvent::new(category, timestamp, level.clone(), message, fields);
 
-            match self.sender
-                .send(UIAction::LogTracingEvent(event).into()) {
+            match self.sender.send(UIAction::LogTracingEvent(event).into()) {
                 Ok(_) => {}
                 Err(err) => {
                     tracing::error!(

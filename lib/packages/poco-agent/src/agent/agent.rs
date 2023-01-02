@@ -1,8 +1,8 @@
+use anyhow::anyhow;
 use std::error::Error;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
-use anyhow::anyhow;
 
 use near_crypto::{InMemorySigner, PublicKey};
 use near_jsonrpc_client::methods::network_info::RpcNetworkInfoResponse;
@@ -140,9 +140,7 @@ impl PocoAgent {
         }
     }
 
-    fn get_buffer_from_call_response(
-        response: RpcQueryResponse,
-    ) -> anyhow::Result<Vec<u8>> {
+    fn get_buffer_from_call_response(response: RpcQueryResponse) -> anyhow::Result<Vec<u8>> {
         if let QueryResponseKind::CallResult(call_result) = response.kind {
             Ok(call_result.result)
         } else {
@@ -307,11 +305,7 @@ impl PocoAgent {
         Ok(response)
     }
 
-    pub async fn query_events(
-        &self,
-        from: u32,
-        count: u32,
-    ) -> anyhow::Result<Vec<IndexedEvent>> {
+    pub async fn query_events(&self, from: u32, count: u32) -> anyhow::Result<Vec<IndexedEvent>> {
         let response = self
             .call_view_function_json(
                 "query_events",

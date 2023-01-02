@@ -1,8 +1,8 @@
 use std::path::Path;
 
-use crate::app::backend::command::get_command_instance;
-
 use serde::{Deserialize, Serialize};
+
+use crate::app::backend::command::get_command_instance;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AppConfig {
@@ -49,18 +49,6 @@ pub struct PocoAgentConfig {
     pub near: NearConfig,
     pub poco: PocoConfig,
 }
-
-// #[derive(Parser)]
-// #[command(name = "poco-agent")]
-// #[command(author = "Twiliness")]
-// #[command(version = "0.0.1")]
-// pub struct CLI {
-//     #[arg(short = 'f')]
-//     #[arg(long = "config")]
-//     #[arg(value_name = "CONFIG_FILE")]
-//     #[arg(default_value = "config.toml")]
-//     pub config_path: Option<PathBuf>,
-// }
 
 pub struct AppRunConfig {
     pub in_ui_mode: bool,

@@ -1,12 +1,7 @@
-pub mod action;
-pub mod state;
-
 use std::io::Write;
+use std::time;
 use std::{io, sync::Arc};
 
-use std::time;
-
-use crate::app::backend::command::CommandSource;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event},
     execute,
@@ -20,14 +15,18 @@ use tui::widgets::{Block, Borders, List, Paragraph};
 use tui::{Frame, Terminal};
 use unicode_width::UnicodeWidthStr;
 
+use crate::app::backend::command::CommandSource;
 use crate::config::PocoAgentConfig;
+
+use super::CommandString;
 
 use self::action::UIAction;
 use self::action::UIActionEvent;
 use self::state::UIInputMode;
 use self::state::UIState;
 
-use super::CommandString;
+pub mod action;
+pub mod state;
 
 pub struct UI {
     state: UIState,

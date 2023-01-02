@@ -1,15 +1,7 @@
 use clap::{Arg, Command};
 use near_primitives::types::AccountId;
+use std::fmt::{Display, Formatter};
 use strum::Display;
-
-// #[inline]
-// fn subcommand(name: &'static str) -> Command {
-//     Command::new(name)
-//         .disable_help_subcommand(true)
-//         .disable_help_flag(true)
-//         .disable_colored_help(true)
-//         .disable_version_flag(true)
-// }
 
 pub fn get_command_instance(in_ui_mode: bool) -> Command {
     let subcommand = if in_ui_mode {
@@ -161,4 +153,10 @@ pub enum ParseBackendCommandError {
     UnknownCommand(String),
     MissingCommandParameter(String),
     InvalidCommandParameter(String),
+}
+
+impl Display for CommandSource {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.id, self.source)
+    }
 }

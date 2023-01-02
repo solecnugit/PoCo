@@ -1,15 +1,15 @@
 use std::future::Future;
-
+use std::path::Path;
 use std::sync::Arc;
 
 use futures::lock::Mutex;
 use futures::FutureExt;
 use near_primitives::types::AccountId;
-
-
+use thiserror::__private::DisplayAsDisplay;
 use tracing::Level;
 
 use crate::agent::agent::PocoAgent;
+use crate::agent::task::config::RawTaskConfig;
 use crate::app::backend::command::{
     BackendCommand::{
         CountEventsCommand, GasPriceCommand, GetUserEndpointCommand, HelpCommand,
@@ -21,8 +21,8 @@ use crate::app::backend::command::{
     ParseBackendCommandError::{InvalidCommandParameter, MissingCommandParameter, UnknownCommand},
 };
 use crate::app::trace::TracingCategory;
-use crate::app::ui::action::CommandExecutionStage;
 use crate::app::ui::action::UIAction::CommandExecutionDone;
+use crate::app::ui::action::{CommandExecutionStage, CommandExecutionStatus};
 use crate::config::PocoAgentConfig;
 use crate::ipfs::client::IpfsClient;
 
@@ -74,7 +74,7 @@ impl Backend {
         }
     }
 
-    fn execute_command_block<F, R>(&mut self, command_id: String, f: F)
+    fn execute_command_block<F, R>(&mut self, command_source: CommandSource, f: F)
     where
         F: FnOnce(
             crossbeam_channel::Sender<UIActionEvent>,
@@ -82,7 +82,7 @@ impl Backend {
             Arc<IpfsClient>,
             Arc<PocoAgentConfig>,
         ) -> R,
-        R: Future<Output = ()> + Send + 'static,
+        R: Future<Output = anyhow::Result<()>> + Send + 'static,
     {
         let sender1 = self.sender.clone();
         let sender2 = self.sender.clone();
@@ -92,17 +92,41 @@ impl Backend {
         let config = self.config.clone();
 
         self.async_runtime
-            .spawn(f(sender1, agent, ipfs_client, config).then(async move |_| {
-                sender2
-                    .send(
-                        UIAction::CommandExecutionDone(command_id, CommandExecutionStage::Executed)
-                            .into(),
+            .spawn(f(sender1, agent, ipfs_client, config).inspect(move |r| {
+                let msg = if let Err(e) = r {
+                    tracing::error!(
+                        message = "failed to execute command",
+                        command = format!("{:?}", command_source),
+                        category = format!("{:?}", TracingCategory::Backend),
+                        error = format!("{:?}", e)
+                    );
+
+                    sender2
+                        .send(UIAction::LogString(format!("{}", e.as_display())).into())
+                        .unwrap();
+
+                    CommandExecutionDone(
+                        command_source,
+                        CommandExecutionStage::Executed,
+                        CommandExecutionStatus::Failure,
                     )
-                    .unwrap();
+                    .into()
+                } else {
+                    CommandExecutionDone(
+                        command_source,
+                        CommandExecutionStage::Executed,
+                        CommandExecutionStatus::Success,
+                    )
+                    .into()
+                };
+
+                sender2.send(msg).unwrap();
+
+                ()
             }));
     }
 
-    fn execute_command(&mut self, command_id: String, command: BackendCommand) {
+    fn execute_command(&mut self, command_source: CommandSource, command: BackendCommand) {
         match command {
             HelpCommand(help) => {
                 self.sender
@@ -111,67 +135,83 @@ impl Backend {
 
                 self.sender
                     .send(
-                        UIAction::CommandExecutionDone(command_id, CommandExecutionStage::Executed)
-                            .into(),
+                        UIAction::CommandExecutionDone(
+                            command_source,
+                            CommandExecutionStage::Executed,
+                            CommandExecutionStatus::Success,
+                        )
+                        .into(),
                     )
                     .unwrap();
             }
-            GasPriceCommand => self.execute_gas_price_command(command_id),
-            NetworkStatusCommand => self.execute_network_status_command(command_id),
-            StatusCommand => self.execute_status_command(command_id),
+            GasPriceCommand => self.execute_gas_price_command(command_source),
+            NetworkStatusCommand => self.execute_network_status_command(command_source),
+            StatusCommand => self.execute_status_command(command_source),
             ViewAccountCommand { account_id } => {
-                self.execute_view_account_command(command_id, account_id)
+                self.execute_view_account_command(command_source, account_id)
             }
-            RoundStatusCommand => self.execute_round_status_command(command_id),
-            CountEventsCommand => self.execute_count_events_command(command_id),
+            RoundStatusCommand => self.execute_round_status_command(command_source),
+            CountEventsCommand => self.execute_count_events_command(command_source),
             QueryEventsCommand { from, count } => {
-                self.execute_query_events_command(command_id, from, count)
+                self.execute_query_events_command(command_source, from, count)
             }
             GetUserEndpointCommand { account_id } => {
-                self.execute_get_user_endpoint_command(command_id, account_id)
+                self.execute_get_user_endpoint_command(command_source, account_id)
             }
             SetUserEndpointCommand { endpoint } => {
-                self.execute_set_user_endpoint_command(command_id, endpoint)
+                self.execute_set_user_endpoint_command(command_source, endpoint)
             }
             IpfsAddFileCommand { file_path } => {
-                self.execute_ipfs_add_file_command(command_id, file_path)
+                self.execute_ipfs_add_file_command(command_source, file_path)
             }
             IpfsCatFileCommand { file_hash } => {
-                self.execute_ipfs_cat_file_command(command_id, file_hash)
+                self.execute_ipfs_cat_file_command(command_source, file_hash)
             }
             PublishTaskCommand { task_config_path } => {
-                self.execute_publish_task_command(command_id, task_config_path)
+                self.execute_publish_task_command(command_source, task_config_path)
             }
         }
     }
 
-    fn execute_publish_task_command(&mut self, command_id: String, _task_config_path: String) {
+    fn execute_publish_task_command(
+        &mut self,
+        command_source: CommandSource,
+        task_config_path: String,
+    ) {
         self.execute_command_block(
-            command_id,
-            async move |_sender, _agent, _ipfs_client, _config| {
-                // let task_config_path = Path::new(&task_config_path);
-                //
-                // match task_config_path.try_exists() {
-                //     Ok(true) => {}
-                //     _ => {
-                //         sender
-                //             .send(UIAction::LogString(format!("Task config file not found: {}", task_config_path.display())).into())
-                //             .unwrap();
-                //         return;
-                //     }
-                // }
-                //
-                // let task_config = tokio::fs::read_to_string(task_config_path).await?;
-                // let task_config = serde_json::from_str::<TaskConfig>(&task_config)?;
-                //
-                // let agent = agent.get_or(|| PocoAgent::new(config));
+            command_source,
+            async move |sender, agent, _ipfs_client, _config| {
+                let task_config_path = Path::new(&task_config_path);
+
+                match task_config_path.try_exists() {
+                    Ok(true) => {}
+                    _ => {
+                        sender
+                            .send(
+                                UIAction::LogString(format!(
+                                    "Task config file not found: {}",
+                                    task_config_path.display()
+                                ))
+                                .into(),
+                            )
+                            .unwrap();
+                        return Ok(());
+                    }
+                }
+
+                let task_config = tokio::fs::read_to_string(task_config_path).await?;
+                let task_config = serde_json::from_str::<RawTaskConfig>(&task_config)?;
+
+                task_config;
+
+                Ok(())
             },
         );
     }
 
-    fn execute_ipfs_cat_file_command(&mut self, command_id: String, file_hash: String) {
+    fn execute_ipfs_cat_file_command(&mut self, command_source: CommandSource, file_hash: String) {
         self.execute_command_block(
-            command_id,
+            command_source,
             async move |sender, _agent, ipfs_client, _config| {
                 let buffer = ipfs_client.cat_file(file_hash.as_str()).await.unwrap();
                 let buffer = String::from_utf8(buffer).unwrap();
@@ -184,31 +224,34 @@ impl Backend {
                         .into(),
                     )
                     .unwrap();
+
+                Ok(())
             },
         );
     }
 
-    fn execute_ipfs_add_file_command(&mut self, command_id: String, file_path: String) {
+    fn execute_ipfs_add_file_command(&mut self, command_source: CommandSource, file_path: String) {
         self.execute_command_block(
-            command_id,
+            command_source,
             async move |sender, _agent, ipfs_client, _config| {
                 let file_hash = ipfs_client.add_file(file_path.as_str()).await.unwrap();
-
-                tracing::info!(
-                    category = TracingCategory::Ipfs.to_string(),
-                    message = format!("File Path: {} File hash: {}", file_path, file_hash)
-                );
 
                 sender
                     .send(UIAction::LogString(format!("File hash: {}", file_hash)).into())
                     .unwrap();
+
+                Ok(())
             },
         );
     }
 
-    fn execute_set_user_endpoint_command(&mut self, command_id: String, endpoint: String) {
+    fn execute_set_user_endpoint_command(
+        &mut self,
+        command_source: CommandSource,
+        endpoint: String,
+    ) {
         self.execute_command_block(
-            command_id,
+            command_source,
             async move |sender, agent, _ipfs_client, _config| match agent
                 .set_user_endpoint(endpoint.as_str())
                 .await
@@ -223,6 +266,8 @@ impl Backend {
                             .into(),
                         )
                         .unwrap();
+
+                    Ok(())
                 }
                 Err(e) => {
                     sender
@@ -231,6 +276,8 @@ impl Backend {
                                 .into(),
                         )
                         .unwrap();
+
+                    Err(e)
                 }
             },
         )
@@ -238,11 +285,11 @@ impl Backend {
 
     fn execute_get_user_endpoint_command(
         &mut self,
-        command_id: String,
+        command_source: CommandSource,
         account_id: Option<AccountId>,
     ) {
         self.execute_command_block(
-            command_id,
+            command_source,
             async move |sender, agent, _ipfs_client, _config| match agent
                 .get_user_endpoint(account_id)
                 .await
@@ -251,11 +298,15 @@ impl Backend {
                     sender
                         .send(UIAction::LogString(format!("Endpoint: {}", endpoint)).into())
                         .unwrap();
+
+                    Ok(())
                 }
                 Ok(None) => {
                     sender
                         .send(UIAction::LogString("No endpoint found".to_string()).into())
                         .unwrap();
+
+                    Ok(())
                 }
                 Err(e) => {
                     sender
@@ -265,14 +316,21 @@ impl Backend {
                     sender
                         .send(UIAction::LogString(format!("Error: {}", e)).into())
                         .unwrap();
+
+                    Err(e)
                 }
             },
         )
     }
 
-    fn execute_query_events_command(&mut self, command_id: String, from: u32, count: u32) {
+    fn execute_query_events_command(
+        &mut self,
+        command_source: CommandSource,
+        from: u32,
+        count: u32,
+    ) {
         self.execute_command_block(
-            command_id,
+            command_source,
             async move |sender, agent, _ipfs_client, _config| match agent
                 .query_events(from, count)
                 .await
@@ -289,6 +347,8 @@ impl Backend {
                                 .unwrap();
                         }
                     }
+
+                    Ok(())
                 }
                 Err(e) => {
                     sender
@@ -298,19 +358,23 @@ impl Backend {
                     sender
                         .send(UIAction::LogString(format!("Error: {}", e)).into())
                         .unwrap();
+
+                    Err(e)
                 }
             },
         )
     }
 
-    fn execute_count_events_command(&mut self, command_id: String) {
+    fn execute_count_events_command(&mut self, command_source: CommandSource) {
         self.execute_command_block(
-            command_id,
+            command_source,
             async move |sender, agent, _ipfs_client, _config| match agent.count_events().await {
                 Ok(event_count) => {
                     sender
                         .send(UIAction::LogString(format!("Total Events: {}", event_count)).into())
                         .unwrap();
+
+                    Ok(())
                 }
                 Err(e) => {
                     sender
@@ -320,19 +384,23 @@ impl Backend {
                     sender
                         .send(UIAction::LogString(format!("Error: {}", e)).into())
                         .unwrap();
+
+                    Err(e)
                 }
             },
         )
     }
 
-    fn execute_round_status_command(&mut self, command_id: String) {
+    fn execute_round_status_command(&mut self, command_source: CommandSource) {
         self.execute_command_block(
-            command_id,
+            command_source,
             async move |sender, agent, _ipfs_client, _config| match agent.get_round_status().await {
                 Ok(round_status) => {
                     sender
                         .send(UIAction::LogString(format!("Round Status: {}", round_status)).into())
                         .unwrap();
+
+                    Ok(())
                 }
                 Err(e) => {
                     sender
@@ -342,14 +410,20 @@ impl Backend {
                     sender
                         .send(UIAction::LogString(format!("Error: {}", e)).into())
                         .unwrap();
+
+                    Err(e)
                 }
             },
         )
     }
 
-    fn execute_view_account_command(&mut self, command_id: String, account_id: AccountId) {
+    fn execute_view_account_command(
+        &mut self,
+        command_source: CommandSource,
+        account_id: AccountId,
+    ) {
         self.execute_command_block(
-            command_id,
+            command_source,
             async move |sender, agent, _ipfs_client, _config| {
                 let account_id_in_string = account_id.to_string();
 
@@ -368,6 +442,8 @@ impl Backend {
                                 .into(),
                             )
                             .unwrap();
+
+                        Ok(())
                     }
                     Err(e) => {
                         sender
@@ -377,15 +453,17 @@ impl Backend {
                         sender
                             .send(UIAction::LogString(format!("Error: {}", e)).into())
                             .unwrap();
+
+                        Err(e)
                     }
                 }
             },
         )
     }
 
-    fn execute_status_command(&mut self, command_id: String) {
+    fn execute_status_command(&mut self, command_source: CommandSource) {
         self.execute_command_block(
-            command_id,
+            command_source,
             async move |sender, agent, _ipfs_client, _config| match agent.status().await {
                 Ok(status) => {
                     sender
@@ -417,6 +495,8 @@ impl Backend {
                             .into(),
                         )
                         .unwrap();
+
+                    Ok(())
                 }
                 Err(e) => {
                     sender
@@ -426,14 +506,16 @@ impl Backend {
                     sender
                         .send(UIAction::LogString(format!("Error: {}", e)).into())
                         .unwrap();
+
+                    Err(e)
                 }
             },
         )
     }
 
-    fn execute_network_status_command(&mut self, command_id: String) {
+    fn execute_network_status_command(&mut self, command_source: CommandSource) {
         self.execute_command_block(
-            command_id,
+            command_source,
             async move |sender, agent, _ipfs_client, _config| match agent.network_status().await {
                 Ok(network_status) => {
                     sender
@@ -452,6 +534,8 @@ impl Backend {
                             .into(),
                         )
                         .unwrap();
+
+                    Ok(())
                 }
                 Err(e) => {
                     sender
@@ -463,19 +547,23 @@ impl Backend {
                     sender
                         .send(UIAction::LogString(format!("Error: {}", e)).into())
                         .unwrap();
+
+                    Err(e)
                 }
             },
         );
     }
 
-    fn execute_gas_price_command(&mut self, command_id: String) {
+    fn execute_gas_price_command(&mut self, command_source: CommandSource) {
         self.execute_command_block(
-            command_id,
+            command_source,
             async move |sender, agent, _ipfs_client, _config| match agent.gas_price().await {
                 Ok(gas_price) => {
                     sender
                         .send(UIAction::LogString(format!("Gas Price: {}", gas_price)).into())
                         .unwrap();
+
+                    Ok(())
                 }
                 Err(e) => {
                     sender
@@ -485,6 +573,8 @@ impl Backend {
                     sender
                         .send(UIAction::LogString(format!("Error: {}", e)).into())
                         .unwrap();
+
+                    Err(e)
                 }
             },
         )
@@ -619,14 +709,15 @@ impl Backend {
                     match self.receiver.recv() {
                         Ok(command_source) => {
                             match self.parse_command(command_source.source.trim()) {
-                                Ok(command) => self.execute_command(command_source.id, command),
+                                Ok(command) => self.execute_command(command_source, command),
                                 Err(error) => {
                                     match error {
                                         UnknownCommand(command) => {
                                             tracing::event!(
                                                 Level::ERROR,
                                                 message = format!("unknown command: {}", command),
-                                                category = format!("{:?}", TracingCategory::Agent)
+                                                category =
+                                                    format!("{:?}", TracingCategory::Backend)
                                             );
                                         }
                                         MissingCommandParameter(parameter) => {
@@ -636,7 +727,8 @@ impl Backend {
                                                     "missing command parameter: {}",
                                                     parameter
                                                 ),
-                                                category = format!("{:?}", TracingCategory::Agent)
+                                                category =
+                                                    format!("{:?}", TracingCategory::Backend)
                                             );
                                         }
                                         InvalidCommandParameter(parameter) => {
@@ -646,7 +738,8 @@ impl Backend {
                                                     "invalid command parameter: {}",
                                                     parameter
                                                 ),
-                                                category = format!("{:?}", TracingCategory::Agent)
+                                                category =
+                                                    format!("{:?}", TracingCategory::Backend)
                                             );
                                         }
                                     }
@@ -654,8 +747,9 @@ impl Backend {
                                     self.sender
                                         .send(
                                             CommandExecutionDone(
-                                                command_source.id,
+                                                command_source,
                                                 CommandExecutionStage::Parsing,
+                                                CommandExecutionStatus::Failure,
                                             )
                                             .into(),
                                         )
@@ -667,7 +761,7 @@ impl Backend {
                             tracing::event!(
                                 Level::ERROR,
                                 message = "backend channel disconnected",
-                                category = format!("{:?}", TracingCategory::Agent)
+                                category = format!("{:?}", TracingCategory::Backend)
                             );
 
                             break 'outer;
