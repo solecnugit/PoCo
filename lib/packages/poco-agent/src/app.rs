@@ -1,12 +1,7 @@
-pub mod backend;
-pub mod trace;
-pub mod ui;
-
-
 use std::error::Error;
 use std::{sync::Arc, thread::JoinHandle};
-use anyhow::anyhow;
 
+use anyhow::anyhow;
 use tracing::Level;
 
 use crate::app::backend::command::CommandSource;
@@ -18,6 +13,10 @@ use self::{
     trace::UITracingLayer,
     ui::{action::UIActionEvent, UI},
 };
+
+pub mod backend;
+pub mod trace;
+pub mod ui;
 
 type CommandString = String;
 
@@ -55,12 +54,6 @@ impl App {
     }
 
     pub fn run(mut self, direct_command_flag: bool) -> anyhow::Result<()> {
-        tracing::event!(
-            Level::INFO,
-            message = "start initializing terminal ui",
-            category = format!("{:?}", TracingCategory::Agent)
-        );
-
         let backend = Backend::new(
             self.config.clone(),
             self.backend_channel.1.clone(),
@@ -81,7 +74,7 @@ impl App {
 
             self.backend_channel.0.send(command_source).unwrap();
 
-            'main:loop {
+            'main: loop {
                 match self.ui_channel.1.recv() {
                     Ok(event) => match event.1 {
                         UIAction::LogCommand(command_id, command) => {
@@ -118,6 +111,12 @@ impl App {
                 }
             }
         } else {
+            tracing::event!(
+                Level::INFO,
+                message = "start initializing terminal ui",
+                category = format!("{:?}", TracingCategory::Agent)
+            );
+
             self.ui.run_ui()
         };
 
