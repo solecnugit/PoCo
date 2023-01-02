@@ -25,7 +25,7 @@ impl From<UIAction> for UIActionEvent {
 #[derive(Debug, Clone)]
 pub enum CommandExecutionStage {
     Parsing,
-    Executed
+    Executed,
 }
 
 #[derive(Debug, Clone)]
@@ -183,7 +183,7 @@ impl UIActionEvent {
                 "Quitting app",
                 Style::default().fg(Color::White),
             ))],
-            UIAction::CommandExecutionDone(id, stage) => vec![Spans::from(Span::styled(
+            UIAction::CommandExecutionDone(id, _stage) => vec![Spans::from(Span::styled(
                 format!("Command {} execution done", id),
                 Style::default().fg(Color::White),
             ))],

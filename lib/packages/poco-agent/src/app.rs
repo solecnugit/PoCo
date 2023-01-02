@@ -2,9 +2,9 @@ pub mod backend;
 pub mod trace;
 pub mod ui;
 
-use std::{io, sync::Arc, thread::JoinHandle};
+
 use std::error::Error;
-use futures::future::err;
+use std::{sync::Arc, thread::JoinHandle};
 
 use tracing::Level;
 
@@ -82,8 +82,7 @@ impl App {
 
             loop {
                 match self.ui_channel.1.recv() {
-                    Ok(event) => {
-                        match event.1 {
+                    Ok(event) => match event.1 {
                         UIAction::LogCommand(command_id, command) => {
                             println!("{} {}", command_id, command);
                         }
@@ -102,15 +101,14 @@ impl App {
                             println!("{}", string);
                             return Ok(());
                         }
-                        UIAction::CommandExecutionDone(command_id, stage) => {
+                        UIAction::CommandExecutionDone(command_id, _stage) => {
                             println!("{} done", command_id);
                             return Ok(());
                         }
                         UIAction::QuitApp => {
                             return Ok(());
                         }
-                    }
-                    }
+                    },
                     Err(error) => {
                         println!("error: {}", error);
                         return Err(Box::new(error));

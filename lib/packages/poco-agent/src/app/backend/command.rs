@@ -1,5 +1,3 @@
-
-
 use clap::{Arg, Command};
 use near_primitives::types::AccountId;
 use strum::Display;

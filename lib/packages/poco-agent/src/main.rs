@@ -2,7 +2,7 @@
 #![feature(fn_traits)]
 
 use std::error::Error;
-use std::io;
+
 
 use time::{format_description, UtcOffset};
 use tracing::Level;
@@ -10,8 +10,8 @@ use tracing_subscriber::fmt::time::OffsetTime;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
-use crate::app::App;
 use crate::app::trace::TracingCategory;
+use crate::app::App;
 
 pub mod agent;
 pub mod app;

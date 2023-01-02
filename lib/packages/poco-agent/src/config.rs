@@ -1,4 +1,4 @@
-use std::path::{Path};
+use std::path::Path;
 
 use crate::app::backend::command::get_command_instance;
 

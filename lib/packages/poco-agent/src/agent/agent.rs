@@ -3,7 +3,6 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 
-
 use near_crypto::{InMemorySigner, PublicKey};
 
 use near_jsonrpc_client::methods::network_info::RpcNetworkInfoResponse;
