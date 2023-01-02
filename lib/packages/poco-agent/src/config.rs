@@ -1,8 +1,8 @@
-use std::path::{Path, PathBuf};
+use std::path::{Path};
 
-use clap::Parser;
-use serde::{Deserialize, Serialize};
 use crate::app::backend::command::get_command_instance;
+
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AppConfig {
@@ -64,28 +64,27 @@ pub struct PocoAgentConfig {
 
 pub struct AppRunConfig {
     pub in_ui_mode: bool,
-    pub config_path: String
+    pub config_path: String,
 }
 
 pub(crate) fn parse() -> AppRunConfig {
     let commands = get_command_instance(false);
 
     let arg_matches = commands.get_matches_from(std::env::args());
-    let config_path = arg_matches.get_one::<String>("config").map(|s| s.to_string()).unwrap_or("config.toml".to_string());
+    let config_path = arg_matches
+        .get_one::<String>("config")
+        .map(|s| s.to_string())
+        .unwrap_or("config.toml".to_string());
 
     match arg_matches.subcommand() {
-        Some(("ui", _)) => {
-            AppRunConfig {
-                in_ui_mode: true,
-                config_path
-            }
+        Some(("ui", _)) => AppRunConfig {
+            in_ui_mode: true,
+            config_path,
         },
-        _ => {
-            AppRunConfig {
-                in_ui_mode: false,
-                config_path
-            }
-        }
+        _ => AppRunConfig {
+            in_ui_mode: false,
+            config_path,
+        },
     }
 }
 

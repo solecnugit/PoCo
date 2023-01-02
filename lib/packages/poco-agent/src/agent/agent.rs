@@ -3,7 +3,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 
-use map_macro::map;
+
 use near_crypto::{InMemorySigner, PublicKey};
 
 use near_jsonrpc_client::methods::network_info::RpcNetworkInfoResponse;
@@ -287,7 +287,8 @@ impl PocoAgent {
     {
         let args = serde_json::to_string(args).unwrap();
 
-        let (gas, _) = self.call_change_function(method_name, args.as_str(), ArgsType::JSON, gas, deposit)
+        let (gas, _) = self
+            .call_change_function(method_name, args.as_str(), ArgsType::JSON, gas, deposit)
             .await?;
 
         Ok(gas)

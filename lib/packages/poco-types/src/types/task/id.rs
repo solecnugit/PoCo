@@ -1,10 +1,10 @@
-use std::fmt::Display;
 use crate::types::round::RoundId;
 use crate::types::task::TaskNonce;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::de::{Unexpected, Visitor};
 use near_sdk::serde::{Deserialize, Serialize};
 use schemars::JsonSchema;
+use std::fmt::Display;
 
 #[derive(
     BorshDeserialize, BorshSerialize, JsonSchema, PartialEq, PartialOrd, Hash, Clone, Debug,

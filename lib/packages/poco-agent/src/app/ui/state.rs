@@ -39,7 +39,12 @@ impl UIState {
         }
     }
 
-    pub fn render_event_list(&mut self, time_format: &str, width: usize, height: usize) -> Vec<ListItem> {
+    pub fn render_event_list(
+        &mut self,
+        time_format: &str,
+        width: usize,
+        height: usize,
+    ) -> Vec<ListItem> {
         let items = self
             .internal_event
             .iter()

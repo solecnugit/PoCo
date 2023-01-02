@@ -61,7 +61,10 @@ impl Display for Events {
             Events::NewRoundEvent { round_id } => {
                 write!(f, "NewRoundEvent {{ round_id: {} }}", round_id)
             }
-            Events::NewTaskEvent { task_id, task_config } => write!(
+            Events::NewTaskEvent {
+                task_id,
+                task_config,
+            } => write!(
                 f,
                 "NewTaskEvent {{ task_id: {}, task_config: {} }}",
                 task_id, task_config

@@ -27,7 +27,7 @@ fn main() -> Result<(), io::Error> {
     let (non_blocking_appender, _guard) = tracing_appender::non_blocking(log_file_appender);
     let format = Box::leak(Box::new(config.log.time_format.to_string()));
 
-    let mut app = App::new(config);
+    let app = App::new(config);
     // Init Tracing
     tracing_subscriber::registry()
         .with(

@@ -1,12 +1,13 @@
 pub mod action;
 pub mod state;
 
+
 use std::io::Write;
 use std::{io, sync::Arc};
-use std::error::Error;
 
 use std::time;
 
+use crate::app::backend::command::CommandSource;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event},
     execute,
@@ -19,7 +20,6 @@ use tui::text::{Span, Spans, Text};
 use tui::widgets::{Block, Borders, List, Paragraph};
 use tui::{Frame, Terminal};
 use unicode_width::UnicodeWidthStr;
-use crate::app::backend::command::CommandSource;
 
 use crate::config::PocoAgentConfig;
 
@@ -37,7 +37,7 @@ pub struct UI {
     receiver: crossbeam_channel::Receiver<UIActionEvent>,
     sender: crossbeam_channel::Sender<CommandSource>,
 
-    command_counter: u64
+    command_counter: u64,
 }
 
 impl UI {
@@ -53,7 +53,7 @@ impl UI {
             receiver,
             sender,
             config,
-            command_counter: 0
+            command_counter: 0,
         }
     }
 
@@ -129,12 +129,14 @@ impl UI {
 
                                     let command_id = format!("#{}", self.command_counter);
 
-                                    self.state
-                                        .push_event(UIAction::LogCommand(command_id.clone(), command.clone()).into());
+                                    self.state.push_event(
+                                        UIAction::LogCommand(command_id.clone(), command.clone())
+                                            .into(),
+                                    );
 
                                     let source = CommandSource {
                                         source: command,
-                                        id: command_id
+                                        id: command_id,
                                     };
 
                                     self.command_counter += 1;
@@ -237,9 +239,9 @@ impl UI {
             _ => 0,
         };
 
-        let event_list = self
-            .state
-            .render_event_list(self.config.ui.time_format.as_str(), width, height);
+        let event_list =
+            self.state
+                .render_event_list(self.config.ui.time_format.as_str(), width, height);
         let logs =
             List::new(event_list).block(Block::default().borders(Borders::ALL).title(" Logs "));
 

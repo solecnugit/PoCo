@@ -1,28 +1,32 @@
-use std::future::Future;
-use std::path::Path;
-use std::sync::Arc;
 use futures::FutureExt;
+use std::future::Future;
+
+use std::sync::Arc;
 
 use futures::lock::Mutex;
 use near_primitives::types::AccountId;
-use poco_types::types::task::TaskConfig;
+
 use thread_local::ThreadLocal;
 use tracing::Level;
 
 use crate::agent::agent::PocoAgent;
-use crate::app::backend::command::{BackendCommand::{
-    GasPriceCommand, GetUserEndpointCommand, HelpCommand, IpfsAddFileCommand,
-    IpfsCatFileCommand, NetworkStatusCommand, SetUserEndpointCommand, StatusCommand,
-    ViewAccountCommand,
-}, CommandSource, ParseBackendCommandError::{InvalidCommandParameter, MissingCommandParameter, UnknownCommand}};
-use crate::app::backend::command::BackendCommand::{CountEventsCommand, PublishTaskCommand, QueryEventsCommand, RoundStatusCommand};
+use crate::app::backend::command::{
+    BackendCommand::{
+        CountEventsCommand, GasPriceCommand, GetUserEndpointCommand, HelpCommand,
+        IpfsAddFileCommand, IpfsCatFileCommand, NetworkStatusCommand, PublishTaskCommand,
+        QueryEventsCommand, RoundStatusCommand, SetUserEndpointCommand, StatusCommand,
+        ViewAccountCommand,
+    },
+    CommandSource,
+    ParseBackendCommandError::{InvalidCommandParameter, MissingCommandParameter, UnknownCommand},
+};
 use crate::app::trace::TracingCategory;
 use crate::config::PocoAgentConfig;
 use crate::ipfs::client::IpfsClient;
 
 use super::ui::action::{UIAction, UIActionEvent};
 
-use self::command::{BackendCommand, get_internal_command, ParseBackendCommandError};
+use self::command::{get_internal_command, BackendCommand, ParseBackendCommandError};
 
 pub mod command;
 
@@ -64,14 +68,14 @@ impl Backend {
     }
 
     fn execute_command_block<F, R>(&mut self, command_id: String, f: F)
-        where
-            F: FnOnce(
-                crossbeam_channel::Sender<UIActionEvent>,
-                Arc<ThreadLocal<PocoAgent>>,
-                Arc<ThreadLocal<IpfsClient>>,
-                Arc<PocoAgentConfig>,
-            ) -> R,
-            R: Future<Output=()> + Send + 'static,
+    where
+        F: FnOnce(
+            crossbeam_channel::Sender<UIActionEvent>,
+            Arc<ThreadLocal<PocoAgent>>,
+            Arc<ThreadLocal<IpfsClient>>,
+            Arc<PocoAgentConfig>,
+        ) -> R,
+        R: Future<Output = ()> + Send + 'static,
     {
         let sender1 = self.sender.clone();
         let sender2 = self.sender.clone();
@@ -102,371 +106,449 @@ impl Backend {
             GasPriceCommand => self.execute_gas_price_command(command_id),
             NetworkStatusCommand => self.execute_network_status_command(command_id),
             StatusCommand => self.execute_status_command(command_id),
-            ViewAccountCommand { account_id } => self.execute_view_account_command(command_id, account_id),
+            ViewAccountCommand { account_id } => {
+                self.execute_view_account_command(command_id, account_id)
+            }
             RoundStatusCommand => self.execute_round_status_command(command_id),
             CountEventsCommand => self.execute_count_events_command(command_id),
-            QueryEventsCommand { from, count } => self.execute_query_events_command(command_id, from, count),
-            GetUserEndpointCommand { account_id } =>
-                self.execute_get_user_endpoint_command(command_id, account_id),
-            SetUserEndpointCommand { endpoint } => self.execute_set_user_endpoint_command(command_id, endpoint),
-            IpfsAddFileCommand { file_path } => self.execute_ipfs_add_file_command(command_id, file_path),
-            IpfsCatFileCommand { file_hash } => self.execute_ipfs_cat_file_command(command_id, file_hash),
-            PublishTaskCommand { task_config_path } => self.execute_publish_task_command(command_id, task_config_path),
+            QueryEventsCommand { from, count } => {
+                self.execute_query_events_command(command_id, from, count)
+            }
+            GetUserEndpointCommand { account_id } => {
+                self.execute_get_user_endpoint_command(command_id, account_id)
+            }
+            SetUserEndpointCommand { endpoint } => {
+                self.execute_set_user_endpoint_command(command_id, endpoint)
+            }
+            IpfsAddFileCommand { file_path } => {
+                self.execute_ipfs_add_file_command(command_id, file_path)
+            }
+            IpfsCatFileCommand { file_hash } => {
+                self.execute_ipfs_cat_file_command(command_id, file_hash)
+            }
+            PublishTaskCommand { task_config_path } => {
+                self.execute_publish_task_command(command_id, task_config_path)
+            }
         }
     }
 
-    fn execute_publish_task_command(&mut self, command_id: String, task_config_path: String) {
-        self.execute_command_block(command_id, async move |sender, agent, ipfs_client, config| {
-            // let task_config_path = Path::new(&task_config_path);
-            //
-            // match task_config_path.try_exists() {
-            //     Ok(true) => {}
-            //     _ => {
-            //         sender
-            //             .send(UIAction::LogString(format!("Task config file not found: {}", task_config_path.display())).into())
-            //             .unwrap();
-            //         return;
-            //     }
-            // }
-            //
-            // ()
+    fn execute_publish_task_command(&mut self, command_id: String, _task_config_path: String) {
+        self.execute_command_block(
+            command_id,
+            async move |_sender, _agent, _ipfs_client, _config| {
+                // let task_config_path = Path::new(&task_config_path);
+                //
+                // match task_config_path.try_exists() {
+                //     Ok(true) => {}
+                //     _ => {
+                //         sender
+                //             .send(UIAction::LogString(format!("Task config file not found: {}", task_config_path.display())).into())
+                //             .unwrap();
+                //         return;
+                //     }
+                // }
+                //
+                // ()
 
-            // let task_config = tokio::fs::read_to_string(task_config_path).await?;
-            // let task_config = serde_json::from_str::<TaskConfig>(&task_config)?;
-            //
-            // let agent = agent.get_or(|| PocoAgent::new(config));
-        });
+                // let task_config = tokio::fs::read_to_string(task_config_path).await?;
+                // let task_config = serde_json::from_str::<TaskConfig>(&task_config)?;
+                //
+                // let agent = agent.get_or(|| PocoAgent::new(config));
+            },
+        );
     }
 
     fn execute_ipfs_cat_file_command(&mut self, command_id: String, file_hash: String) {
-        self.execute_command_block(command_id, async move |sender, _agent, ipfs_client, config| {
-            let ipfs_client = ipfs_client.get_or(|| {
-                IpfsClient::create_ipfs_client(config.ipfs.ipfs_endpoint.as_str())
-                    .map_err(|e| {
-                        tracing::error!(
-                            category = TracingCategory::Ipfs.to_string(),
-                            message = format!("Failed to create IPFS client: {:?}", e)
-                        );
+        self.execute_command_block(
+            command_id,
+            async move |sender, _agent, ipfs_client, config| {
+                let ipfs_client = ipfs_client.get_or(|| {
+                    IpfsClient::create_ipfs_client(config.ipfs.ipfs_endpoint.as_str())
+                        .map_err(|e| {
+                            tracing::error!(
+                                category = TracingCategory::Ipfs.to_string(),
+                                message = format!("Failed to create IPFS client: {:?}", e)
+                            );
 
-                        panic!("Failed to create IPFS client: {:?}", e);
-                    })
-                    .unwrap()
-            });
+                            panic!("Failed to create IPFS client: {:?}", e);
+                        })
+                        .unwrap()
+                });
 
-            let buffer = ipfs_client.cat_file(file_hash.as_str()).await.unwrap();
-            let buffer = String::from_utf8(buffer).unwrap();
+                let buffer = ipfs_client.cat_file(file_hash.as_str()).await.unwrap();
+                let buffer = String::from_utf8(buffer).unwrap();
 
-            sender
-                .send(
-                    UIAction::LogMultipleString(
-                        buffer.lines().into_iter().map(|e| e.to_string()).collect(),
-                    )
+                sender
+                    .send(
+                        UIAction::LogMultipleString(
+                            buffer.lines().into_iter().map(|e| e.to_string()).collect(),
+                        )
                         .into(),
-                )
-                .unwrap();
-        });
+                    )
+                    .unwrap();
+            },
+        );
     }
 
     fn execute_ipfs_add_file_command(&mut self, command_id: String, file_path: String) {
-        self.execute_command_block(command_id, async move |sender, _agent, ipfs_client, config| {
-            let ipfs_client = ipfs_client.get_or(|| {
-                IpfsClient::create_ipfs_client(config.ipfs.ipfs_endpoint.as_str())
-                    .map_err(|e| {
-                        tracing::error!(
-                            category = TracingCategory::Ipfs.to_string(),
-                            message = format!("Failed to create IPFS client: {:?}", e)
-                        );
+        self.execute_command_block(
+            command_id,
+            async move |sender, _agent, ipfs_client, config| {
+                let ipfs_client = ipfs_client.get_or(|| {
+                    IpfsClient::create_ipfs_client(config.ipfs.ipfs_endpoint.as_str())
+                        .map_err(|e| {
+                            tracing::error!(
+                                category = TracingCategory::Ipfs.to_string(),
+                                message = format!("Failed to create IPFS client: {:?}", e)
+                            );
 
-                        panic!("Failed to create IPFS client: {:?}", e);
-                    })
-                    .unwrap()
-            });
+                            panic!("Failed to create IPFS client: {:?}", e);
+                        })
+                        .unwrap()
+                });
 
-            let file_hash = ipfs_client.add_file(file_path.as_str()).await.unwrap();
+                let file_hash = ipfs_client.add_file(file_path.as_str()).await.unwrap();
 
-            tracing::info!(
-                category = TracingCategory::Ipfs.to_string(),
-                message = format!("File Path: {} File hash: {}", file_path, file_hash)
-            );
+                tracing::info!(
+                    category = TracingCategory::Ipfs.to_string(),
+                    message = format!("File Path: {} File hash: {}", file_path, file_hash)
+                );
 
-            sender
-                .send(UIAction::LogString(format!("File hash: {}", file_hash)).into())
-                .unwrap();
-        });
+                sender
+                    .send(UIAction::LogString(format!("File hash: {}", file_hash)).into())
+                    .unwrap();
+            },
+        );
     }
 
     fn execute_set_user_endpoint_command(&mut self, command_id: String, endpoint: String) {
-        self.execute_command_block(command_id, async move |sender, agent, _ipfs_client, config| {
-            let agent = agent.get_or(|| PocoAgent::new(config));
+        self.execute_command_block(
+            command_id,
+            async move |sender, agent, _ipfs_client, config| {
+                let agent = agent.get_or(|| PocoAgent::new(config));
 
-            match agent.set_user_endpoint(endpoint.as_str()).await {
-                Ok(gas) => {
-                    sender
-                        .send(
-                            UIAction::LogString(format!("Set user endpoint to {} ({} Gas Burnt)", endpoint, gas))
+                match agent.set_user_endpoint(endpoint.as_str()).await {
+                    Ok(gas) => {
+                        sender
+                            .send(
+                                UIAction::LogString(format!(
+                                    "Set user endpoint to {} ({} Gas Burnt)",
+                                    endpoint, gas
+                                ))
                                 .into(),
-                        )
-                        .unwrap();
-                }
-                Err(e) => {
-                    sender
-                        .send(
-                            UIAction::LogString(format!("Failed to set user endpoint: {:?}", e))
+                            )
+                            .unwrap();
+                    }
+                    Err(e) => {
+                        sender
+                            .send(
+                                UIAction::LogString(format!(
+                                    "Failed to set user endpoint: {:?}",
+                                    e
+                                ))
                                 .into(),
-                        )
-                        .unwrap();
+                            )
+                            .unwrap();
+                    }
                 }
-            }
-        })
+            },
+        )
     }
 
-    fn execute_get_user_endpoint_command(&mut self, command_id: String, account_id: Option<AccountId>) {
-        self.execute_command_block(command_id, async move |sender, agent, _ipfs_client, config| {
-            let agent = agent.get_or(|| PocoAgent::new(config));
+    fn execute_get_user_endpoint_command(
+        &mut self,
+        command_id: String,
+        account_id: Option<AccountId>,
+    ) {
+        self.execute_command_block(
+            command_id,
+            async move |sender, agent, _ipfs_client, config| {
+                let agent = agent.get_or(|| PocoAgent::new(config));
 
-            match agent.get_user_endpoint(account_id).await {
-                Ok(Some(endpoint)) => {
-                    sender
-                        .send(UIAction::LogString(format!("Endpoint: {}", endpoint)).into())
-                        .unwrap();
-                }
-                Ok(None) => {
-                    sender
-                        .send(UIAction::LogString("No endpoint found".to_string()).into())
-                        .unwrap();
-                }
-                Err(e) => {
-                    sender
-                        .send(UIAction::LogString("Failed to get user endpoint".to_string()).into())
-                        .unwrap();
+                match agent.get_user_endpoint(account_id).await {
+                    Ok(Some(endpoint)) => {
+                        sender
+                            .send(UIAction::LogString(format!("Endpoint: {}", endpoint)).into())
+                            .unwrap();
+                    }
+                    Ok(None) => {
+                        sender
+                            .send(UIAction::LogString("No endpoint found".to_string()).into())
+                            .unwrap();
+                    }
+                    Err(e) => {
+                        sender
+                            .send(
+                                UIAction::LogString("Failed to get user endpoint".to_string())
+                                    .into(),
+                            )
+                            .unwrap();
 
-                    sender
-                        .send(UIAction::LogString(format!("Error: {}", e)).into())
-                        .unwrap();
+                        sender
+                            .send(UIAction::LogString(format!("Error: {}", e)).into())
+                            .unwrap();
+                    }
                 }
-            }
-        })
+            },
+        )
     }
 
     fn execute_query_events_command(&mut self, command_id: String, from: u32, count: u32) {
-        self.execute_command_block(command_id, async move |sender, agent, _ipfs_client, config| {
-            let agent = agent.get_or(|| PocoAgent::new(config));
+        self.execute_command_block(
+            command_id,
+            async move |sender, agent, _ipfs_client, config| {
+                let agent = agent.get_or(|| PocoAgent::new(config));
 
-            match agent.query_events(from, count).await {
-                Ok(events) => {
-                    if events.is_empty() {
-                        sender
-                            .send(UIAction::LogString("No events found".to_string()).into())
-                            .unwrap();
-                    } else {
-                        for event in events {
+                match agent.query_events(from, count).await {
+                    Ok(events) => {
+                        if events.is_empty() {
                             sender
-                                .send(UIAction::LogString(format!("Event: {}", event)).into())
+                                .send(UIAction::LogString("No events found".to_string()).into())
                                 .unwrap();
+                        } else {
+                            for event in events {
+                                sender
+                                    .send(UIAction::LogString(format!("Event: {}", event)).into())
+                                    .unwrap();
+                            }
                         }
                     }
-                }
-                Err(e) => {
-                    sender
-                        .send(UIAction::LogString("Failed to query events".to_string()).into())
-                        .unwrap();
+                    Err(e) => {
+                        sender
+                            .send(UIAction::LogString("Failed to query events".to_string()).into())
+                            .unwrap();
 
-                    sender
-                        .send(UIAction::LogString(format!("Error: {}", e)).into())
-                        .unwrap();
+                        sender
+                            .send(UIAction::LogString(format!("Error: {}", e)).into())
+                            .unwrap();
+                    }
                 }
-            }
-        })
+            },
+        )
     }
 
     fn execute_count_events_command(&mut self, command_id: String) {
-        self.execute_command_block(command_id, async move |sender, agent, _ipfs_client, config| {
-            let agent = agent.get_or(|| PocoAgent::new(config));
+        self.execute_command_block(
+            command_id,
+            async move |sender, agent, _ipfs_client, config| {
+                let agent = agent.get_or(|| PocoAgent::new(config));
 
-            match agent.count_events().await {
-                Ok(event_count) => {
-                    sender
-                        .send(UIAction::LogString(format!("Total Events: {}", event_count)).into())
-                        .unwrap();
-                }
-                Err(e) => {
-                    sender
-                        .send(UIAction::LogString("Failed to get count events".to_string()).into())
-                        .unwrap();
+                match agent.count_events().await {
+                    Ok(event_count) => {
+                        sender
+                            .send(
+                                UIAction::LogString(format!("Total Events: {}", event_count))
+                                    .into(),
+                            )
+                            .unwrap();
+                    }
+                    Err(e) => {
+                        sender
+                            .send(
+                                UIAction::LogString("Failed to get count events".to_string())
+                                    .into(),
+                            )
+                            .unwrap();
 
-                    sender
-                        .send(UIAction::LogString(format!("Error: {}", e)).into())
-                        .unwrap();
+                        sender
+                            .send(UIAction::LogString(format!("Error: {}", e)).into())
+                            .unwrap();
+                    }
                 }
-            }
-        })
+            },
+        )
     }
 
     fn execute_round_status_command(&mut self, command_id: String) {
-        self.execute_command_block(command_id, async move |sender, agent, _ipfs_client, config| {
-            let agent = agent.get_or(|| PocoAgent::new(config));
+        self.execute_command_block(
+            command_id,
+            async move |sender, agent, _ipfs_client, config| {
+                let agent = agent.get_or(|| PocoAgent::new(config));
 
-            match agent.get_round_status().await {
-                Ok(round_status) => {
-                    sender
-                        .send(UIAction::LogString(format!("Round Status: {}", round_status)).into())
-                        .unwrap();
-                }
-                Err(e) => {
-                    sender
-                        .send(UIAction::LogString("Failed to get round status".to_string()).into())
-                        .unwrap();
+                match agent.get_round_status().await {
+                    Ok(round_status) => {
+                        sender
+                            .send(
+                                UIAction::LogString(format!("Round Status: {}", round_status))
+                                    .into(),
+                            )
+                            .unwrap();
+                    }
+                    Err(e) => {
+                        sender
+                            .send(
+                                UIAction::LogString("Failed to get round status".to_string())
+                                    .into(),
+                            )
+                            .unwrap();
 
-                    sender
-                        .send(UIAction::LogString(format!("Error: {}", e)).into())
-                        .unwrap();
+                        sender
+                            .send(UIAction::LogString(format!("Error: {}", e)).into())
+                            .unwrap();
+                    }
                 }
-            }
-        })
+            },
+        )
     }
 
     fn execute_view_account_command(&mut self, command_id: String, account_id: AccountId) {
-        self.execute_command_block(command_id, async move |sender, agent, _ipfs_client, config| {
-            let agent = agent.get_or(|| PocoAgent::new(config));
-            let account_id_in_string = account_id.to_string();
+        self.execute_command_block(
+            command_id,
+            async move |sender, agent, _ipfs_client, config| {
+                let agent = agent.get_or(|| PocoAgent::new(config));
+                let account_id_in_string = account_id.to_string();
 
-            match agent.view_account(account_id).await {
-                Ok(account) => {
-                    sender
-                        .send(
-                            UIAction::LogMultipleString(vec![
-                                format!("Account ID: {}", account_id_in_string),
-                                format!("Amount: {}", account.amount),
-                                format!("Locked: {}", account.locked),
-                                format!("Code Hash: {}", account.code_hash),
-                                format!("Storage Usage: {}", account.storage_usage),
-                                format!("Storage Paid At: {}", account.storage_paid_at),
-                            ])
+                match agent.view_account(account_id).await {
+                    Ok(account) => {
+                        sender
+                            .send(
+                                UIAction::LogMultipleString(vec![
+                                    format!("Account ID: {}", account_id_in_string),
+                                    format!("Amount: {}", account.amount),
+                                    format!("Locked: {}", account.locked),
+                                    format!("Code Hash: {}", account.code_hash),
+                                    format!("Storage Usage: {}", account.storage_usage),
+                                    format!("Storage Paid At: {}", account.storage_paid_at),
+                                ])
                                 .into(),
-                        )
-                        .unwrap();
-                }
-                Err(e) => {
-                    sender
-                        .send(UIAction::LogString("Failed to get account".to_string()).into())
-                        .unwrap();
+                            )
+                            .unwrap();
+                    }
+                    Err(e) => {
+                        sender
+                            .send(UIAction::LogString("Failed to get account".to_string()).into())
+                            .unwrap();
 
-                    sender
-                        .send(UIAction::LogString(format!("Error: {}", e)).into())
-                        .unwrap();
+                        sender
+                            .send(UIAction::LogString(format!("Error: {}", e)).into())
+                            .unwrap();
+                    }
                 }
-            }
-        })
+            },
+        )
     }
 
     fn execute_status_command(&mut self, command_id: String) {
-        self.execute_command_block(command_id, async move |sender, agent, _ipfs_client, config| {
-            let agent = agent.get_or(|| PocoAgent::new(config));
+        self.execute_command_block(
+            command_id,
+            async move |sender, agent, _ipfs_client, config| {
+                let agent = agent.get_or(|| PocoAgent::new(config));
 
-            match agent.status().await {
-                Ok(status) => {
-                    sender
-                        .send(
-                            UIAction::LogMultipleString(vec![
-                                format!("Version: {}", status.version.version),
-                                format!("Build: {}", status.version.build),
-                                format!("Protocol Version: {}", status.protocol_version),
-                                format!(
-                                    "Latest Protocol Version: {}",
-                                    status.latest_protocol_version
-                                ),
-                                format!("Rpc Address: {}", status.rpc_addr.unwrap_or_default()),
-                                format!("Sync Info: "),
-                                format!(
-                                    "  Latest Block Hash: {}",
-                                    status.sync_info.latest_block_hash
-                                ),
-                                format!(
-                                    "  Latest Block Height: {}",
-                                    status.sync_info.latest_block_height
-                                ),
-                                format!(
-                                    "  Latest State Root: {}",
-                                    status.sync_info.latest_state_root
-                                ),
-                                format!("  Syncing: {}", status.sync_info.syncing),
-                            ])
+                match agent.status().await {
+                    Ok(status) => {
+                        sender
+                            .send(
+                                UIAction::LogMultipleString(vec![
+                                    format!("Version: {}", status.version.version),
+                                    format!("Build: {}", status.version.build),
+                                    format!("Protocol Version: {}", status.protocol_version),
+                                    format!(
+                                        "Latest Protocol Version: {}",
+                                        status.latest_protocol_version
+                                    ),
+                                    format!("Rpc Address: {}", status.rpc_addr.unwrap_or_default()),
+                                    format!("Sync Info: "),
+                                    format!(
+                                        "  Latest Block Hash: {}",
+                                        status.sync_info.latest_block_hash
+                                    ),
+                                    format!(
+                                        "  Latest Block Height: {}",
+                                        status.sync_info.latest_block_height
+                                    ),
+                                    format!(
+                                        "  Latest State Root: {}",
+                                        status.sync_info.latest_state_root
+                                    ),
+                                    format!("  Syncing: {}", status.sync_info.syncing),
+                                ])
                                 .into(),
-                        )
-                        .unwrap();
-                }
-                Err(e) => {
-                    sender
-                        .send(UIAction::LogString("Failed to get status".to_string()).into())
-                        .unwrap();
+                            )
+                            .unwrap();
+                    }
+                    Err(e) => {
+                        sender
+                            .send(UIAction::LogString("Failed to get status".to_string()).into())
+                            .unwrap();
 
-                    sender
-                        .send(UIAction::LogString(format!("Error: {}", e)).into())
-                        .unwrap();
+                        sender
+                            .send(UIAction::LogString(format!("Error: {}", e)).into())
+                            .unwrap();
+                    }
                 }
-            }
-        })
+            },
+        )
     }
 
     fn execute_network_status_command(&mut self, command_id: String) {
-        self.execute_command_block(command_id, async move |sender, agent, _ipfs_client, config| {
-            let agent = agent.get_or(|| PocoAgent::new(config));
+        self.execute_command_block(
+            command_id,
+            async move |sender, agent, _ipfs_client, config| {
+                let agent = agent.get_or(|| PocoAgent::new(config));
 
-            match agent.network_status().await {
-                Ok(network_status) => {
-                    sender
-                        .send(
-                            UIAction::LogMultipleString(vec![
-                                format!("Num Active Peers: {}", network_status.num_active_peers),
-                                format!(
-                                    "Sent Bytes Per Sec: {}",
-                                    network_status.sent_bytes_per_sec
-                                ),
-                                format!(
-                                    "Received Bytes Per Sec: {}",
-                                    network_status.received_bytes_per_sec
-                                ),
-                            ])
+                match agent.network_status().await {
+                    Ok(network_status) => {
+                        sender
+                            .send(
+                                UIAction::LogMultipleString(vec![
+                                    format!(
+                                        "Num Active Peers: {}",
+                                        network_status.num_active_peers
+                                    ),
+                                    format!(
+                                        "Sent Bytes Per Sec: {}",
+                                        network_status.sent_bytes_per_sec
+                                    ),
+                                    format!(
+                                        "Received Bytes Per Sec: {}",
+                                        network_status.received_bytes_per_sec
+                                    ),
+                                ])
                                 .into(),
-                        )
-                        .unwrap();
-                }
-                Err(e) => {
-                    sender
-                        .send(
-                            UIAction::LogString("Failed to get network status".to_string()).into(),
-                        )
-                        .unwrap();
+                            )
+                            .unwrap();
+                    }
+                    Err(e) => {
+                        sender
+                            .send(
+                                UIAction::LogString("Failed to get network status".to_string())
+                                    .into(),
+                            )
+                            .unwrap();
 
-                    sender
-                        .send(UIAction::LogString(format!("Error: {}", e)).into())
-                        .unwrap();
+                        sender
+                            .send(UIAction::LogString(format!("Error: {}", e)).into())
+                            .unwrap();
+                    }
                 }
-            }
-        });
+            },
+        );
     }
 
     fn execute_gas_price_command(&mut self, command_id: String) {
-        self.execute_command_block(command_id, async move |sender, agent, _ipfs_client, config| {
-            let agent = agent.get_or(|| PocoAgent::new(config.clone()));
+        self.execute_command_block(
+            command_id,
+            async move |sender, agent, _ipfs_client, config| {
+                let agent = agent.get_or(|| PocoAgent::new(config.clone()));
 
-            match agent.gas_price().await {
-                Ok(gas_price) => {
-                    sender
-                        .send(UIAction::LogString(format!("Gas Price: {}", gas_price)).into())
-                        .unwrap();
-                }
-                Err(e) => {
-                    sender
-                        .send(UIAction::LogString("Failed to get gas price".to_string()).into())
-                        .unwrap();
+                match agent.gas_price().await {
+                    Ok(gas_price) => {
+                        sender
+                            .send(UIAction::LogString(format!("Gas Price: {}", gas_price)).into())
+                            .unwrap();
+                    }
+                    Err(e) => {
+                        sender
+                            .send(UIAction::LogString("Failed to get gas price".to_string()).into())
+                            .unwrap();
 
-                    sender
-                        .send(UIAction::LogString(format!("Error: {}", e)).into())
-                        .unwrap();
+                        sender
+                            .send(UIAction::LogString(format!("Error: {}", e)).into())
+                            .unwrap();
+                    }
                 }
-            }
-        })
+            },
+        )
     }
 
     fn parse_command(&self, command: &str) -> Result<BackendCommand, ParseBackendCommandError> {
@@ -596,34 +678,36 @@ impl Backend {
             .spawn(move || 'outer: loop {
                 loop {
                     match self.receiver.recv() {
-                        Ok(command_source) => match self.parse_command(command_source.source.trim()) {
-                            Ok(command) => self.execute_command(command_source.id, command),
-                            Err(error) => match error {
-                                UnknownCommand(command) => {
-                                    tracing::event!(
-                                        Level::ERROR,
-                                        message = format!("unknown command: {}", command),
-                                        category = format!("{:?}", TracingCategory::Agent)
-                                    );
-                                }
-                                MissingCommandParameter(parameter) => {
-                                    tracing::event!(
-                                        Level::ERROR,
-                                        message =
-                                            format!("missing command parameter: {}", parameter),
-                                        category = format!("{:?}", TracingCategory::Agent)
-                                    );
-                                }
-                                InvalidCommandParameter(parameter) => {
-                                    tracing::event!(
-                                        Level::ERROR,
-                                        message =
-                                            format!("invalid command parameter: {}", parameter),
-                                        category = format!("{:?}", TracingCategory::Agent)
-                                    );
-                                }
-                            },
-                        },
+                        Ok(command_source) => {
+                            match self.parse_command(command_source.source.trim()) {
+                                Ok(command) => self.execute_command(command_source.id, command),
+                                Err(error) => match error {
+                                    UnknownCommand(command) => {
+                                        tracing::event!(
+                                            Level::ERROR,
+                                            message = format!("unknown command: {}", command),
+                                            category = format!("{:?}", TracingCategory::Agent)
+                                        );
+                                    }
+                                    MissingCommandParameter(parameter) => {
+                                        tracing::event!(
+                                            Level::ERROR,
+                                            message =
+                                                format!("missing command parameter: {}", parameter),
+                                            category = format!("{:?}", TracingCategory::Agent)
+                                        );
+                                    }
+                                    InvalidCommandParameter(parameter) => {
+                                        tracing::event!(
+                                            Level::ERROR,
+                                            message =
+                                                format!("invalid command parameter: {}", parameter),
+                                            category = format!("{:?}", TracingCategory::Agent)
+                                        );
+                                    }
+                                },
+                            }
+                        }
                         Err(_error) => {
                             tracing::event!(
                                 Level::ERROR,

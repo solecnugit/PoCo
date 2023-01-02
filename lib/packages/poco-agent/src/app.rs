@@ -6,9 +6,9 @@ use std::{io, sync::Arc, thread::JoinHandle};
 
 use tracing::Level;
 
+use crate::app::backend::command::CommandSource;
 use crate::app::ui::action::UIAction;
 use crate::{app::trace::TracingCategory, config::PocoAgentConfig};
-use crate::app::backend::command::CommandSource;
 
 use self::{
     backend::Backend,
@@ -67,10 +67,13 @@ impl App {
         backend.run_backend_thread();
 
         if direct_command_flag {
-            let command = std::env::args().skip(1).reduce(|a, b| a + " " + &b).unwrap();
+            let command = std::env::args()
+                .skip(1)
+                .reduce(|a, b| a + " " + &b)
+                .unwrap();
             let command_source = CommandSource {
                 source: command,
-                id: "#1".to_string()
+                id: "#1".to_string(),
             };
 
             self.backend_channel.0.send(command_source).unwrap();

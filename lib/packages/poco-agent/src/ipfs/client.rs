@@ -1,7 +1,7 @@
 use futures::TryStreamExt;
 use ipfs_api_backend_hyper::{IpfsApi, TryFromUri};
+
 use std::sync::Arc;
-use lazy_static::lazy_static;
 use tokio_util::compat::TokioAsyncReadCompatExt;
 
 pub struct IpfsClient {
@@ -26,7 +26,6 @@ impl From<ipfs_api_backend_hyper::Error> for IpfsClientError {
         IpfsClientError::InnerError(e)
     }
 }
-
 
 impl IpfsClient {
     pub fn create_ipfs_client(ipfs_endpoint: &str) -> Result<Self, IpfsClientError> {
