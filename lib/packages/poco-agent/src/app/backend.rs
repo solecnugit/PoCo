@@ -180,27 +180,83 @@ impl Backend {
     ) {
         self.execute_command_block(
             command_source,
-            async move |sender, agent, _ipfs_client, _config| {
+            async move |sender, agent, ipfs_client, _config| {
                 let task_config_path = Path::new(&task_config_path);
 
-                match task_config_path.try_exists() {
-                    Ok(true) => {}
-                    _ => {
-                        sender
-                            .send(
-                                UIAction::LogString(format!(
-                                    "Task config file not found: {}",
-                                    task_config_path.display()
-                                ))
+                if let Ok(true) = task_config_path.try_exists() {} else {
+                    sender
+                        .send(
+                            UIAction::LogString(format!(
+                                "Task config file not found: {}",
+                                task_config_path.display()
+                            ))
                                 .into(),
-                            )
-                            .unwrap();
-                        return Ok(());
-                    }
+                        )
+                        .unwrap();
+                    return Ok(());
                 }
 
                 let task_config = tokio::fs::read_to_string(task_config_path).await?;
                 let task_config = serde_json::from_str::<RawTaskConfig>(&task_config)?;
+
+                if let RawTaskInputSource::Ipfs { hash, file } = &task_config.input {
+                    if hash.is_some() && file.is_some() {
+                        sender
+                            .send(
+                                UIAction::LogString(format!(
+                                    "Both hash and file are specified in task config file: {}",
+                                    task_config_path.display()
+                                ))
+                                    .into(),
+                            )
+                            .unwrap();
+                        return Ok(());
+                    }
+
+                    if let Some(file) = file {
+                        let file_path = Path::new(file.as_str());
+                        let file_path = if file_path.is_absolute() {
+                            file_path.to_path_buf()
+                        } else {
+                            task_config_path.parent().unwrap().join(file_path)
+                        };
+
+                        if let Ok(true) = file_path.try_exists() {
+                             sender
+                                .send(
+                                    UIAction::LogString(format!(
+                                        "Uploading file to IPFS: {}",
+                                        file_path.display()
+                                    ))
+                                        .into(),
+                                )
+                                .unwrap();
+
+                            let file_cid = ipfs_client.add_file(file_path.as_path()).await?;
+
+                            sender
+                                .send(
+                                    UIAction::LogString(format!(
+                                        "File uploaded to IPFS, CID: {}",
+                                        file_cid
+                                    ))
+                                        .into(),
+                                )
+                                .unwrap();
+                        } else {
+                            sender
+                                .send(
+                                    UIAction::LogString(format!(
+                                        "Task input file not found: {}",
+                                        file_path.display()
+                                    ))
+                                        .into(),
+                                )
+                                .unwrap();
+                            return Ok(());
+                        }
+                    }
+                }
 
                 task_config;
 
