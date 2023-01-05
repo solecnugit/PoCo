@@ -47,7 +47,7 @@ pub enum TaskRequirementOperator {
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, JsonSchema, Clone, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub struct TaskRequirement {
-    pub key: String,
+    pub property: String,
     pub operator: TaskRequirementOperator,
     pub value: U256,
 }
