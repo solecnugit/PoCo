@@ -26,6 +26,7 @@ use self::state::UIState;
 
 pub mod action;
 pub mod state;
+pub mod util;
 
 pub struct UI {
     state: UIState,
@@ -125,16 +126,13 @@ impl UI {
                                         self.state.input.drain(..).collect::<CommandString>();
 
                                     let command_id = format!("#{}", self.command_counter);
-
-                                    self.state.push_event(
-                                        UIAction::LogCommand(command_id.clone(), command.clone())
-                                            .into(),
-                                    );
-
                                     let source = CommandSource {
                                         source: command,
                                         id: command_id,
                                     };
+
+                                    self.state
+                                        .push_event(UIAction::LogCommand(source.clone()).into());
 
                                     self.command_counter += 1;
 

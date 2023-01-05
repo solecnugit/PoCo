@@ -33,18 +33,18 @@ pub enum CommandExecutionStage {
 
 #[derive(Debug, Clone)]
 pub enum CommandExecutionStatus {
-    Success,
-    Failure,
+    Succeed,
+    Failed,
 }
 
 #[derive(Debug, Clone)]
 pub enum UIAction {
     Panic(String),
     LogString(String),
-    LogMultipleString(Vec<String>),
+    LogMultipleStrings(Vec<String>),
     LogTracingEvent(TracingEvent),
-    LogCommand(String, String),
-    CommandExecutionDone(CommandSource, CommandExecutionStage, CommandExecutionStatus),
+    LogCommand(CommandSource),
+    LogCommandExecutionDone(CommandSource, CommandExecutionStage, CommandExecutionStatus),
     QuitApp,
 }
 
@@ -100,7 +100,7 @@ impl UIActionEvent {
                 self.render_wrapped_string(time_string, max_width, string.as_str())
             }
 
-            UIAction::LogMultipleString(strings) => strings
+            UIAction::LogMultipleStrings(strings) => strings
                 .iter()
                 .flat_map(|e| {
                     self.render_wrapped_string(time_string.clone(), max_width, e.as_str())
@@ -178,34 +178,34 @@ impl UIActionEvent {
                 }
             }
 
-            UIAction::LogCommand(command_id, command) => {
+            UIAction::LogCommand(command_source) => {
                 vec![Spans::from(vec![
                     time_span,
                     Span::raw(" "),
                     Span::styled(">>", Style::default().fg(Color::Yellow)),
                     Span::raw(" "),
-                    Span::styled(command_id, Style::default().fg(Color::Green)),
+                    Span::styled(&command_source.id, Style::default().fg(Color::Green)),
                     Span::raw(" "),
-                    Span::styled(command, Style::default().fg(Color::White)),
+                    Span::styled(&command_source.source, Style::default().fg(Color::White)),
                 ])]
             }
             UIAction::QuitApp => vec![Spans::from(Span::styled(
                 "Quitting app",
                 Style::default().fg(Color::White),
             ))],
-            UIAction::CommandExecutionDone(source, _stage, status) => vec![Spans::from(vec![
+            UIAction::LogCommandExecutionDone(source, _stage, status) => vec![Spans::from(vec![
                 time_span,
                 Span::raw(" "),
                 Span::styled(
                     match status {
-                        CommandExecutionStatus::Success => {
+                        CommandExecutionStatus::Succeed => {
                             format!("Command {source} executed successfully")
                         }
-                        CommandExecutionStatus::Failure => format!("Command {source} failed",),
+                        CommandExecutionStatus::Failed => format!("Command {source} failed",),
                     },
                     Style::default().fg(match status {
-                        CommandExecutionStatus::Success => Color::Green,
-                        CommandExecutionStatus::Failure => Color::Red,
+                        CommandExecutionStatus::Succeed => Color::Green,
+                        CommandExecutionStatus::Failed => Color::Red,
                     }),
                 ),
             ])],

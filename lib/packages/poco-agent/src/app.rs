@@ -75,13 +75,13 @@ impl App {
             'main: loop {
                 match self.ui_channel.1.recv() {
                     Ok(event) => match event.1 {
-                        UIAction::LogCommand(command_id, command) => {
-                            println!("{command_id} {command}");
+                        UIAction::LogCommand(command_source) => {
+                            println!("{} {}", &command_source.id, &command_source.source);
                         }
                         UIAction::LogString(string) => {
                             println!("{string}");
                         }
-                        UIAction::LogMultipleString(strings) => {
+                        UIAction::LogMultipleStrings(strings) => {
                             for string in strings {
                                 println!("{string}");
                             }
@@ -93,12 +93,12 @@ impl App {
                             println!("{error:?}");
                             break 'main Err(anyhow::anyhow!(error));
                         }
-                        UIAction::CommandExecutionDone(command_source, _stage, status) => {
+                        UIAction::LogCommandExecutionDone(command_source, _stage, status) => {
                             match status {
-                                CommandExecutionStatus::Success => {
+                                CommandExecutionStatus::Succeed => {
                                     println!("Command {} executed successfully", command_source.id);
                                 }
-                                CommandExecutionStatus::Failure => {
+                                CommandExecutionStatus::Failed => {
                                     println!("Command {} failed", command_source.id);
                                 }
                             }

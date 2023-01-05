@@ -21,12 +21,14 @@ use crate::app::backend::command::{
     ParseBackendCommandError::{InvalidCommandParameter, MissingCommandParameter, UnknownCommand},
 };
 use crate::app::trace::TracingCategory;
-use crate::app::ui::action::UIAction::CommandExecutionDone;
+use crate::app::ui::action::UIAction::LogCommandExecutionDone;
 use crate::app::ui::action::{CommandExecutionStage, CommandExecutionStatus};
+use crate::app::ui::util::log_command_execution_done;
 use crate::config::PocoAgentConfig;
 use crate::ipfs::client::IpfsClient;
 
 use super::ui::action::{UIAction, UIActionEvent};
+use super::ui::util::{log_multiple_strings, log_string};
 
 use self::command::{get_internal_command, BackendCommand, ParseBackendCommandError};
 
@@ -93,7 +95,7 @@ impl Backend {
 
         self.async_runtime
             .spawn(f(sender1, agent, ipfs_client, config).inspect(move |r| {
-                let msg = if let Err(e) = r {
+                if let Err(e) = r {
                     tracing::error!(
                         message = "failed to execute command",
                         command = format!("{command_source:?}"),
@@ -101,46 +103,34 @@ impl Backend {
                         error = format!("{e:?}")
                     );
 
-                    sender2
-                        .send(UIAction::LogString(format!("{}", e.as_display())).into())
-                        .unwrap();
-
-                    CommandExecutionDone(
+                    log_string(&sender2, format!("error: {}", e.as_display()));
+                    log_command_execution_done(
+                        &sender2,
                         command_source,
                         CommandExecutionStage::Executed,
-                        CommandExecutionStatus::Failure,
-                    )
-                    .into()
+                        CommandExecutionStatus::Failed,
+                    );
                 } else {
-                    CommandExecutionDone(
+                    log_command_execution_done(
+                        &sender2,
                         command_source,
                         CommandExecutionStage::Executed,
-                        CommandExecutionStatus::Success,
-                    )
-                    .into()
+                        CommandExecutionStatus::Succeed,
+                    );
                 };
-
-                sender2.send(msg).unwrap();
             }));
     }
 
     fn execute_command(&mut self, command_source: CommandSource, command: BackendCommand) {
         match command {
             HelpCommand(help) => {
-                self.sender
-                    .send(UIAction::LogMultipleString(help).into())
-                    .unwrap();
-
-                self.sender
-                    .send(
-                        CommandExecutionDone(
-                            command_source,
-                            CommandExecutionStage::Executed,
-                            CommandExecutionStatus::Success,
-                        )
-                        .into(),
-                    )
-                    .unwrap();
+                log_multiple_strings(&self.sender, help);
+                log_command_execution_done(
+                    &self.sender,
+                    command_source,
+                    CommandExecutionStage::Executed,
+                    CommandExecutionStatus::Succeed,
+                );
             }
             GasPriceCommand => self.execute_gas_price_command(command_source),
             NetworkStatusCommand => self.execute_network_status_command(command_source),
@@ -181,17 +171,11 @@ impl Backend {
             async move |sender, agent, ipfs_client, _config| {
                 let task_config_path = Path::new(&task_config_path);
 
-                if let Ok(true) = task_config_path.try_exists() {
-                } else {
-                    sender
-                        .send(
-                            UIAction::LogString(format!(
-                                "Task config file not found: {}",
-                                task_config_path.display()
-                            ))
-                            .into(),
-                        )
-                        .unwrap();
+                if let Ok(true) = task_config_path.try_exists() {} else {
+                    log_string(&sender, format!(
+                        "Task config file not found: {}",
+                        task_config_path.display()
+                    ));
                     return Ok(());
                 }
 
@@ -200,15 +184,7 @@ impl Backend {
 
                 if let RawTaskInputSource::Ipfs { hash, file } = &task_config.input {
                     if hash.is_some() && file.is_some() {
-                        sender
-                            .send(
-                                UIAction::LogString(format!(
-                                    "Both hash and file are specified in task config file: {}",
-                                    task_config_path.display()
-                                ))
-                                .into(),
-                            )
-                            .unwrap();
+                        log_string(&sender, "Both hash and file are specified in task config. Please specify only one of them.".to_string());
                         return Ok(());
                     }
 
@@ -221,36 +197,19 @@ impl Backend {
                         };
 
                         if let Ok(true) = file_path.try_exists() {
-                            sender
-                                .send(
-                                    UIAction::LogString(format!(
-                                        "Uploading file to IPFS: {}",
-                                        file_path.display()
-                                    ))
-                                    .into(),
-                                )
-                                .unwrap();
+                            log_string(&sender, format!(
+                                "Uploading file to ipfs: {}",
+                                file_path.display()
+                            ));
 
                             let file_cid = ipfs_client.add_file(file_path.as_path()).await?;
 
-                            sender
-                                .send(
-                                    UIAction::LogString(format!(
-                                        "File uploaded to IPFS, CID: {file_cid}"
-                                    ))
-                                    .into(),
-                                )
-                                .unwrap();
+                            log_string(&sender, format!("File uploaded to ipfs: {file_cid}"));
                         } else {
-                            sender
-                                .send(
-                                    UIAction::LogString(format!(
-                                        "Task input file not found: {}",
-                                        file_path.display()
-                                    ))
-                                    .into(),
-                                )
-                                .unwrap();
+                            log_string(&sender, format!(
+                                "Task input file not found: {}",
+                                file_path.display()
+                            ));
                             return Ok(());
                         }
                     }
@@ -270,14 +229,7 @@ impl Backend {
                 let buffer = ipfs_client.cat_file(file_hash.as_str()).await.unwrap();
                 let buffer = String::from_utf8(buffer).unwrap();
 
-                sender
-                    .send(
-                        UIAction::LogMultipleString(
-                            buffer.lines().map(|e| e.to_string()).collect(),
-                        )
-                        .into(),
-                    )
-                    .unwrap();
+                log_multiple_strings(&sender, buffer.lines().map(|s| s.to_string()).collect());
 
                 Ok(())
             },
@@ -290,9 +242,7 @@ impl Backend {
             async move |sender, _agent, ipfs_client, _config| {
                 let file_hash = ipfs_client.add_file(file_path.as_str()).await.unwrap();
 
-                sender
-                    .send(UIAction::LogString(format!("File hash: {file_hash}")).into())
-                    .unwrap();
+                log_string(&sender, format!("File uploaded to ipfs: {file_hash}"));
 
                 Ok(())
             },
@@ -311,24 +261,15 @@ impl Backend {
                 .await
             {
                 Ok(gas) => {
-                    sender
-                        .send(
-                            UIAction::LogString(format!(
-                                "Set user endpoint to {endpoint} ({gas} Gas Burnt)",
-                            ))
-                            .into(),
-                        )
-                        .unwrap();
+                    log_string(
+                        &sender,
+                        format!("User endpoint set successfully. Gas used: {gas}"),
+                    );
 
                     Ok(())
                 }
                 Err(e) => {
-                    sender
-                        .send(
-                            UIAction::LogString(format!("Failed to set user endpoint: {e:?}"))
-                                .into(),
-                        )
-                        .unwrap();
+                    log_string(&sender, format!("Failed to set user endpoint: {e:?}"));
 
                     Err(e)
                 }
@@ -348,27 +289,18 @@ impl Backend {
                 .await
             {
                 Ok(Some(endpoint)) => {
-                    sender
-                        .send(UIAction::LogString(format!("Endpoint: {endpoint}")).into())
-                        .unwrap();
+                    log_string(&sender, format!("User endpoint: {endpoint}"));
 
                     Ok(())
                 }
                 Ok(None) => {
-                    sender
-                        .send(UIAction::LogString("No endpoint found".to_string()).into())
-                        .unwrap();
+                    log_string(&sender, "User endpoint not set".to_string());
 
                     Ok(())
                 }
                 Err(e) => {
-                    sender
-                        .send(UIAction::LogString("Failed to get user endpoint".to_string()).into())
-                        .unwrap();
-
-                    sender
-                        .send(UIAction::LogString(format!("Error: {e}")).into())
-                        .unwrap();
+                    log_string(&sender, "Failed to get user endpoint".to_string());
+                    log_string(&sender, format!("{e:?}"));
 
                     Err(e)
                 }
@@ -390,27 +322,18 @@ impl Backend {
             {
                 Ok(events) => {
                     if events.is_empty() {
-                        sender
-                            .send(UIAction::LogString("No events found".to_string()).into())
-                            .unwrap();
+                        log_string(&sender, "No events found".to_string());
                     } else {
                         for event in events {
-                            sender
-                                .send(UIAction::LogString(format!("Event: {event}")).into())
-                                .unwrap();
+                            log_string(&sender, format!("{event}"));
                         }
                     }
 
                     Ok(())
                 }
                 Err(e) => {
-                    sender
-                        .send(UIAction::LogString("Failed to query events".to_string()).into())
-                        .unwrap();
-
-                    sender
-                        .send(UIAction::LogString(format!("Error: {e}")).into())
-                        .unwrap();
+                    log_string(&sender, "Failed to query events".to_string());
+                    log_string(&sender, format!("{e:?}"));
 
                     Err(e)
                 }
@@ -423,20 +346,13 @@ impl Backend {
             command_source,
             async move |sender, agent, _ipfs_client, _config| match agent.count_events().await {
                 Ok(event_count) => {
-                    sender
-                        .send(UIAction::LogString(format!("Total Events: {event_count}")).into())
-                        .unwrap();
+                    log_string(&sender, format!("Event count: {event_count}"));
 
                     Ok(())
                 }
                 Err(e) => {
-                    sender
-                        .send(UIAction::LogString("Failed to get count events".to_string()).into())
-                        .unwrap();
-
-                    sender
-                        .send(UIAction::LogString(format!("Error: {e}")).into())
-                        .unwrap();
+                    log_string(&sender, "Failed to count events".to_string());
+                    log_string(&sender, format!("{e:?}"));
 
                     Err(e)
                 }
@@ -449,20 +365,13 @@ impl Backend {
             command_source,
             async move |sender, agent, _ipfs_client, _config| match agent.get_round_status().await {
                 Ok(round_status) => {
-                    sender
-                        .send(UIAction::LogString(format!("Round Status: {round_status}")).into())
-                        .unwrap();
+                    log_string(&sender, format!("Round status: {round_status}"));
 
                     Ok(())
                 }
                 Err(e) => {
-                    sender
-                        .send(UIAction::LogString("Failed to get round status".to_string()).into())
-                        .unwrap();
-
-                    sender
-                        .send(UIAction::LogString(format!("Error: {e}")).into())
-                        .unwrap();
+                    log_string(&sender, "Failed to get round status".to_string());
+                    log_string(&sender, format!("{e:?}"));
 
                     Err(e)
                 }
@@ -482,30 +391,23 @@ impl Backend {
 
                 match agent.view_account(account_id).await {
                     Ok(account) => {
-                        sender
-                            .send(
-                                UIAction::LogMultipleString(vec![
-                                    format!("Account ID: {account_id_in_string}"),
-                                    format!("Amount: {}", account.amount),
-                                    format!("Locked: {}", account.locked),
-                                    format!("Code Hash: {}", account.code_hash),
-                                    format!("Storage Usage: {}", account.storage_usage),
-                                    format!("Storage Paid At: {}", account.storage_paid_at),
-                                ])
-                                .into(),
-                            )
-                            .unwrap();
+                        log_multiple_strings(
+                            &sender,
+                            vec![
+                                format!("Account ID: {account_id_in_string}"),
+                                format!("Amount: {}", account.amount),
+                                format!("Locked: {}", account.locked),
+                                format!("Code Hash: {}", account.code_hash),
+                                format!("Storage Usage: {}", account.storage_usage),
+                                format!("Storage Paid At: {}", account.storage_paid_at),
+                            ],
+                        );
 
                         Ok(())
                     }
                     Err(e) => {
-                        sender
-                            .send(UIAction::LogString("Failed to get account".to_string()).into())
-                            .unwrap();
-
-                        sender
-                            .send(UIAction::LogString(format!("Error: {e}")).into())
-                            .unwrap();
+                        log_string(&sender, "Failed to view account".to_string());
+                        log_string(&sender, format!("{e:?}"));
 
                         Err(e)
                     }
@@ -519,46 +421,39 @@ impl Backend {
             command_source,
             async move |sender, agent, _ipfs_client, _config| match agent.status().await {
                 Ok(status) => {
-                    sender
-                        .send(
-                            UIAction::LogMultipleString(vec![
-                                format!("Version: {}", status.version.version),
-                                format!("Build: {}", status.version.build),
-                                format!("Protocol Version: {}", status.protocol_version),
-                                format!(
-                                    "Latest Protocol Version: {}",
-                                    status.latest_protocol_version
-                                ),
-                                format!("Rpc Address: {}", status.rpc_addr.unwrap_or_default()),
-                                format!("Sync Info: "),
-                                format!(
-                                    "  Latest Block Hash: {}",
-                                    status.sync_info.latest_block_hash
-                                ),
-                                format!(
-                                    "  Latest Block Height: {}",
-                                    status.sync_info.latest_block_height
-                                ),
-                                format!(
-                                    "  Latest State Root: {}",
-                                    status.sync_info.latest_state_root
-                                ),
-                                format!("  Syncing: {}", status.sync_info.syncing),
-                            ])
-                            .into(),
-                        )
-                        .unwrap();
+                    log_multiple_strings(
+                        &sender,
+                        vec![
+                            format!("Version: {}", status.version.version),
+                            format!("Build: {}", status.version.build),
+                            format!("Protocol Version: {}", status.protocol_version),
+                            format!(
+                                "Latest Protocol Version: {}",
+                                status.latest_protocol_version
+                            ),
+                            format!("Rpc Address: {}", status.rpc_addr.unwrap_or_default()),
+                            format!("Sync Info: "),
+                            format!(
+                                "  Latest Block Hash: {}",
+                                status.sync_info.latest_block_hash
+                            ),
+                            format!(
+                                "  Latest Block Height: {}",
+                                status.sync_info.latest_block_height
+                            ),
+                            format!(
+                                "  Latest State Root: {}",
+                                status.sync_info.latest_state_root
+                            ),
+                            format!("  Syncing: {}", status.sync_info.syncing),
+                        ],
+                    );
 
                     Ok(())
                 }
                 Err(e) => {
-                    sender
-                        .send(UIAction::LogString("Failed to get status".to_string()).into())
-                        .unwrap();
-
-                    sender
-                        .send(UIAction::LogString(format!("Error: {e}")).into())
-                        .unwrap();
+                    log_string(&sender, "Failed to get status".to_string());
+                    log_string(&sender, format!("{e:?}"));
 
                     Err(e)
                 }
@@ -571,35 +466,22 @@ impl Backend {
             command_source,
             async move |sender, agent, _ipfs_client, _config| match agent.network_status().await {
                 Ok(network_status) => {
-                    sender
-                        .send(
-                            UIAction::LogMultipleString(vec![
-                                format!("Num Active Peers: {}", network_status.num_active_peers),
-                                format!(
-                                    "Sent Bytes Per Sec: {}",
-                                    network_status.sent_bytes_per_sec
-                                ),
-                                format!(
-                                    "Received Bytes Per Sec: {}",
-                                    network_status.received_bytes_per_sec
-                                ),
-                            ])
-                            .into(),
-                        )
-                        .unwrap();
-
+                    log_multiple_strings(
+                        &sender,
+                        vec![
+                            format!("Num Active Peers: {}", network_status.num_active_peers),
+                            format!("Sent Bytes Per Sec: {}", network_status.sent_bytes_per_sec),
+                            format!(
+                                "Received Bytes Per Sec: {}",
+                                network_status.received_bytes_per_sec
+                            ),
+                        ],
+                    );
                     Ok(())
                 }
                 Err(e) => {
-                    sender
-                        .send(
-                            UIAction::LogString("Failed to get network status".to_string()).into(),
-                        )
-                        .unwrap();
-
-                    sender
-                        .send(UIAction::LogString(format!("Error: {e}")).into())
-                        .unwrap();
+                    log_string(&sender, "Failed to get network status".to_string());
+                    log_string(&sender, format!("{e:?}"));
 
                     Err(e)
                 }
@@ -612,20 +494,13 @@ impl Backend {
             command_source,
             async move |sender, agent, _ipfs_client, _config| match agent.gas_price().await {
                 Ok(gas_price) => {
-                    sender
-                        .send(UIAction::LogString(format!("Gas Price: {gas_price}")).into())
-                        .unwrap();
+                    log_string(&sender, format!("Gas price: {gas_price}"));
 
                     Ok(())
                 }
                 Err(e) => {
-                    sender
-                        .send(UIAction::LogString("Failed to get gas price".to_string()).into())
-                        .unwrap();
-
-                    sender
-                        .send(UIAction::LogString(format!("Error: {e}")).into())
-                        .unwrap();
+                    log_string(&sender, "Failed to get gas price".to_string());
+                    log_string(&sender, format!("{e:?}"));
 
                     Err(e)
                 }
@@ -797,10 +672,10 @@ impl Backend {
 
                                     self.sender
                                         .send(
-                                            CommandExecutionDone(
+                                            LogCommandExecutionDone(
                                                 command_source,
                                                 CommandExecutionStage::Parsing,
-                                                CommandExecutionStatus::Failure,
+                                                CommandExecutionStatus::Failed,
                                             )
                                             .into(),
                                         )
