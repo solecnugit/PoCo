@@ -1,3 +1,6 @@
+use std::error::Error;
+use std::fmt::Display;
+use std::path::Path;
 use std::sync::Arc;
 
 use futures::TryStreamExt;
@@ -27,6 +30,25 @@ impl From<ipfs_api_backend_hyper::Error> for IpfsClientError {
     }
 }
 
+impl Display for IpfsClientError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            IpfsClientError::InvalidUrl(url) => write!(f, "invalid url: {}", url),
+            IpfsClientError::IoError(e) => write!(f, "io error: {}", e),
+            IpfsClientError::InnerError(e) => write!(f, "inner error: {}", e),
+        }
+    }
+}
+impl Error for IpfsClientError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            IpfsClientError::InvalidUrl(_) => None,
+            IpfsClientError::IoError(e) => Some(e),
+            IpfsClientError::InnerError(e) => Some(e),
+        }
+    }
+}
+
 impl IpfsClient {
     pub fn create_ipfs_client(ipfs_endpoint: &str) -> Result<Self, IpfsClientError> {
         let client = if let Ok(client) = ipfs_api_backend_hyper::IpfsClient::from_str(ipfs_endpoint)
@@ -41,7 +63,7 @@ impl IpfsClient {
         Ok(Self { inner })
     }
 
-    pub async fn add_file(&self, file_path: &str) -> Result<String, IpfsClientError> {
+    pub async fn add_file(&self, file_path: impl AsRef<Path>) -> Result<String, IpfsClientError> {
         let file = tokio::fs::File::open(file_path).await?;
         let file = file.compat();
         let file = self.inner.add_async(file).await?;
