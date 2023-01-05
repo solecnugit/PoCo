@@ -9,7 +9,7 @@ use thiserror::__private::DisplayAsDisplay;
 use tracing::Level;
 
 use crate::agent::agent::PocoAgent;
-use crate::agent::task::config::RawTaskConfig;
+use crate::agent::task::config::{RawTaskConfig, RawTaskInputSource};
 use crate::app::backend::command::{
     BackendCommand::{
         CountEventsCommand, GasPriceCommand, GetUserEndpointCommand, HelpCommand,
@@ -96,9 +96,9 @@ impl Backend {
                 let msg = if let Err(e) = r {
                     tracing::error!(
                         message = "failed to execute command",
-                        command = format!("{:?}", command_source),
+                        command = format!("{command_source:?}"),
                         category = format!("{:?}", TracingCategory::Backend),
-                        error = format!("{:?}", e)
+                        error = format!("{e:?}")
                     );
 
                     sender2
@@ -121,8 +121,6 @@ impl Backend {
                 };
 
                 sender2.send(msg).unwrap();
-
-                ()
             }));
     }
 
@@ -135,7 +133,7 @@ impl Backend {
 
                 self.sender
                     .send(
-                        UIAction::CommandExecutionDone(
+                        CommandExecutionDone(
                             command_source,
                             CommandExecutionStage::Executed,
                             CommandExecutionStatus::Success,
@@ -183,14 +181,15 @@ impl Backend {
             async move |sender, agent, ipfs_client, _config| {
                 let task_config_path = Path::new(&task_config_path);
 
-                if let Ok(true) = task_config_path.try_exists() {} else {
+                if let Ok(true) = task_config_path.try_exists() {
+                } else {
                     sender
                         .send(
                             UIAction::LogString(format!(
                                 "Task config file not found: {}",
                                 task_config_path.display()
                             ))
-                                .into(),
+                            .into(),
                         )
                         .unwrap();
                     return Ok(());
@@ -207,7 +206,7 @@ impl Backend {
                                     "Both hash and file are specified in task config file: {}",
                                     task_config_path.display()
                                 ))
-                                    .into(),
+                                .into(),
                             )
                             .unwrap();
                         return Ok(());
@@ -222,13 +221,13 @@ impl Backend {
                         };
 
                         if let Ok(true) = file_path.try_exists() {
-                             sender
+                            sender
                                 .send(
                                     UIAction::LogString(format!(
                                         "Uploading file to IPFS: {}",
                                         file_path.display()
                                     ))
-                                        .into(),
+                                    .into(),
                                 )
                                 .unwrap();
 
@@ -237,10 +236,9 @@ impl Backend {
                             sender
                                 .send(
                                     UIAction::LogString(format!(
-                                        "File uploaded to IPFS, CID: {}",
-                                        file_cid
+                                        "File uploaded to IPFS, CID: {file_cid}"
                                     ))
-                                        .into(),
+                                    .into(),
                                 )
                                 .unwrap();
                         } else {
@@ -250,7 +248,7 @@ impl Backend {
                                         "Task input file not found: {}",
                                         file_path.display()
                                     ))
-                                        .into(),
+                                    .into(),
                                 )
                                 .unwrap();
                             return Ok(());
@@ -275,7 +273,7 @@ impl Backend {
                 sender
                     .send(
                         UIAction::LogMultipleString(
-                            buffer.lines().into_iter().map(|e| e.to_string()).collect(),
+                            buffer.lines().map(|e| e.to_string()).collect(),
                         )
                         .into(),
                     )
@@ -293,7 +291,7 @@ impl Backend {
                 let file_hash = ipfs_client.add_file(file_path.as_str()).await.unwrap();
 
                 sender
-                    .send(UIAction::LogString(format!("File hash: {}", file_hash)).into())
+                    .send(UIAction::LogString(format!("File hash: {file_hash}")).into())
                     .unwrap();
 
                 Ok(())
@@ -316,8 +314,7 @@ impl Backend {
                     sender
                         .send(
                             UIAction::LogString(format!(
-                                "Set user endpoint to {} ({} Gas Burnt)",
-                                endpoint, gas
+                                "Set user endpoint to {endpoint} ({gas} Gas Burnt)",
                             ))
                             .into(),
                         )
@@ -328,7 +325,7 @@ impl Backend {
                 Err(e) => {
                     sender
                         .send(
-                            UIAction::LogString(format!("Failed to set user endpoint: {:?}", e))
+                            UIAction::LogString(format!("Failed to set user endpoint: {e:?}"))
                                 .into(),
                         )
                         .unwrap();
@@ -352,7 +349,7 @@ impl Backend {
             {
                 Ok(Some(endpoint)) => {
                     sender
-                        .send(UIAction::LogString(format!("Endpoint: {}", endpoint)).into())
+                        .send(UIAction::LogString(format!("Endpoint: {endpoint}")).into())
                         .unwrap();
 
                     Ok(())
@@ -370,7 +367,7 @@ impl Backend {
                         .unwrap();
 
                     sender
-                        .send(UIAction::LogString(format!("Error: {}", e)).into())
+                        .send(UIAction::LogString(format!("Error: {e}")).into())
                         .unwrap();
 
                     Err(e)
@@ -399,7 +396,7 @@ impl Backend {
                     } else {
                         for event in events {
                             sender
-                                .send(UIAction::LogString(format!("Event: {}", event)).into())
+                                .send(UIAction::LogString(format!("Event: {event}")).into())
                                 .unwrap();
                         }
                     }
@@ -412,7 +409,7 @@ impl Backend {
                         .unwrap();
 
                     sender
-                        .send(UIAction::LogString(format!("Error: {}", e)).into())
+                        .send(UIAction::LogString(format!("Error: {e}")).into())
                         .unwrap();
 
                     Err(e)
@@ -427,7 +424,7 @@ impl Backend {
             async move |sender, agent, _ipfs_client, _config| match agent.count_events().await {
                 Ok(event_count) => {
                     sender
-                        .send(UIAction::LogString(format!("Total Events: {}", event_count)).into())
+                        .send(UIAction::LogString(format!("Total Events: {event_count}")).into())
                         .unwrap();
 
                     Ok(())
@@ -438,7 +435,7 @@ impl Backend {
                         .unwrap();
 
                     sender
-                        .send(UIAction::LogString(format!("Error: {}", e)).into())
+                        .send(UIAction::LogString(format!("Error: {e}")).into())
                         .unwrap();
 
                     Err(e)
@@ -453,7 +450,7 @@ impl Backend {
             async move |sender, agent, _ipfs_client, _config| match agent.get_round_status().await {
                 Ok(round_status) => {
                     sender
-                        .send(UIAction::LogString(format!("Round Status: {}", round_status)).into())
+                        .send(UIAction::LogString(format!("Round Status: {round_status}")).into())
                         .unwrap();
 
                     Ok(())
@@ -464,7 +461,7 @@ impl Backend {
                         .unwrap();
 
                     sender
-                        .send(UIAction::LogString(format!("Error: {}", e)).into())
+                        .send(UIAction::LogString(format!("Error: {e}")).into())
                         .unwrap();
 
                     Err(e)
@@ -488,7 +485,7 @@ impl Backend {
                         sender
                             .send(
                                 UIAction::LogMultipleString(vec![
-                                    format!("Account ID: {}", account_id_in_string),
+                                    format!("Account ID: {account_id_in_string}"),
                                     format!("Amount: {}", account.amount),
                                     format!("Locked: {}", account.locked),
                                     format!("Code Hash: {}", account.code_hash),
@@ -507,7 +504,7 @@ impl Backend {
                             .unwrap();
 
                         sender
-                            .send(UIAction::LogString(format!("Error: {}", e)).into())
+                            .send(UIAction::LogString(format!("Error: {e}")).into())
                             .unwrap();
 
                         Err(e)
@@ -560,7 +557,7 @@ impl Backend {
                         .unwrap();
 
                     sender
-                        .send(UIAction::LogString(format!("Error: {}", e)).into())
+                        .send(UIAction::LogString(format!("Error: {e}")).into())
                         .unwrap();
 
                     Err(e)
@@ -601,7 +598,7 @@ impl Backend {
                         .unwrap();
 
                     sender
-                        .send(UIAction::LogString(format!("Error: {}", e)).into())
+                        .send(UIAction::LogString(format!("Error: {e}")).into())
                         .unwrap();
 
                     Err(e)
@@ -616,7 +613,7 @@ impl Backend {
             async move |sender, agent, _ipfs_client, _config| match agent.gas_price().await {
                 Ok(gas_price) => {
                     sender
-                        .send(UIAction::LogString(format!("Gas Price: {}", gas_price)).into())
+                        .send(UIAction::LogString(format!("Gas Price: {gas_price}")).into())
                         .unwrap();
 
                     Ok(())
@@ -627,7 +624,7 @@ impl Backend {
                         .unwrap();
 
                     sender
-                        .send(UIAction::LogString(format!("Error: {}", e)).into())
+                        .send(UIAction::LogString(format!("Error: {e}")).into())
                         .unwrap();
 
                     Err(e)
@@ -738,7 +735,7 @@ impl Backend {
                         Err(MissingCommandParameter("hash".to_string()))
                     }
                 }
-                Some((command, _)) => Err(UnknownCommand(format!("ipfs {}", command))),
+                Some((command, _)) => Err(UnknownCommand(format!("ipfs {command}"))),
                 None => Err(UnknownCommand("ipfs".to_string())),
             },
             Some(("publish-task", args)) => {
@@ -771,7 +768,7 @@ impl Backend {
                                         UnknownCommand(command) => {
                                             tracing::event!(
                                                 Level::ERROR,
-                                                message = format!("unknown command: {}", command),
+                                                message = format!("unknown command: {command}"),
                                                 category =
                                                     format!("{:?}", TracingCategory::Backend)
                                             );
@@ -780,8 +777,7 @@ impl Backend {
                                             tracing::event!(
                                                 Level::ERROR,
                                                 message = format!(
-                                                    "missing command parameter: {}",
-                                                    parameter
+                                                    "missing command parameter: {parameter}"
                                                 ),
                                                 category =
                                                     format!("{:?}", TracingCategory::Backend)
@@ -791,8 +787,7 @@ impl Backend {
                                             tracing::event!(
                                                 Level::ERROR,
                                                 message = format!(
-                                                    "invalid command parameter: {}",
-                                                    parameter
+                                                    "invalid command parameter: {parameter}"
                                                 ),
                                                 category =
                                                     format!("{:?}", TracingCategory::Backend)

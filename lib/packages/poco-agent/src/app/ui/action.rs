@@ -83,7 +83,7 @@ impl UIActionEvent {
             current_width += word.width() + 1;
         }
 
-        spans.into_iter().map(|e| Spans::from(e)).collect()
+        spans.into_iter().map(Spans::from).collect()
     }
 
     pub fn render_spans(&self, max_width: usize, time_format: &str) -> Vec<Spans> {
@@ -199,9 +199,9 @@ impl UIActionEvent {
                 Span::styled(
                     match status {
                         CommandExecutionStatus::Success => {
-                            format!("Command {} executed successfully", source)
+                            format!("Command {source} executed successfully")
                         }
-                        CommandExecutionStatus::Failure => format!("Command {} failed", source),
+                        CommandExecutionStatus::Failure => format!("Command {source} failed",),
                     },
                     Style::default().fg(match status {
                         CommandExecutionStatus::Success => Color::Green,

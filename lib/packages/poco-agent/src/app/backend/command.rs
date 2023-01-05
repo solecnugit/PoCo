@@ -28,19 +28,19 @@ pub fn get_command_instance(in_ui_mode: bool) -> Command {
         subcommand("status").about("Get Blockchain status"),
         subcommand("view-account")
             .about("View account")
-            .arg(clap::Arg::new("account-id").required(true).index(1)),
+            .arg(Arg::new("account-id").required(true).index(1)),
         subcommand("round-status").about("Get round status"),
         subcommand("count-events").about("Count events"),
         subcommand("query-events")
             .about("Query events")
             .arg(
-                clap::Arg::new("from")
+                Arg::new("from")
                     .required(true)
                     .index(1)
                     .allow_negative_numbers(false),
             )
             .arg(
-                clap::Arg::new("count")
+                Arg::new("count")
                     .required(false)
                     .index(2)
                     .allow_negative_numbers(false)
@@ -48,24 +48,24 @@ pub fn get_command_instance(in_ui_mode: bool) -> Command {
             ),
         subcommand("get-user-endpoint")
             .about("Get User Endpoint")
-            .arg(clap::Arg::new("account-id").required(false).index(1)),
+            .arg(Arg::new("account-id").required(false).index(1)),
         subcommand("set-user-endpoint")
             .about("Set User Endpoint")
-            .arg(clap::Arg::new("endpoint").required(true).index(1)),
+            .arg(Arg::new("endpoint").required(true).index(1)),
         subcommand("ipfs")
             .about("IPFS")
             .subcommand_required(true)
             .subcommands(vec![
                 subcommand("add")
                     .about("Add file to IPFS")
-                    .arg(clap::Arg::new("file").required(true).index(1)),
+                    .arg(Arg::new("file").required(true).index(1)),
                 subcommand("cat")
                     .about("Cat file from IPFS")
-                    .arg(clap::Arg::new("hash").required(true).index(1)),
+                    .arg(Arg::new("hash").required(true).index(1)),
             ]),
         subcommand("publish-task")
             .about("Publish task")
-            .arg(clap::Arg::new("task-config-path").required(true).index(1)),
+            .arg(Arg::new("task-config-path").required(true).index(1)),
     ];
 
     let command = if in_ui_mode {
@@ -89,7 +89,7 @@ pub fn get_command_instance(in_ui_mode: bool) -> Command {
             .subcommand(
                 subcommand("help")
                     .about("Get help for poco-agent")
-                    .arg(clap::Arg::new("command").required(false).index(1)),
+                    .arg(Arg::new("command").required(false).index(1)),
             )
     } else {
         Command::new("poco")

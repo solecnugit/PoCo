@@ -10,12 +10,12 @@
     {
       "property": "stake",
       "operator": "GREATER_THAN",
-      "value": 100
+      "value": "0x100"
     }
   ],
   "offer": [
     {
-      "bounty": 100,
+      "bounty": "0x100",
       "requirements": []
     }
   ],

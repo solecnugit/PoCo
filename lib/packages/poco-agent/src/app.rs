@@ -1,7 +1,5 @@
-use std::error::Error;
 use std::{sync::Arc, thread::JoinHandle};
 
-use anyhow::anyhow;
 use tracing::Level;
 
 use crate::app::backend::command::CommandSource;
@@ -78,21 +76,21 @@ impl App {
                 match self.ui_channel.1.recv() {
                     Ok(event) => match event.1 {
                         UIAction::LogCommand(command_id, command) => {
-                            println!("{} {}", command_id, command);
+                            println!("{command_id} {command}");
                         }
                         UIAction::LogString(string) => {
-                            println!("{}", string);
+                            println!("{string}");
                         }
                         UIAction::LogMultipleString(strings) => {
                             for string in strings {
-                                println!("{}", string);
+                                println!("{string}");
                             }
                         }
                         UIAction::LogTracingEvent(event) => {
-                            println!("{}", event);
+                            println!("{event}");
                         }
                         UIAction::Panic(error) => {
-                            println!("{}", error);
+                            println!("{error:?}");
                             break 'main Err(anyhow::anyhow!(error));
                         }
                         UIAction::CommandExecutionDone(command_source, _stage, status) => {
@@ -112,7 +110,7 @@ impl App {
                         }
                     },
                     Err(error) => {
-                        println!("error: {}", error);
+                        println!("error: {error}");
 
                         break 'main Err(error.into());
                     }

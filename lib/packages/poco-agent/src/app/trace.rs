@@ -43,7 +43,7 @@ impl<S: Subscriber> Layer<S> for UITracingLayer {
         _ctx: tracing_subscriber::layer::Context<'_, S>,
     ) {
         let metadata = event.metadata();
-        let timestamp = chrono::Local::now();
+        let timestamp = Local::now();
         let level = metadata.level();
         let mut fields = HashMap::new();
 
@@ -59,7 +59,7 @@ impl<S: Subscriber> Layer<S> for UITracingLayer {
 
             fn record_debug(&mut self, field: &tracing::field::Field, value: &dyn std::fmt::Debug) {
                 let name = field.name();
-                let value = format!("{:?}", value);
+                let value = format!("{value:?}");
 
                 self.fields.insert(name.to_string(), value);
             }
@@ -84,14 +84,14 @@ impl<S: Subscriber> Layer<S> for UITracingLayer {
                 .map(|(k, v)| (k, v))
                 .collect();
 
-            let event = TracingEvent::new(category, timestamp, level.clone(), message, fields);
+            let event = TracingEvent::new(category, timestamp, *level, message, fields);
 
             match self.sender.send(UIAction::LogTracingEvent(event).into()) {
                 Ok(_) => {}
                 Err(err) => {
                     tracing::error!(
                         message = "failed to send tracing event to ui",
-                        error = format!("{:?}", err)
+                        error = format!("{err:?}")
                     );
                 }
             }
@@ -126,7 +126,7 @@ impl Display for TracingEvent {
         }
 
         for (key, value) in &self.fields {
-            message.push_str(&format!("{}: {}, ", key, value));
+            message.push_str(format!("{key}: {value}, ").as_str());
         }
 
         write!(

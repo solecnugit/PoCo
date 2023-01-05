@@ -33,9 +33,9 @@ impl From<ipfs_api_backend_hyper::Error> for IpfsClientError {
 impl Display for IpfsClientError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            IpfsClientError::InvalidUrl(url) => write!(f, "invalid url: {}", url),
-            IpfsClientError::IoError(e) => write!(f, "io error: {}", e),
-            IpfsClientError::InnerError(e) => write!(f, "inner error: {}", e),
+            IpfsClientError::InvalidUrl(url) => write!(f, "invalid url: {url}"),
+            IpfsClientError::IoError(e) => write!(f, "io error: {e}"),
+            IpfsClientError::InnerError(e) => write!(f, "inner error: {e}"),
         }
     }
 }

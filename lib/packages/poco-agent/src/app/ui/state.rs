@@ -49,7 +49,7 @@ impl UIState {
             .internal_event
             .iter()
             .flat_map(|e| e.render_spans(width, time_format))
-            .map(|e| ListItem::new(e))
+            .map(ListItem::new)
             .collect::<Vec<ListItem>>();
 
         self.offset = self.offset.min(items.len().saturating_sub(height));

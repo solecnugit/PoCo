@@ -1,5 +1,4 @@
 use anyhow::anyhow;
-use std::error::Error;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
@@ -131,12 +130,12 @@ impl PocoAgent {
 
     fn encode_args(&self, args: &str, r#type: ArgsType) -> Vec<u8> {
         match r#type {
-            ArgsType::JSON => serde_json::Value::from_str(&args)
+            ArgsType::JSON => serde_json::Value::from_str(args)
                 .unwrap()
                 .to_string()
                 .into_bytes(),
             ArgsType::TEXT => args.to_string().into_bytes(),
-            ArgsType::BASE64 => base64::decode(&args.as_bytes()).unwrap(),
+            ArgsType::BASE64 => base64::decode(args.as_bytes()).unwrap(),
         }
     }
 

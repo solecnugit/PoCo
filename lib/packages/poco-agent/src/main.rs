@@ -20,10 +20,8 @@ pub mod ipfs;
 fn main() -> anyhow::Result<()> {
     let app_run_config = config::parse();
     let config = app_run_config.get_config().expect("Failed to load config");
-    let log_file_appender = tracing_appender::rolling::daily(
-        config.log.directory.to_string(),
-        config.log.prefix.to_string(),
-    );
+    let log_file_appender =
+        tracing_appender::rolling::daily(&config.log.directory, &config.log.prefix);
     let (non_blocking_appender, _guard) = tracing_appender::non_blocking(log_file_appender);
     let format = Box::leak(Box::new(config.log.time_format.to_string()));
 
