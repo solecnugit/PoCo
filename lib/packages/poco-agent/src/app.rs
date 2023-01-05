@@ -93,13 +93,14 @@ impl App {
                             println!("{error:?}");
                             break 'main Err(anyhow::anyhow!(error));
                         }
-                        UIAction::LogCommandExecution(command_source, _stage, status) => {
+                        UIAction::LogCommandExecution(command_source, stage, status, error) => {
                             match status {
                                 CommandExecutionStatus::Succeed => {
                                     println!("Command {} executed successfully", command_source.id);
                                 }
                                 CommandExecutionStatus::Failed => {
-                                    println!("Command {} failed", command_source.id);
+                                    println!("Command {} failed(Stage: {stage})", command_source.id);
+                                    println!("Error: {error:?}");
                                 }
                             }
 

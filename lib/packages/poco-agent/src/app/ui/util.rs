@@ -24,13 +24,14 @@ pub fn log_command(sender: &crossbeam_channel::Sender<UIActionEvent>, command: C
 }
 
 #[inline]
-pub fn log_command_execution_done(
+pub fn log_command_execution(
     sender: &crossbeam_channel::Sender<UIActionEvent>,
     command: CommandSource,
     stage: CommandExecutionStage,
     status: CommandExecutionStatus,
+    error: Option<String>,
 ) {
     sender
-        .send(UIAction::LogCommandExecution(command, stage, status).into())
+        .send(UIAction::LogCommandExecution(command, stage, status, error).into())
         .unwrap();
 }

@@ -1,4 +1,6 @@
+use std::error::Error;
 use chrono::{DateTime, Local};
+use strum::Display;
 use tracing::Level;
 use tui::{
     style::{Color, Style},
@@ -25,13 +27,13 @@ impl From<UIAction> for UIActionEvent {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Display)]
 pub enum CommandExecutionStage {
     Parsing,
     Executed,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Display)]
 pub enum CommandExecutionStatus {
     Succeed,
     Failed,
@@ -44,7 +46,7 @@ pub enum UIAction {
     LogMultipleStrings(Vec<String>),
     LogTracingEvent(TracingEvent),
     LogCommand(CommandSource),
-    LogCommandExecution(CommandSource, CommandExecutionStage, CommandExecutionStatus),
+    LogCommandExecution(CommandSource, CommandExecutionStage, CommandExecutionStatus, Option<String>),
     QuitApp,
 }
 
@@ -193,7 +195,7 @@ impl UIActionEvent {
                 "Quitting app",
                 Style::default().fg(Color::White),
             ))],
-            UIAction::LogCommandExecution(source, _stage, status) => vec![Spans::from(vec![
+            UIAction::LogCommandExecution(source, stage, status, error) => vec![Spans::from(vec![
                 time_span,
                 Span::raw(" "),
                 Span::styled(
@@ -201,14 +203,23 @@ impl UIActionEvent {
                         CommandExecutionStatus::Succeed => {
                             format!("Command {source} executed successfully")
                         }
-                        CommandExecutionStatus::Failed => format!("Command {source} failed",),
+                        CommandExecutionStatus::Failed => format!("Command {source} failed (Stage: {stage})",),
                     },
                     Style::default().fg(match status {
                         CommandExecutionStatus::Succeed => Color::Green,
                         CommandExecutionStatus::Failed => Color::Red,
                     }),
                 ),
-            ])],
+            ]), match error {
+                Some(error) => Spans::from(vec![
+                    Span::raw(" ".repeat(time_string.width() + 1)),
+                    Span::styled(
+                        format!("Error: {}", error),
+                        Style::default().fg(Color::Red),
+                    ),
+                ]),
+                None => Spans::from(vec![]),
+            }],
             UIAction::Panic(_) => unreachable!(),
         }
     }

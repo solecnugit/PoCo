@@ -45,7 +45,8 @@ near-jsonrpc-primitives = "0.15.0"
 near-crypto = "0.15.0"
 near-primitives = "0.15.0"
 
-ipfs-api-backend-hyper = { version = "0.5.0", features = ["with-send-sync"] }
+ipfs-api-prelude = "0.6.0"
+ipfs-api-backend-hyper = { version = "0.6.0", features = ["with-send-sync"] }
 
 crossbeam-channel = "0.5.6"
 
