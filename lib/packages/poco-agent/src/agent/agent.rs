@@ -1,4 +1,3 @@
-use anyhow::anyhow;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
@@ -102,7 +101,7 @@ impl PocoAgent {
         if let QueryResponseKind::ViewAccount(account_view) = response.kind {
             Ok(account_view)
         } else {
-            Err(anyhow!("Unexpected response kind: {:?}", response.kind))
+            anyhow::bail!("Unexpected response kind: {:?}", response.kind)
         }
     }
 
@@ -124,7 +123,7 @@ impl PocoAgent {
         if let QueryResponseKind::AccessKey(access_key_view) = response.kind {
             Ok(access_key_view)
         } else {
-            Err(anyhow!("Unexpected response kind: {:?}", response.kind))
+            anyhow::bail!("Unexpected response kind: {:?}", response.kind)
         }
     }
 
@@ -143,7 +142,7 @@ impl PocoAgent {
         if let QueryResponseKind::CallResult(call_result) = response.kind {
             Ok(call_result.result)
         } else {
-            Err(anyhow!("Unexpected response"))
+            anyhow::bail!("Unexpected response kind: {:?}", response.kind)
         }
     }
 
@@ -188,7 +187,7 @@ impl PocoAgent {
 
         let current_nonce = match access_key_response.kind {
             QueryResponseKind::AccessKey(access_key) => access_key.nonce,
-            _ => Err(anyhow!("Unexpected response"))?,
+            _ => anyhow::bail!("Unexpected response kind: {:?}", access_key_response.kind),
         };
 
         let transaction = Transaction {
@@ -222,7 +221,7 @@ impl PocoAgent {
         match response.status {
             FinalExecutionStatus::SuccessValue(buffer) => Ok((gas_burnt, buffer)),
             FinalExecutionStatus::Failure(error) => Err(error)?,
-            _ => Err(anyhow!("transaction not finished yet"))?,
+            _ => anyhow::bail!("Unexpected response status: {:?}", response.status),
         }
     }
 
@@ -265,7 +264,7 @@ impl PocoAgent {
 
         match serde_json::from_slice(buffer.as_slice()) {
             Ok(result) => Ok((gas, result)),
-            Err(_) => Err(anyhow!("Unexpected response"))?,
+            Err(_) => anyhow::bail!("Unexpected response: {:?}", String::from_utf8(buffer)),
         }
     }
 
