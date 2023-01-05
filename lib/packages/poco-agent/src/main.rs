@@ -1,8 +1,6 @@
 #![feature(async_closure)]
 #![feature(fn_traits)]
 
-use std::error::Error;
-
 use time::{format_description, UtcOffset};
 use tracing::Level;
 use tracing_subscriber::fmt::time::OffsetTime;

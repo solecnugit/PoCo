@@ -31,6 +31,6 @@ pub fn log_command_execution_done(
     status: CommandExecutionStatus,
 ) {
     sender
-        .send(UIAction::LogCommandExecutionDone(command, stage, status).into())
+        .send(UIAction::LogCommandExecution(command, stage, status).into())
         .unwrap();
 }

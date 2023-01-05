@@ -53,11 +53,23 @@ impl PocoAgent {
         let rpc_client = JsonRpcClient::with(client).connect(config.near.rpc_endpoint.as_str());
 
         let signer = InMemorySigner::from_secret_key(
-            config.near.signer_account_id.parse().unwrap(),
-            config.near.signer_secret_key.parse().unwrap(),
+            config
+                .near
+                .signer_account_id
+                .parse()
+                .expect("Invalid signer account id"),
+            config
+                .near
+                .signer_secret_key
+                .parse()
+                .expect("Invalid signer secret key"),
         );
 
-        let contract_id = config.poco.poco_contract_account.parse().unwrap();
+        let contract_id = config
+            .poco
+            .poco_contract_account
+            .parse()
+            .expect("Invalid contract account id");
 
         PocoAgent {
             config,

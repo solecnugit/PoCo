@@ -5,7 +5,6 @@ use std::sync::Arc;
 use futures::lock::Mutex;
 use futures::FutureExt;
 use near_primitives::types::AccountId;
-use thiserror::__private::DisplayAsDisplay;
 use tracing::Level;
 
 use crate::agent::agent::PocoAgent;
@@ -21,13 +20,13 @@ use crate::app::backend::command::{
     ParseBackendCommandError::{InvalidCommandParameter, MissingCommandParameter, UnknownCommand},
 };
 use crate::app::trace::TracingCategory;
-use crate::app::ui::action::UIAction::LogCommandExecutionDone;
+use crate::app::ui::action::UIAction::LogCommandExecution;
 use crate::app::ui::action::{CommandExecutionStage, CommandExecutionStatus};
 use crate::app::ui::util::log_command_execution_done;
 use crate::config::PocoAgentConfig;
 use crate::ipfs::client::IpfsClient;
 
-use super::ui::action::{UIAction, UIActionEvent};
+use super::ui::action::{UIActionEvent};
 use super::ui::util::{log_multiple_strings, log_string};
 
 use self::command::{get_internal_command, BackendCommand, ParseBackendCommandError};
@@ -103,7 +102,7 @@ impl Backend {
                         error = format!("{e:?}")
                     );
 
-                    log_string(&sender2, format!("error: {}", e.as_display()));
+                    log_string(&sender2, format!("error: {e:?}"));
                     log_command_execution_done(
                         &sender2,
                         command_source,
@@ -168,7 +167,7 @@ impl Backend {
     ) {
         self.execute_command_block(
             command_source,
-            async move |sender, agent, ipfs_client, _config| {
+            async move |sender, _agent, ipfs_client, _config| {
                 let task_config_path = Path::new(&task_config_path);
 
                 if let Ok(true) = task_config_path.try_exists() {} else {
@@ -181,8 +180,7 @@ impl Backend {
 
                 let task_config = tokio::fs::read_to_string(task_config_path).await?;
                 let task_config = serde_json::from_str::<RawTaskConfig>(&task_config)?;
-
-                if let RawTaskInputSource::Ipfs { hash, file } = &task_config.input {
+                let task_config = if let RawTaskInputSource::Ipfs { hash, file } = &task_config.input {
                     if hash.is_some() && file.is_some() {
                         log_string(&sender, "Both hash and file are specified in task config. Please specify only one of them.".to_string());
                         return Ok(());
@@ -205,6 +203,8 @@ impl Backend {
                             let file_cid = ipfs_client.add_file(file_path.as_path()).await?;
 
                             log_string(&sender, format!("File uploaded to ipfs: {file_cid}"));
+
+                            task_config.to_task_config(Some(file_cid))
                         } else {
                             log_string(&sender, format!(
                                 "Task input file not found: {}",
@@ -212,10 +212,14 @@ impl Backend {
                             ));
                             return Ok(());
                         }
+                    } else {
+                        task_config.to_task_config(None)
                     }
-                }
+                } else {
+                    task_config.to_task_config(None)
+                };
 
-                task_config;
+                drop(task_config);
 
                 Ok(())
             },
@@ -672,7 +676,7 @@ impl Backend {
 
                                     self.sender
                                         .send(
-                                            LogCommandExecutionDone(
+                                            LogCommandExecution(
                                                 command_source,
                                                 CommandExecutionStage::Parsing,
                                                 CommandExecutionStatus::Failed,
