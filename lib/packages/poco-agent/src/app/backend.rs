@@ -1,9 +1,10 @@
 use std::future::Future;
 use std::path::Path;
 use std::sync::Arc;
+use std::time::{Duration};
 
-use futures::lock::Mutex;
 use futures::FutureExt;
+use futures::lock::Mutex;
 use near_primitives::types::AccountId;
 use tracing::Level;
 
@@ -19,17 +20,18 @@ use crate::app::backend::command::{
     CommandSource,
     ParseBackendCommandError::{InvalidCommandParameter, MissingCommandParameter, UnknownCommand},
 };
+use crate::app::backend::command::BackendCommand::IpfsGetFileCommand;
 use crate::app::trace::TracingCategory;
-use crate::app::ui::action::UIAction::LogCommandExecution;
 use crate::app::ui::action::{CommandExecutionStage, CommandExecutionStatus};
-use crate::app::ui::util::log_command_execution_done;
+use crate::app::ui::util::log_command_execution;
 use crate::config::PocoAgentConfig;
 use crate::ipfs::client::IpfsClient;
+use crate::util::pretty_bytes;
 
-use super::ui::action::{UIActionEvent};
+use super::ui::action::UIActionEvent;
 use super::ui::util::{log_multiple_strings, log_string};
 
-use self::command::{get_internal_command, BackendCommand, ParseBackendCommandError};
+use self::command::{BackendCommand, get_internal_command, ParseBackendCommandError};
 
 pub mod command;
 
@@ -76,14 +78,14 @@ impl Backend {
     }
 
     fn execute_command_block<F, R>(&mut self, command_source: CommandSource, f: F)
-    where
-        F: FnOnce(
-            crossbeam_channel::Sender<UIActionEvent>,
-            Arc<PocoAgent>,
-            Arc<IpfsClient>,
-            Arc<PocoAgentConfig>,
-        ) -> R,
-        R: Future<Output = anyhow::Result<()>> + Send + 'static,
+        where
+            F: FnOnce(
+                crossbeam_channel::Sender<UIActionEvent>,
+                Arc<PocoAgent>,
+                Arc<IpfsClient>,
+                Arc<PocoAgentConfig>,
+            ) -> R,
+            R: Future<Output=anyhow::Result<()>> + Send + 'static,
     {
         let sender1 = self.sender.clone();
         let sender2 = self.sender.clone();
@@ -102,19 +104,20 @@ impl Backend {
                         error = format!("{e:?}")
                     );
 
-                    log_string(&sender2, format!("error: {e:?}"));
-                    log_command_execution_done(
+                    log_command_execution(
                         &sender2,
                         command_source,
                         CommandExecutionStage::Executed,
                         CommandExecutionStatus::Failed,
+                        Some(format!("{e:?}")),
                     );
                 } else {
-                    log_command_execution_done(
+                    log_command_execution(
                         &sender2,
                         command_source,
                         CommandExecutionStage::Executed,
                         CommandExecutionStatus::Succeed,
+                        None,
                     );
                 };
             }));
@@ -124,11 +127,12 @@ impl Backend {
         match command {
             HelpCommand(help) => {
                 log_multiple_strings(&self.sender, help);
-                log_command_execution_done(
+                log_command_execution(
                     &self.sender,
                     command_source,
                     CommandExecutionStage::Executed,
                     CommandExecutionStatus::Succeed,
+                    None,
                 );
             }
             GasPriceCommand => self.execute_gas_price_command(command_source),
@@ -154,6 +158,10 @@ impl Backend {
             IpfsCatFileCommand { file_hash } => {
                 self.execute_ipfs_cat_file_command(command_source, file_hash)
             }
+            IpfsGetFileCommand {
+                file_hash,
+                file_path,
+            } => self.execute_ipfs_get_file_command(command_source, file_hash, file_path),
             PublishTaskCommand { task_config_path } => {
                 self.execute_publish_task_command(command_source, task_config_path)
             }
@@ -234,6 +242,62 @@ impl Backend {
                 let buffer = String::from_utf8(buffer).unwrap();
 
                 log_multiple_strings(&sender, buffer.lines().map(|s| s.to_string()).collect());
+
+                Ok(())
+            },
+        );
+    }
+
+    fn execute_ipfs_get_file_command(
+        &mut self,
+        command_source: CommandSource,
+        file_hash: String,
+        file_path: String,
+    ) {
+        self.execute_command_block(
+            command_source,
+            async move |sender, _agent, ipfs_client, _config| {
+                let mut interval = tokio::time::interval(Duration::from_millis(1000));
+                let (tx, mut rx) = tokio::sync::mpsc::channel(1);
+
+                log_string(&sender, format!("Downloading file from ipfs: {file_hash}"));
+
+                tokio::spawn(async move {
+                    let mut last_progress = (0, 0);
+
+                    loop {
+                        tokio::select! {
+                            _ = interval.tick() => {
+                                let (downloaded, total) = last_progress;
+
+                                if downloaded != 0 {
+                                    let percent = (downloaded as f64 / total as f64) * 100.0;
+                                    let downloaded = pretty_bytes(downloaded);
+                                    let total = pretty_bytes(total);
+
+                                    log_string(&sender, format!(
+                                        "Downloading file from ipfs: {downloaded}/{total}({percent:.2}%)"
+                                    ));
+                                }
+                            }
+                            progress = rx.recv() => {
+                                if let Some(progress) = progress {
+                                    last_progress = progress;
+                                } else {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                });
+
+                ipfs_client
+                    .get_file(
+                        file_hash.as_str(),
+                        file_path.as_str(),
+                        Some(tx),
+                    )
+                    .await?;
 
                 Ok(())
             },
@@ -614,6 +678,20 @@ impl Backend {
                         Err(MissingCommandParameter("hash".to_string()))
                     }
                 }
+                Some(("get", args)) => {
+                    if let Some(hash) = args.get_one::<String>("hash") {
+                        if let Some(file_path) = args.get_one::<String>("file-path") {
+                            Ok(IpfsGetFileCommand {
+                                file_hash: hash.to_string(),
+                                file_path: file_path.to_string(),
+                            })
+                        } else {
+                            Err(MissingCommandParameter("file".to_string()))
+                        }
+                    } else {
+                        Err(MissingCommandParameter("hash".to_string()))
+                    }
+                }
                 Some((command, _)) => Err(UnknownCommand(format!("ipfs {command}"))),
                 None => Err(UnknownCommand("ipfs".to_string())),
             },
@@ -643,7 +721,7 @@ impl Backend {
                             match self.parse_command(command_source.source.trim()) {
                                 Ok(command) => self.execute_command(command_source, command),
                                 Err(error) => {
-                                    match error {
+                                    match &error {
                                         UnknownCommand(command) => {
                                             tracing::event!(
                                                 Level::ERROR,
@@ -674,16 +752,13 @@ impl Backend {
                                         }
                                     }
 
-                                    self.sender
-                                        .send(
-                                            LogCommandExecution(
-                                                command_source,
-                                                CommandExecutionStage::Parsing,
-                                                CommandExecutionStatus::Failed,
-                                            )
-                                            .into(),
-                                        )
-                                        .unwrap();
+                                    log_command_execution(
+                                        &self.sender,
+                                        command_source,
+                                        CommandExecutionStage::Parsing,
+                                        CommandExecutionStatus::Failed,
+                                        Some(format!("{error:?}")),
+                                    );
                                 }
                             }
                         }

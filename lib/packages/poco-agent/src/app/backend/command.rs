@@ -62,6 +62,10 @@ pub fn get_command_instance(in_ui_mode: bool) -> Command {
                 subcommand("cat")
                     .about("Cat file from IPFS")
                     .arg(Arg::new("hash").required(true).index(1)),
+                subcommand("get")
+                    .about("Get file from IPFS")
+                    .arg(Arg::new("hash").required(true).index(1))
+                    .arg(Arg::new("file-path").required(true).index(2)),
             ]),
         subcommand("publish-task")
             .about("Publish task")
@@ -125,21 +129,40 @@ pub(crate) fn get_internal_command() -> Command {
 pub enum BackendCommand {
     HelpCommand(Vec<String>),
     // Ipfs Commands
-    IpfsAddFileCommand { file_path: String },
-    IpfsCatFileCommand { file_hash: String },
+    IpfsAddFileCommand {
+        file_path: String,
+    },
+    IpfsCatFileCommand {
+        file_hash: String,
+    },
+    IpfsGetFileCommand {
+        file_hash: String,
+        file_path: String,
+    },
     // Near Network
     GasPriceCommand,
     NetworkStatusCommand,
     StatusCommand,
-    ViewAccountCommand { account_id: AccountId },
+    ViewAccountCommand {
+        account_id: AccountId,
+    },
     // PoCo Contract Commands
     RoundStatusCommand,
     CountEventsCommand,
-    QueryEventsCommand { from: u32, count: u32 },
-    GetUserEndpointCommand { account_id: Option<AccountId> },
-    SetUserEndpointCommand { endpoint: String },
+    QueryEventsCommand {
+        from: u32,
+        count: u32,
+    },
+    GetUserEndpointCommand {
+        account_id: Option<AccountId>,
+    },
+    SetUserEndpointCommand {
+        endpoint: String,
+    },
     // Task Related Commands
-    PublishTaskCommand { task_config_path: String },
+    PublishTaskCommand {
+        task_config_path: String,
+    },
 }
 
 #[derive(Debug, Clone)]

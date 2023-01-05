@@ -1,5 +1,5 @@
-use std::error::Error;
 use chrono::{DateTime, Local};
+use std::error::Error;
 use strum::Display;
 use tracing::Level;
 use tui::{
@@ -46,7 +46,12 @@ pub enum UIAction {
     LogMultipleStrings(Vec<String>),
     LogTracingEvent(TracingEvent),
     LogCommand(CommandSource),
-    LogCommandExecution(CommandSource, CommandExecutionStage, CommandExecutionStatus, Option<String>),
+    LogCommandExecution(
+        CommandSource,
+        CommandExecutionStage,
+        CommandExecutionStatus,
+        Option<String>,
+    ),
     QuitApp,
 }
 
@@ -195,31 +200,33 @@ impl UIActionEvent {
                 "Quitting app",
                 Style::default().fg(Color::White),
             ))],
-            UIAction::LogCommandExecution(source, stage, status, error) => vec![Spans::from(vec![
-                time_span,
-                Span::raw(" "),
-                Span::styled(
-                    match status {
-                        CommandExecutionStatus::Succeed => {
-                            format!("Command {source} executed successfully")
-                        }
-                        CommandExecutionStatus::Failed => format!("Command {source} failed (Stage: {stage})",),
-                    },
-                    Style::default().fg(match status {
-                        CommandExecutionStatus::Succeed => Color::Green,
-                        CommandExecutionStatus::Failed => Color::Red,
-                    }),
-                ),
-            ]), match error {
-                Some(error) => Spans::from(vec![
-                    Span::raw(" ".repeat(time_string.width() + 1)),
+            UIAction::LogCommandExecution(source, stage, status, error) => vec![
+                Spans::from(vec![
+                    time_span,
+                    Span::raw(" "),
                     Span::styled(
-                        format!("Error: {}", error),
-                        Style::default().fg(Color::Red),
+                        match status {
+                            CommandExecutionStatus::Succeed => {
+                                format!("Command {source} executed successfully")
+                            }
+                            CommandExecutionStatus::Failed => {
+                                format!("Command {source} failed (Stage: {stage})",)
+                            }
+                        },
+                        Style::default().fg(match status {
+                            CommandExecutionStatus::Succeed => Color::Green,
+                            CommandExecutionStatus::Failed => Color::Red,
+                        }),
                     ),
                 ]),
-                None => Spans::from(vec![]),
-            }],
+                match error {
+                    Some(error) => Spans::from(vec![
+                        Span::raw(" ".repeat(time_string.width() + 1)),
+                        Span::styled(format!("Error: {}", error), Style::default().fg(Color::Red)),
+                    ]),
+                    None => Spans::from(vec![]),
+                },
+            ],
             UIAction::Panic(_) => unreachable!(),
         }
     }

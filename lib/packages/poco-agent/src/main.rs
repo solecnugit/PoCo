@@ -1,5 +1,7 @@
 #![feature(async_closure)]
 #![feature(fn_traits)]
+#![feature(inherent_associated_types)]
+#![feature(box_syntax)]
 
 use time::{format_description, UtcOffset};
 use tracing::Level;
@@ -14,6 +16,7 @@ pub mod agent;
 pub mod app;
 pub mod config;
 pub mod ipfs;
+pub mod util;
 
 fn main() -> anyhow::Result<()> {
     let app_run_config = config::parse();

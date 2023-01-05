@@ -99,7 +99,10 @@ impl App {
                                     println!("Command {} executed successfully", command_source.id);
                                 }
                                 CommandExecutionStatus::Failed => {
-                                    println!("Command {} failed(Stage: {stage})", command_source.id);
+                                    println!(
+                                        "Command {} failed(Stage: {stage})",
+                                        command_source.id
+                                    );
                                     println!("Error: {error:?}");
                                 }
                             }

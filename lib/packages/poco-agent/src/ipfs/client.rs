@@ -1,9 +1,9 @@
-use std::cell::RefCell;
+
 use std::error::Error;
 use std::fmt::Display;
-use std::future::Future;
+
 use std::path::Path;
-use std::rc::Rc;
+
 use std::sync::Arc;
 
 use futures::{TryFutureExt, TryStreamExt};
@@ -21,7 +21,7 @@ pub enum IpfsClientError {
     InvalidUrlError(String),
     InvalidHashError(String),
     IoError(std::io::Error),
-    InnerError(ipfs_api_backend_hyper::Error)
+    InnerError(ipfs_api_backend_hyper::Error),
 }
 
 impl From<std::io::Error> for IpfsClientError {
@@ -29,7 +29,6 @@ impl From<std::io::Error> for IpfsClientError {
         IpfsClientError::IoError(e)
     }
 }
-
 
 impl From<ipfs_api_backend_hyper::Error> for IpfsClientError {
     fn from(e: ipfs_api_backend_hyper::Error) -> Self {
@@ -114,43 +113,50 @@ impl IpfsClient {
         &'a self,
         hash: &'a str,
         path: impl AsRef<Path> + 'a,
-        callback: Option<Box<dyn Fn(u64, u64) + Send + 'static>>,
+        progress_callback_sender: Option<tokio::sync::mpsc::Sender<(u64, u64)>>,
     ) -> Result<(), IpfsClientError> {
         let file_status = self.file_status(hash).await?;
         let file_size = file_status.cumulative_size;
         let file = tokio::fs::File::create(path).await?;
 
-        if let Some(callback) = callback {
+        if let Some(sender) = progress_callback_sender {
+            let sender2 = sender.clone();
+
             self.inner
-            .get(hash)
-            .try_fold((file, 0, callback), |(mut file, mut downloaded, callback), chunk| async move {
-                if let Err(e) = file.write_all(&chunk).await {
-                    return Err(ipfs_api_backend_hyper::Error::IpfsClientError(
-                        ipfs_api_prelude::Error::Io(e)
-                    ));
-                }
+                .cat(hash)
+                .try_fold(
+                    (file, 0, sender),
+                    |(mut file, mut downloaded, sender), chunk| async move {
+                        if let Err(e) = file.write_all(&chunk).await {
+                            return Err(ipfs_api_backend_hyper::Error::IpfsClientError(
+                                ipfs_api_prelude::Error::Io(e),
+                            ));
+                        }
 
-                downloaded += chunk.len() as u64;
-                callback(downloaded, file_size);
+                        downloaded += chunk.len() as u64;
+                        sender.send((downloaded, file_size)).await.unwrap();
 
-                Ok((file, downloaded, callback))
-            })
-            .map_err(IpfsClientError::InnerError)
-            .await?;
+                        Ok((file, downloaded, sender))
+                    },
+                )
+                .map_err(IpfsClientError::InnerError)
+                .await?;
+
+            sender2.send((file_size, file_size)).await.unwrap();
         } else {
             self.inner
-            .get(hash)
+                .cat(hash)
                 .try_fold(file, |mut file, chunk| async move {
                     if let Err(e) = file.write_all(&chunk).await {
                         return Err(ipfs_api_backend_hyper::Error::IpfsClientError(
-                            ipfs_api_prelude::Error::Io(e)
+                            ipfs_api_prelude::Error::Io(e),
                         ));
                     }
 
                     Ok(file)
                 })
-            .map_err(IpfsClientError::InnerError)
-            .await?;
+                .map_err(IpfsClientError::InnerError)
+                .await?;
         }
 
         Ok(())
