@@ -10,6 +10,8 @@ anyhow = "1.0.68"
 thiserror = "1.0.37"
 strum = { version = "0.24", features = ["derive"] }
 
+either = "1.8.0"
+
 lazy_static = "1.4.0"
 thread_local = "1.1.4"
 
@@ -46,8 +48,6 @@ near-primitives = "0.15.0"
 ipfs-api-backend-hyper = { version = "0.5.0", features = ["with-send-sync"] }
 
 crossbeam-channel = "0.5.6"
-
-map-macro = "0.2.4"
 
 rusqlite = { verision = "0.28.0", features = ["bundled", "load_extension", "trace", "chrono", "serde_json"] }
 

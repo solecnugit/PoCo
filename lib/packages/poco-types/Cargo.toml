@@ -11,3 +11,4 @@ uint = { version = "0.9.3", default-features = false }
 schemars = "0.8.11"
 
 strum = { version = "0.24", features = ["derive"] }
+impl-serde = "0.4.0"

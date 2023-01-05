@@ -634,6 +634,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "either"
+version = "1.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "90e5c1c8368803113bf0c9584fc495a58b86dc8a29edbf8fe877d21d9507e797"
+
+[[package]]
 name = "encoding_rs"
 version = "0.8.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1057,6 +1063,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "impl-serde"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ebc88fc67028ae3db0c853baa36269d398d5f45b6982f95549ff5def78c935cd"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "impl-trait-for-tuples"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1255,12 +1270,6 @@ checksum = "abb12e687cfb44aa40f41fc3978ef76448f9b6038cad6aef4259d3c095a2382e"
 dependencies = [
  "cfg-if 1.0.0",
 ]
-
-[[package]]
-name = "map-macro"
-version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0dffbf44bae6c3f2c0befb25f800b092eea36d55bcba28226038fe3d29b29d25"
 
 [[package]]
 name = "matchers"
@@ -2059,10 +2068,10 @@ dependencies = [
  "config",
  "crossbeam-channel",
  "crossterm",
+ "either",
  "futures",
  "ipfs-api-backend-hyper",
  "lazy_static",
- "map-macro",
  "near-crypto 0.15.0",
  "near-jsonrpc-client",
  "near-jsonrpc-primitives",
@@ -2089,6 +2098,7 @@ dependencies = [
 name = "poco-types"
 version = "0.0.1"
 dependencies = [
+ "impl-serde",
  "near-sdk",
  "schemars",
  "strum",
