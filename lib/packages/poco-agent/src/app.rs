@@ -64,7 +64,8 @@ impl App {
             let command = std::env::args()
                 .skip(1)
                 .reduce(|a, b| a + " " + &b)
-                .unwrap();
+                .unwrap_or("help".to_string());
+
             let command_source = CommandSource {
                 source: command,
                 id: "#1".to_string(),
