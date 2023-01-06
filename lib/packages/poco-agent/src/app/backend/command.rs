@@ -1,6 +1,7 @@
+use std::fmt::{Display, Formatter};
+
 use clap::{Arg, Command};
 use near_primitives::types::AccountId;
-use std::fmt::{Display, Formatter};
 use strum::Display;
 
 pub fn get_command_instance(in_ui_mode: bool) -> Command {

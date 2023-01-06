@@ -1,11 +1,13 @@
 use std::future::Future;
 use std::path::Path;
 use std::sync::Arc;
-use std::time::{Duration};
+use std::time::Duration;
 
+use anyhow::anyhow;
 use futures::FutureExt;
 use futures::lock::Mutex;
 use near_primitives::types::AccountId;
+use poco_types::types::round::RoundStatus;
 use tracing::Level;
 
 use crate::agent::agent::PocoAgent;
@@ -179,23 +181,18 @@ impl Backend {
     ) {
         self.execute_command_block(
             command_source,
-            async move |sender, _agent, ipfs_client, _config| {
+            async move |sender, agent, ipfs_client, _config| {
                 let task_config_path = Path::new(&task_config_path);
 
                 if let Ok(true) = task_config_path.try_exists() {} else {
-                    log_string(&sender, format!(
-                        "Task config file not found: {}",
-                        task_config_path.display()
-                    ));
-                    return Ok(());
+                    anyhow::bail!("Task config file does not exist");
                 }
 
                 let task_config = tokio::fs::read_to_string(task_config_path).await?;
                 let task_config = serde_json::from_str::<RawTaskConfig>(&task_config)?;
                 let task_config = if let RawTaskInputSource::Ipfs { hash, file } = &task_config.input {
                     if hash.is_some() && file.is_some() {
-                        log_string(&sender, "Both hash and file are specified in task config. Please specify only one of them.".to_string());
-                        return Ok(());
+                        anyhow::bail!("Both hash and file are specified in task config {}", task_config_path.display());
                     }
 
                     if let Some(file) = file {
@@ -218,11 +215,7 @@ impl Backend {
 
                             task_config.to_task_config(Some(file_cid))
                         } else {
-                            log_string(&sender, format!(
-                                "Task input file not found: {}",
-                                file_path.display()
-                            ));
-                            return Ok(());
+                            anyhow::bail!("Task input file does not exist, {}", file_path.display());
                         }
                     } else {
                         task_config.to_task_config(None)
@@ -230,6 +223,12 @@ impl Backend {
                 } else {
                     task_config.to_task_config(None)
                 };
+
+                let round_status = agent.get_round_status().await?;
+
+                if let RoundStatus::Pending = round_status {
+                    anyhow::bail!("Round is not started yet. Please wait for the round to start.");
+                }
 
                 drop(task_config);
 
@@ -242,8 +241,8 @@ impl Backend {
         self.execute_command_block(
             command_source,
             async move |sender, _agent, ipfs_client, _config| {
-                let buffer = ipfs_client.cat_file(file_hash.as_str()).await.unwrap();
-                let buffer = String::from_utf8(buffer).unwrap();
+                let buffer = ipfs_client.cat_file(file_hash.as_str()).await?;
+                let buffer = String::from_utf8(buffer)?;
 
                 log_multiple_strings(&sender, buffer.lines().map(|s| s.to_string()).collect());
 
@@ -256,7 +255,7 @@ impl Backend {
         self.execute_command_block(
             command_source,
             async move |sender, _agent, ipfs_client, _config| {
-                let status = ipfs_client.file_status(file_hash.as_str()).await.unwrap();
+                let status = ipfs_client.file_status(file_hash.as_str()).await?;
 
                 log_multiple_strings(&sender, vec![
                     format!("File hash: {}", status.hash),
@@ -332,7 +331,7 @@ impl Backend {
         self.execute_command_block(
             command_source,
             async move |sender, _agent, ipfs_client, _config| {
-                let file_hash = ipfs_client.add_file(file_path.as_str()).await.unwrap();
+                let file_hash = ipfs_client.add_file(file_path.as_str()).await?;
 
                 log_string(&sender, format!("File uploaded to ipfs: {file_hash}"));
 
@@ -360,11 +359,7 @@ impl Backend {
 
                     Ok(())
                 }
-                Err(e) => {
-                    log_string(&sender, format!("Failed to set user endpoint: {e:?}"));
-
-                    Err(e)
-                }
+                Err(e) => Err(e),
             },
         )
     }
@@ -390,12 +385,7 @@ impl Backend {
 
                     Ok(())
                 }
-                Err(e) => {
-                    log_string(&sender, "Failed to get user endpoint".to_string());
-                    log_string(&sender, format!("{e:?}"));
-
-                    Err(e)
-                }
+                Err(e) => Err(e),
             },
         )
     }
@@ -423,12 +413,7 @@ impl Backend {
 
                     Ok(())
                 }
-                Err(e) => {
-                    log_string(&sender, "Failed to query events".to_string());
-                    log_string(&sender, format!("{e:?}"));
-
-                    Err(e)
-                }
+                Err(e) => Err(e),
             },
         )
     }
@@ -442,12 +427,7 @@ impl Backend {
 
                     Ok(())
                 }
-                Err(e) => {
-                    log_string(&sender, "Failed to count events".to_string());
-                    log_string(&sender, format!("{e:?}"));
-
-                    Err(e)
-                }
+                Err(e) => Err(e),
             },
         )
     }
@@ -461,12 +441,7 @@ impl Backend {
 
                     Ok(())
                 }
-                Err(e) => {
-                    log_string(&sender, "Failed to get round status".to_string());
-                    log_string(&sender, format!("{e:?}"));
-
-                    Err(e)
-                }
+                Err(e) => Err(e),
             },
         )
     }
@@ -497,12 +472,7 @@ impl Backend {
 
                         Ok(())
                     }
-                    Err(e) => {
-                        log_string(&sender, "Failed to view account".to_string());
-                        log_string(&sender, format!("{e:?}"));
-
-                        Err(e)
-                    }
+                    Err(e) => Err(e),
                 }
             },
         )
@@ -543,12 +513,7 @@ impl Backend {
 
                     Ok(())
                 }
-                Err(e) => {
-                    log_string(&sender, "Failed to get status".to_string());
-                    log_string(&sender, format!("{e:?}"));
-
-                    Err(e)
-                }
+                Err(e) => Err(e),
             },
         )
     }
@@ -571,12 +536,7 @@ impl Backend {
                     );
                     Ok(())
                 }
-                Err(e) => {
-                    log_string(&sender, "Failed to get network status".to_string());
-                    log_string(&sender, format!("{e:?}"));
-
-                    Err(e)
-                }
+                Err(e) => Err(e),
             },
         );
     }
@@ -590,12 +550,7 @@ impl Backend {
 
                     Ok(())
                 }
-                Err(e) => {
-                    log_string(&sender, "Failed to get gas price".to_string());
-                    log_string(&sender, format!("{e:?}"));
-
-                    Err(e)
-                }
+                Err(e) => Err(e),
             },
         )
     }
@@ -795,7 +750,7 @@ impl Backend {
                                 }
                             }
                         }
-                        Err(_error) => {
+                        Err(_) => {
                             tracing::event!(
                                 Level::ERROR,
                                 message = "backend channel disconnected",

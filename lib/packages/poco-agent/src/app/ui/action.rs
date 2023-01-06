@@ -1,5 +1,6 @@
-use chrono::{DateTime, Local};
 use std::error::Error;
+
+use chrono::{DateTime, Local};
 use strum::Display;
 use tracing::Level;
 use tui::{
@@ -210,7 +211,7 @@ impl UIActionEvent {
                                 format!("Command {source} executed successfully")
                             }
                             CommandExecutionStatus::Failed => {
-                                format!("Command {source} failed (Stage: {stage})",)
+                                format!("Command {source} failed (Stage: {stage})", )
                             }
                         },
                         Style::default().fg(match status {
@@ -222,7 +223,7 @@ impl UIActionEvent {
                 match error {
                     Some(error) => Spans::from(vec![
                         Span::raw(" ".repeat(time_string.width() + 1)),
-                        Span::styled(format!("Error: {}", error), Style::default().fg(Color::Red)),
+                        Span::styled(format!("Error: {error}"), Style::default().fg(Color::Red)),
                     ]),
                     None => Spans::from(vec![]),
                 },

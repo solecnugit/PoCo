@@ -1,17 +1,17 @@
-use std::time;
 use std::{io, sync::Arc};
+use std::time;
 
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use tui::{Frame, Terminal};
 use tui::backend::{Backend, CrosstermBackend};
 use tui::layout::{Constraint, Direction, Layout};
 use tui::style::{Color, Modifier, Style};
 use tui::text::{Span, Spans, Text};
 use tui::widgets::{Block, Borders, List, Paragraph};
-use tui::{Frame, Terminal};
 use unicode_width::UnicodeWidthStr;
 
 use crate::app::backend::command::CommandSource;
@@ -167,7 +167,7 @@ impl UI {
                     Constraint::Length(3),
                     Constraint::Length(1),
                 ]
-                .as_ref(),
+                    .as_ref(),
             )
             .split(frame.size());
 
@@ -209,7 +209,7 @@ impl UI {
 
         match self.state.mode {
             UIInputMode::Normal =>
-                // Hide the cursor. `Frame` does this by default, so we don't need to do anything here
+            // Hide the cursor. `Frame` does this by default, so we don't need to do anything here
                 {}
 
             UIInputMode::Edit => {

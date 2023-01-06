@@ -3,12 +3,12 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use near_crypto::{InMemorySigner, PublicKey};
+use near_jsonrpc_client::{JsonRpcClient, methods};
 use near_jsonrpc_client::methods::network_info::RpcNetworkInfoResponse;
 use near_jsonrpc_client::methods::status::RpcStatusResponse;
-use near_jsonrpc_client::{methods, JsonRpcClient};
 use near_jsonrpc_primitives::types::query::{QueryResponseKind, RpcQueryResponse};
-use near_primitives::transaction::FunctionCallAction;
 use near_primitives::transaction::{Action, Transaction};
+use near_primitives::transaction::FunctionCallAction;
 use near_primitives::types::{AccountId, Balance, BlockReference, Finality, Gas};
 use near_primitives::views::{AccessKeyView, AccountView, FinalExecutionStatus, QueryRequest};
 use poco_types::types::event::IndexedEvent;
@@ -242,9 +242,9 @@ impl PocoAgent {
         method_name: &str,
         args: &T,
     ) -> anyhow::Result<R>
-    where
-        T: Serialize,
-        R: DeserializeOwned,
+        where
+            T: Serialize,
+            R: DeserializeOwned,
     {
         let args = serde_json::to_string(args).unwrap();
 
@@ -264,9 +264,9 @@ impl PocoAgent {
         gas: u64,
         deposit: u128,
     ) -> anyhow::Result<(Gas, R)>
-    where
-        T: Serialize,
-        R: DeserializeOwned,
+        where
+            T: Serialize,
+            R: DeserializeOwned,
     {
         let args = serde_json::to_string(args).unwrap();
 
@@ -287,8 +287,8 @@ impl PocoAgent {
         gas: u64,
         deposit: u128,
     ) -> anyhow::Result<Gas>
-    where
-        T: Serialize,
+        where
+            T: Serialize,
     {
         let args = serde_json::to_string(args).unwrap();
 
@@ -344,6 +344,6 @@ impl PocoAgent {
             10_000_000_000_000,
             0,
         )
-        .await
+            .await
     }
 }
