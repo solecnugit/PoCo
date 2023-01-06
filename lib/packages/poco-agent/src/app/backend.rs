@@ -39,7 +39,7 @@ pub struct Backend {
     config: Arc<PocoAgentConfig>,
     receiver: crossbeam_channel::Receiver<CommandSource>,
     sender: crossbeam_channel::Sender<UIActionEvent>,
-    async_runtime: Box<tokio::runtime::Runtime>,
+    runtime: Box<tokio::runtime::Runtime>,
     db_connection: Arc<Mutex<rusqlite::Connection>>,
     agent: Arc<PocoAgent>,
     ipfs_client: Arc<IpfsClient>,
@@ -57,7 +57,7 @@ impl Backend {
             .unwrap();
 
         let db_connection = Arc::new(Mutex::new(
-            rusqlite::Connection::open(config.app.database_path.clone())
+            rusqlite::Connection::open(&config.app.database_path)
                 .expect("Failed to open database connection"),
         ));
 
@@ -69,7 +69,7 @@ impl Backend {
         Backend {
             receiver,
             sender,
-            async_runtime: Box::new(runtime),
+            runtime: Box::new(runtime),
             db_connection,
             agent: Arc::new(PocoAgent::new(config.clone())),
             ipfs_client,
@@ -77,7 +77,7 @@ impl Backend {
         }
     }
 
-    fn execute_command_block<F, R>(&mut self, command_source: CommandSource, f: F)
+    fn execute_command_block<F, R, I>(&mut self, command_source: CommandSource, f: F)
         where
             F: FnOnce(
                 crossbeam_channel::Sender<UIActionEvent>,
@@ -85,7 +85,8 @@ impl Backend {
                 Arc<IpfsClient>,
                 Arc<PocoAgentConfig>,
             ) -> R,
-            R: Future<Output=anyhow::Result<()>> + Send + 'static,
+            R: Future<Output=anyhow::Result<I>> + Send + 'static,
+            I: Send + 'static
     {
         let sender1 = self.sender.clone();
         let sender2 = self.sender.clone();
@@ -94,7 +95,7 @@ impl Backend {
         let ipfs_client = self.ipfs_client.clone();
         let config = self.config.clone();
 
-        self.async_runtime
+        self.runtime
             .spawn(f(sender1, agent, ipfs_client, config).inspect(move |r| {
                 if let Err(e) = r {
                     tracing::error!(

@@ -93,7 +93,7 @@ pub struct TaskConfig {
 }
 
 impl TaskConfig {
-    pub fn convert_to_internal_config(self, owner: AccountId, id: TaskId) -> InternalTaskConfig {
+    pub fn to_internal_config(self, owner: AccountId, id: TaskId) -> InternalTaskConfig {
         InternalTaskConfig {
             owner,
             id,
