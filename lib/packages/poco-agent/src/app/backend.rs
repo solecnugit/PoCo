@@ -22,13 +22,13 @@ use crate::app::backend::command::{
     CommandSource,
     ParseBackendCommandError::{InvalidCommandParameter, MissingCommandParameter, UnknownCommand},
 };
-use crate::app::backend::command::BackendCommand::{IpfsFileStatusCommand, IpfsGetFileCommand};
+use crate::app::backend::command::BackendCommand::{IpfsFileStatusCommand, IpfsGetFileCommand, StartNewRoundCommand};
 use crate::app::trace::TracingCategory;
 use crate::app::ui::action::{CommandExecutionStage, CommandExecutionStatus};
 use crate::app::ui::util::log_command_execution;
 use crate::config::PocoAgentConfig;
 use crate::ipfs::client::IpfsClient;
-use crate::util::pretty_bytes;
+use crate::util::{pretty_bytes, pretty_gas};
 
 use super::ui::action::UIActionEvent;
 use super::ui::util::{log_multiple_strings, log_string};
@@ -354,7 +354,8 @@ impl Backend {
                 };
 
                 log_string(&sender, format!(
-                    "New round started: {round_id}, gas used: {gas}"
+                    "New round started: {round_id}, gas used: {}",
+                    pretty_gas(gas),
                 ));
 
                 Ok(())
@@ -376,7 +377,9 @@ impl Backend {
                 Ok(gas) => {
                     log_string(
                         &sender,
-                        format!("User endpoint set successfully. Gas used: {gas}"),
+                        format!("User endpoint set successfully. Gas used: {}",
+                        pretty_gas(gas),
+                        ),
                     );
 
                     Ok(())
