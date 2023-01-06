@@ -168,6 +168,7 @@ impl Backend {
             IpfsFileStatusCommand {
                 file_hash,
             } => self.execute_ipfs_file_status_command(command_source, file_hash),
+            StartNewRoundCommand => self.execute_start_new_round_command(command_source),
             PublishTaskCommand { task_config_path } => {
                 self.execute_publish_task_command(command_source, task_config_path)
             }
@@ -334,6 +335,27 @@ impl Backend {
                 let file_hash = ipfs_client.add_file(file_path.as_str()).await?;
 
                 log_string(&sender, format!("File uploaded to ipfs: {file_hash}"));
+
+                Ok(())
+            },
+        );
+    }
+
+    fn execute_start_new_round_command(&mut self, command_source: CommandSource) {
+        self.execute_command_block(
+            command_source,
+            async move |sender, agent, _ipfs_client, _config| {
+                let round_status = agent.get_round_status().await?;
+
+                let (gas, round_id) = if let RoundStatus::Pending = round_status {
+                    agent.start_new_round().await?
+                } else {
+                    anyhow::bail!("Round is already started");
+                };
+
+                log_string(&sender, format!(
+                    "New round started: {round_id}, gas used: {gas}"
+                ));
 
                 Ok(())
             },
@@ -683,6 +705,9 @@ impl Backend {
                 Some((command, _)) => Err(UnknownCommand(format!("ipfs {command}"))),
                 None => Err(UnknownCommand("ipfs".to_string())),
             },
+            Some(("start-new-round", _)) => {
+                Ok(StartNewRoundCommand)
+            }
             Some(("publish-task", args)) => {
                 let task_config_path = args.get_one::<String>("task-config-path");
 

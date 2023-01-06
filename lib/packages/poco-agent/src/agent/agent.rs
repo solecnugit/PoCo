@@ -12,7 +12,9 @@ use near_primitives::transaction::FunctionCallAction;
 use near_primitives::types::{AccountId, Balance, BlockReference, Finality, Gas};
 use near_primitives::views::{AccessKeyView, AccountView, FinalExecutionStatus, QueryRequest};
 use poco_types::types::event::IndexedEvent;
-use poco_types::types::round::RoundStatus;
+use poco_types::types::round::{RoundId, RoundStatus};
+use poco_types::types::task::id::TaskId;
+use poco_types::types::task::TaskConfig;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::json;
@@ -345,5 +347,27 @@ impl PocoAgent {
             0,
         )
             .await
+    }
+
+    pub async fn start_new_round(
+        &self
+    ) -> anyhow::Result<(Gas, RoundId)> {
+        self.call_change_function_json(
+            "start_new_round",
+            &json!({}),
+            10_000_000_000_000,
+            0,
+        )
+            .await
+    }
+
+    pub async fn publish_task(
+        &self,
+        task_config: TaskConfig,
+    ) -> anyhow::Result<(Gas, TaskId)> {
+        let result = self.call_change_function_json::<TaskConfig, TaskId>("publish-task", &task_config, 10_000_000_000_000, 0)
+            .await?;
+
+        Ok(result)
     }
 }
