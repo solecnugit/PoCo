@@ -20,7 +20,7 @@ use crate::app::backend::command::{
     CommandSource,
     ParseBackendCommandError::{InvalidCommandParameter, MissingCommandParameter, UnknownCommand},
 };
-use crate::app::backend::command::BackendCommand::IpfsGetFileCommand;
+use crate::app::backend::command::BackendCommand::{IpfsFileStatusCommand, IpfsGetFileCommand};
 use crate::app::trace::TracingCategory;
 use crate::app::ui::action::{CommandExecutionStage, CommandExecutionStatus};
 use crate::app::ui::util::log_command_execution;
@@ -163,6 +163,9 @@ impl Backend {
                 file_hash,
                 file_path,
             } => self.execute_ipfs_get_file_command(command_source, file_hash, file_path),
+            IpfsFileStatusCommand {
+                file_hash,
+            } => self.execute_ipfs_file_status_command(command_source, file_hash),
             PublishTaskCommand { task_config_path } => {
                 self.execute_publish_task_command(command_source, task_config_path)
             }
@@ -243,6 +246,26 @@ impl Backend {
                 let buffer = String::from_utf8(buffer).unwrap();
 
                 log_multiple_strings(&sender, buffer.lines().map(|s| s.to_string()).collect());
+
+                Ok(())
+            },
+        );
+    }
+
+    fn execute_ipfs_file_status_command(&mut self, command_source: CommandSource, file_hash: String) {
+        self.execute_command_block(
+            command_source,
+            async move |sender, _agent, ipfs_client, _config| {
+                let status = ipfs_client.file_status(file_hash.as_str()).await.unwrap();
+
+                log_multiple_strings(&sender, vec![
+                    format!("File hash: {}", status.hash),
+                    format!("File size: {}", pretty_bytes(status.cumulative_size)),
+                    format!("File block size: {}", pretty_bytes(status.block_size)),
+                    format!("File links size: {}", pretty_bytes(status.links_size)),
+                    format!("File data size: {}", pretty_bytes(status.data_size)),
+                    format!("File num links: {}", status.num_links),
+                ]);
 
                 Ok(())
             },
@@ -689,6 +712,15 @@ impl Backend {
                         } else {
                             Err(MissingCommandParameter("file".to_string()))
                         }
+                    } else {
+                        Err(MissingCommandParameter("hash".to_string()))
+                    }
+                }
+                Some(("status", args)) => {
+                    if let Some(hash) = args.get_one::<String>("hash") {
+                        Ok(IpfsFileStatusCommand {
+                            file_hash: hash.to_string(),
+                        })
                     } else {
                         Err(MissingCommandParameter("hash".to_string()))
                     }

@@ -66,6 +66,9 @@ pub fn get_command_instance(in_ui_mode: bool) -> Command {
                     .about("Get file from IPFS")
                     .arg(Arg::new("hash").required(true).index(1))
                     .arg(Arg::new("file-path").required(true).index(2)),
+                subcommand("status")
+                    .about("Get file status from IPFS")
+                    .arg(Arg::new("hash").required(false).index(1)),
             ]),
         subcommand("publish-task")
             .about("Publish task")
@@ -138,6 +141,9 @@ pub enum BackendCommand {
     IpfsGetFileCommand {
         file_hash: String,
         file_path: String,
+    },
+    IpfsFileStatusCommand {
+        file_hash: String,
     },
     // Near Network
     GasPriceCommand,
