@@ -370,21 +370,19 @@ impl Backend {
     ) {
         self.execute_command_block(
             command_source,
-            async move |sender, agent, _ipfs_client, _config| match agent
-                .set_user_endpoint(endpoint.as_str())
-                .await
-            {
-                Ok(gas) => {
-                    log_string(
-                        &sender,
-                        format!("User endpoint set successfully. Gas used: {}",
-                        pretty_gas(gas),
-                        ),
-                    );
+            async move |sender, agent, _ipfs_client, _config| {
+                let gas = agent
+                    .set_user_endpoint(endpoint.as_str())
+                    .await?;
 
-                    Ok(())
-                }
-                Err(e) => Err(e),
+                log_string(
+                    &sender,
+                    format!("User endpoint set successfully. Gas used: {}",
+                            pretty_gas(gas),
+                    ),
+                );
+
+                Ok(())
             },
         )
     }
@@ -396,21 +394,18 @@ impl Backend {
     ) {
         self.execute_command_block(
             command_source,
-            async move |sender, agent, _ipfs_client, _config| match agent
-                .get_user_endpoint(account_id)
-                .await
-            {
-                Ok(Some(endpoint)) => {
+            async move |sender, agent, _ipfs_client, _config| {
+                let endpoint = agent
+                    .get_user_endpoint(account_id)
+                    .await?;
+
+                if let Some(endpoint) = endpoint {
                     log_string(&sender, format!("User endpoint: {endpoint}"));
-
-                    Ok(())
+                } else {
+                    log_string(&sender, "User endpoint is not set".to_string());
                 }
-                Ok(None) => {
-                    log_string(&sender, "User endpoint not set".to_string());
 
-                    Ok(())
-                }
-                Err(e) => Err(e),
+                Ok(())
             },
         )
     }
@@ -423,22 +418,20 @@ impl Backend {
     ) {
         self.execute_command_block(
             command_source,
-            async move |sender, agent, _ipfs_client, _config| match agent
-                .query_events(from, count)
-                .await
-            {
-                Ok(events) => {
-                    if events.is_empty() {
-                        log_string(&sender, "No events found".to_string());
-                    } else {
-                        for event in events {
-                            log_string(&sender, format!("{event}"));
-                        }
-                    }
+            async move |sender, agent, _ipfs_client, _config| {
+                let events = agent
+                    .query_events(from, count)
+                    .await?;
 
-                    Ok(())
+                if events.is_empty() {
+                    log_string(&sender, "No events found".to_string());
+                } else {
+                    for event in events {
+                        log_string(&sender, format!("{event}"));
+                    }
                 }
-                Err(e) => Err(e),
+
+                Ok(())
             },
         )
     }
@@ -446,13 +439,14 @@ impl Backend {
     fn execute_count_events_command(&mut self, command_source: CommandSource) {
         self.execute_command_block(
             command_source,
-            async move |sender, agent, _ipfs_client, _config| match agent.count_events().await {
-                Ok(event_count) => {
-                    log_string(&sender, format!("Event count: {event_count}"));
+            async move |sender, agent, _ipfs_client, _config| {
+                let count = agent
+                    .count_events()
+                    .await?;
 
-                    Ok(())
-                }
-                Err(e) => Err(e),
+                log_string(&sender, format!("Events count: {count}"));
+
+                Ok(())
             },
         )
     }
@@ -460,13 +454,14 @@ impl Backend {
     fn execute_round_status_command(&mut self, command_source: CommandSource) {
         self.execute_command_block(
             command_source,
-            async move |sender, agent, _ipfs_client, _config| match agent.get_round_status().await {
-                Ok(round_status) => {
-                    log_string(&sender, format!("Round status: {round_status}"));
+            async move |sender, agent, _ipfs_client, _config| {
+                let round_status = agent
+                    .get_round_status()
+                    .await?;
 
-                    Ok(())
-                }
-                Err(e) => Err(e),
+                log_string(&sender, format!("Round status: {round_status}"));
+
+                Ok(())
             },
         )
     }
@@ -481,24 +476,21 @@ impl Backend {
             async move |sender, agent, _ipfs_client, _config| {
                 let account_id_in_string = account_id.to_string();
 
-                match agent.view_account(account_id).await {
-                    Ok(account) => {
-                        log_multiple_strings(
-                            &sender,
-                            vec![
-                                format!("Account ID: {account_id_in_string}"),
-                                format!("Amount: {}", account.amount),
-                                format!("Locked: {}", account.locked),
-                                format!("Code Hash: {}", account.code_hash),
-                                format!("Storage Usage: {}", account.storage_usage),
-                                format!("Storage Paid At: {}", account.storage_paid_at),
-                            ],
-                        );
+                let account = agent.view_account(account_id).await?;
 
-                        Ok(())
-                    }
-                    Err(e) => Err(e),
-                }
+                log_multiple_strings(
+                    &sender,
+                    vec![
+                        format!("Account ID: {account_id_in_string}"),
+                        format!("Amount: {}", account.amount),
+                        format!("Locked: {}", account.locked),
+                        format!("Code Hash: {}", account.code_hash),
+                        format!("Storage Usage: {}", account.storage_usage),
+                        format!("Storage Paid At: {}", account.storage_paid_at),
+                    ],
+                );
+
+                Ok(())
             },
         )
     }
@@ -506,39 +498,38 @@ impl Backend {
     fn execute_status_command(&mut self, command_source: CommandSource) {
         self.execute_command_block(
             command_source,
-            async move |sender, agent, _ipfs_client, _config| match agent.status().await {
-                Ok(status) => {
-                    log_multiple_strings(
-                        &sender,
-                        vec![
-                            format!("Version: {}", status.version.version),
-                            format!("Build: {}", status.version.build),
-                            format!("Protocol Version: {}", status.protocol_version),
-                            format!(
-                                "Latest Protocol Version: {}",
-                                status.latest_protocol_version
-                            ),
-                            format!("Rpc Address: {}", status.rpc_addr.unwrap_or_default()),
-                            format!("Sync Info: "),
-                            format!(
-                                "  Latest Block Hash: {}",
-                                status.sync_info.latest_block_hash
-                            ),
-                            format!(
-                                "  Latest Block Height: {}",
-                                status.sync_info.latest_block_height
-                            ),
-                            format!(
-                                "  Latest State Root: {}",
-                                status.sync_info.latest_state_root
-                            ),
-                            format!("  Syncing: {}", status.sync_info.syncing),
-                        ],
-                    );
+            async move |sender, agent, _ipfs_client, _config| {
+                let status = agent.status().await?;
 
-                    Ok(())
-                }
-                Err(e) => Err(e),
+                log_multiple_strings(
+                    &sender,
+                    vec![
+                        format!("Version: {}", status.version.version),
+                        format!("Build: {}", status.version.build),
+                        format!("Protocol Version: {}", status.protocol_version),
+                        format!(
+                            "Latest Protocol Version: {}",
+                            status.latest_protocol_version
+                        ),
+                        format!("Rpc Address: {}", status.rpc_addr.unwrap_or_default()),
+                        format!("Sync Info: "),
+                        format!(
+                            "  Latest Block Hash: {}",
+                            status.sync_info.latest_block_hash
+                        ),
+                        format!(
+                            "  Latest Block Height: {}",
+                            status.sync_info.latest_block_height
+                        ),
+                        format!(
+                            "  Latest State Root: {}",
+                            status.sync_info.latest_state_root
+                        ),
+                        format!("  Syncing: {}", status.sync_info.syncing),
+                    ],
+                );
+
+                Ok(())
             },
         )
     }
@@ -546,22 +537,22 @@ impl Backend {
     fn execute_network_status_command(&mut self, command_source: CommandSource) {
         self.execute_command_block(
             command_source,
-            async move |sender, agent, _ipfs_client, _config| match agent.network_status().await {
-                Ok(network_status) => {
-                    log_multiple_strings(
-                        &sender,
-                        vec![
-                            format!("Num Active Peers: {}", network_status.num_active_peers),
-                            format!("Sent Bytes Per Sec: {}", network_status.sent_bytes_per_sec),
-                            format!(
-                                "Received Bytes Per Sec: {}",
-                                network_status.received_bytes_per_sec
-                            ),
-                        ],
-                    );
-                    Ok(())
-                }
-                Err(e) => Err(e),
+            async move |sender, agent, _ipfs_client, _config| {
+                let status = agent.network_status().await?;
+
+                log_multiple_strings(
+                    &sender,
+                    vec![
+                        format!("Num Active Peers: {}", status.num_active_peers),
+                        format!("Sent Bytes Per Sec: {}", status.sent_bytes_per_sec),
+                        format!(
+                            "Received Bytes Per Sec: {}",
+                            status.received_bytes_per_sec
+                        ),
+                    ],
+                );
+
+                Ok(())
             },
         );
     }
@@ -569,13 +560,12 @@ impl Backend {
     fn execute_gas_price_command(&mut self, command_source: CommandSource) {
         self.execute_command_block(
             command_source,
-            async move |sender, agent, _ipfs_client, _config| match agent.gas_price().await {
-                Ok(gas_price) => {
-                    log_string(&sender, format!("Gas price: {gas_price}"));
+            async move |sender, agent, _ipfs_client, _config| {
+                let gas_price = agent.gas_price().await?;
 
-                    Ok(())
-                }
-                Err(e) => Err(e),
+                log_string(&sender, format!("Gas price: {gas_price}"));
+
+                Ok(())
             },
         )
     }
