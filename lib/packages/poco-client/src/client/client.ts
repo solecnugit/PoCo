@@ -532,11 +532,15 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
     if (!this.jobCenter) {
       throw new PocoClientNotReadyError(this);
     }
-
+    console.log("opts file 输出");
+    console.log(opts.file);
     // 将file转成arrayBuffer
     const fileBuffer = await opts.file.arrayBuffer();
     // 获取arrayBuffer的hash
     const fileHash = await sha256Digest(fileBuffer);
+
+    console.log("获取当前filehash");
+    console.log(fileHash);
 
     const messengerToUse =
     // address 应该是发送者的
@@ -551,9 +555,11 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
     ).toString(16);
     const secret = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(key));
 
+    console.log("jobcenter post job start");
     const response = await (
       await this.jobCenter.postJob(messengerToUse, secret)
     ).wait();
+    console.log("jobcenter post job over");
     const args = (response.events![0] as NewJobEvent).args;
     const jobId = args["jobId"];
     const jobIdInString = jobId.toString();

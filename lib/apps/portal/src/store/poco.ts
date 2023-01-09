@@ -12,7 +12,7 @@ import {
 } from "@poco/client";
 import { BigNumber, ethers } from "ethers";
 import { useState } from "./state";
-import { getFileId, splitVideo } from "@poco/codec"
+import { Segment, getFileId, splitVideo, getSegments, checkFinish, mergeSegments } from "@poco/codec"
 
 interface UserInfo {
   account: string;
@@ -52,7 +52,10 @@ export const usePoco = defineStore("poco", {
       jobFileMapping: new Map<string, File>(),
 
       //对每一个job进行映射
-      jobFileIDMapping: new Map<string, string>(),
+      jobSegmentMapping: new Map<string, Segment>(),
+      videoCountMapping: new Map<string, number>(),
+      videoJobMapping: new Map<string, string[]>(),
+      jobBufferMapping: new Map<string, Uint8Array>()
     };
   },
   actions: {
@@ -116,8 +119,11 @@ export const usePoco = defineStore("poco", {
       });
 
       //poco-client中触发JobResultAvailable
-      instance.on("JobResultAvailable", (jobId, buffer) => {
+      instance.on("JobResultAvailable", async (jobId, buffer) => {
         const job = this.jobs.find((e) => e.jobId.eq(jobId));
+        var result = checkFinish(jobId.toString(), this.jobSegmentMapping, this.videoCountMapping);
+        console.log("current result is " + result);
+        this.jobBufferMapping.set(jobId.toString(), buffer);
 
         if (!job) {
           this.log(
@@ -129,8 +135,13 @@ export const usePoco = defineStore("poco", {
           return;
         }
 
-        job.buffer = buffer;
-        job.status = "done";
+        if(result) {
+          var videoId = this.jobSegmentMapping.get(jobId.toString())!.video_id;
+          var jobIds = this.videoJobMapping.get(videoId);
+          var finalData = await mergeSegments(jobIds!, this.jobBufferMapping);
+          job.buffer = buffer;
+          job.status = "done";
+        }
       });
 
       instance.on("AccountChanged", (account) => {
@@ -210,21 +221,42 @@ export const usePoco = defineStore("poco", {
       console.log(file);
 
       // getFile后进行视频的切割
-      const fileId = getFileId(file.name);
+      const videoId = getFileId(file.name);
 
-      const videoSegment = splitVideo(file);
+      const videoSegment = await splitVideo(file);
 
+      this.videoCountMapping.set(videoId,0);
+
+      console.log("输出切片");
       console.log(videoSegment);
 
       console.log("输出当前的文件名");
-      console.log(fileId);
+      console.log(videoId);
 
-      const jobId = await window.pocoClientInstance.postJob({
-        file: file,
-        messenger: this.services.messenger[0].provider,
-      });
+      // const jobId = await window.pocoClientInstance.postJob({
+      //     file: file,
+      //     messenger: this.services.messenger[0].provider,
+      //   });
+      //   this.jobFileMapping.set(jobId.toString(), file);
+      var segment_num = videoSegment.length;
+      var jobArr = new Array<string>();
 
-      this.jobFileMapping.set(jobId.toString(), file);
+      for(var i = 0; i < segment_num; i++){
+        const jobId = await window.pocoClientInstance.postJob({
+          file: videoSegment[i],
+          messenger: this.services.messenger[0].provider,
+        });
+        this.jobFileMapping.set(jobId.toString(), videoSegment[i]);
+        jobArr[i] = jobId.toString();
+        if(i == segment_num - 1)
+        this.videoJobMapping.set(videoId, jobArr);
+      }
+      var segmentArr = getSegments(videoId, jobArr);
+      for(var i = 0; i < segment_num; i++) {
+        this.jobSegmentMapping.set(jobArr[i].toString(), segmentArr[i]);
+      }
+      console.log("映射完成");
+
     },
     async resetJobFile(jobId: BigNumber, file: File) {
       window.pocoClientInstance!.setJobFile(jobId, file)
