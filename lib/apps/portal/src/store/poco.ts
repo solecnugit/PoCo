@@ -139,7 +139,7 @@ export const usePoco = defineStore("poco", {
           var videoId = this.jobSegmentMapping.get(jobId.toString())!.video_id;
           var jobIds = this.videoJobMapping.get(videoId);
           var finalData = await mergeSegments(jobIds!, this.jobBufferMapping);
-          job.buffer = buffer;
+          job.buffer = finalData;
           job.status = "done";
         }
       });
