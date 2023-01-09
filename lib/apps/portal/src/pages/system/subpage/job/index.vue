@@ -25,6 +25,7 @@ const postJob = async () => {
 }
 
 const takeJob = async (jobId: BigNumber) => {
+    console.log('taking job...');
     poco.clientInstance!.takeJob({
         jobId: jobId,
     });

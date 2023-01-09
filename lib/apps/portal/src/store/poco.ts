@@ -12,6 +12,7 @@ import {
 } from "@poco/client";
 import { BigNumber, ethers } from "ethers";
 import { useState } from "./state";
+import { getFileId, splitVideo } from "@poco/codec"
 
 interface UserInfo {
   account: string;
@@ -49,6 +50,9 @@ export const usePoco = defineStore("poco", {
       logs: [] as (PocoClientLog & { id: number })[],
       jobs: [] as (PocoClientJob & { buffer: Uint8Array | undefined })[],
       jobFileMapping: new Map<string, File>(),
+
+      //对每一个job进行映射
+      jobFileIDMapping: new Map<string, string>(),
     };
   },
   actions: {
@@ -190,8 +194,9 @@ export const usePoco = defineStore("poco", {
       });
     },
 
-    //发送当前job
+    //发送当前job，页面调用此方法
     async postJob() {
+      console.log('post job doing...');
       if (!window.pocoClientInstance) {
         throw new Error("client not ready");
       }
@@ -201,6 +206,18 @@ export const usePoco = defineStore("poco", {
       });
 
       const file = await fileHandle.getFile();
+
+      console.log(file);
+
+      // getFile后进行视频的切割
+      const fileId = getFileId(file.name);
+
+      const videoSegment = splitVideo(file);
+
+      console.log(videoSegment);
+
+      console.log("输出当前的文件名");
+      console.log(fileId);
 
       const jobId = await window.pocoClientInstance.postJob({
         file: file,

@@ -524,6 +524,8 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
     ).wait();
   }
 
+  // deploy task通过postjob发送文件
+  // 在这里加入split方法，将文件进行切分
   async postJob(
     opts: Optional<PocoClientPostJobOptions, "messenger">
   ): Promise<BigNumber> {
@@ -531,13 +533,17 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
       throw new PocoClientNotReadyError(this);
     }
 
+    // 将file转成arrayBuffer
     const fileBuffer = await opts.file.arrayBuffer();
+    // 获取arrayBuffer的hash
     const fileHash = await sha256Digest(fileBuffer);
 
     const messengerToUse =
+    // address 应该是发送者的
       opts?.messenger ||
       Array.from(this.getServices(PocoServiceRole.MESSENGER))[0].provider;
 
+      // 加密算法
     const key = (
       (await this.getBlockNumber()) *
       Math.random() *
@@ -558,6 +564,7 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
       fileHash,
     });
 
+//  这里不用动了把
     this.jobToFileMapping.set(jobIdInString, opts.file);
 
     this.log("info", "client", `New job ${jobIdInString} has been posted.`);
@@ -667,6 +674,8 @@ export class PocoClient extends EventDispatcher<PocoClientEvents> {
 
 
       //之前的写法：将整个buffer全部转换完才会返回，现在需要改成流式传输
+      //此时接收到的buffer应该已经是流失传输后的一个个分片
+      //应当在此前就进行分片了
       // const finalbuffer = await transcode(buffer);
       const finalbuffer = await transcode(buffer);
 

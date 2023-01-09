@@ -12,7 +12,7 @@ export async function splitVideo(video: File){
 
     // 加载ffmpeg相关组件
     const ffmpeg = createFFmpeg({ 
-      corePath: '../../@ffmpeg/core/dist/ffmpeg-core.js',
+      corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
       log: true 
     });
     await ffmpeg.load();
