@@ -34,7 +34,7 @@ impl TaskManager {
         });
 
         let task_id = TaskId::new(round_id, tasks_for_round.len());
-        let config = config.convert_to_internal_config(owner, task_id.clone());
+        let config = config.to_internal_config(owner, task_id.clone());
 
         tasks_for_round.push(config.clone());
 
