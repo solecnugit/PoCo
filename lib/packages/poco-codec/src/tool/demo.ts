@@ -13,6 +13,11 @@ export class Transcoder{
   finalBuffer: ArrayBuffer|undefined;
   //定义输入文件的buffer
   buffer: ArrayBuffer;
+
+  //以下是对buffer改成流的做出的相应更改，这里先注释
+  //  wait_for_reslut: ((value: ReadableStream<Uint8Array>) => void) | null | undefined;
+  // status: Promise<ReadableStream<Uint8Array>>;
+  // finalStream: ReadableStream<Uint8Array>|undefined;
   
   wait_for_reslut: ((value: ArrayBuffer) => void) | null | undefined;
   //定义promise
@@ -55,6 +60,8 @@ export class Transcoder{
   }
 
   //转码的调用
+  //以下是对buffer改成流的做出的相应更改，这里先注释
+  //Promise<ReadableStream<Uint8Array>> {
   async start(): Promise<ArrayBuffer> {
     //发送给demuxworker初始化message，并且在后续几个worker的相互作用之下进行转码的过程
     this.demuxDecodeWorker.postMessage({type: 'initialize', buffer: this.buffer});
@@ -84,6 +91,9 @@ export class Transcoder{
                 //将r转换为blob，进而再次转换成为arraybuffer，并且resolve返回最终结果。
             const blob = new Blob(r, { type: 'video/webm' });
             console.log('blob finished')
+            // 以下是对buffer改成流的做出的相应更改，这里先注释
+            // this.finalStream = blob.stream();
+            //       this.wait_for_reslut!(this.finalStream);
             this.finalBuffer = await blob.arrayBuffer();
             //当这一步被调用，finalbuffer返回给status。
             this.wait_for_reslut!(this.finalBuffer);
