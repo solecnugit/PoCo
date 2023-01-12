@@ -1,3 +1,4 @@
+use std::error::Error;
 use crate::app::backend::command::CommandSource;
 use crate::app::ui::action::{
     CommandExecutionStage, CommandExecutionStatus, UIAction, UIActionEvent,
@@ -29,7 +30,7 @@ pub fn log_command_execution(
     command: CommandSource,
     stage: CommandExecutionStage,
     status: CommandExecutionStatus,
-    error: Option<String>,
+    error: Option<Box<anyhow::Error>>,
 ) {
     sender
         .send(UIAction::LogCommandExecution(command, stage, status, error).into())

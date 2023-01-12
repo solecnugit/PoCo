@@ -1,6 +1,5 @@
 #![feature(async_closure)]
 #![feature(fn_traits)]
-#![feature(inherent_associated_types)]
 #![feature(box_syntax)]
 
 use time::{format_description, UtcOffset};

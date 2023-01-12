@@ -40,7 +40,7 @@ pub enum CommandExecutionStatus {
     Failed,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum UIAction {
     Panic(String),
     LogString(String),
@@ -51,7 +51,7 @@ pub enum UIAction {
         CommandSource,
         CommandExecutionStage,
         CommandExecutionStatus,
-        Option<String>,
+        Option<Box<anyhow::Error>>,
     ),
     QuitApp,
 }
@@ -223,7 +223,7 @@ impl UIActionEvent {
                 match error {
                     Some(error) => Spans::from(vec![
                         Span::raw(" ".repeat(time_string.width() + 1)),
-                        Span::styled(format!("Error: {error}"), Style::default().fg(Color::Red)),
+                        Span::styled(format!("Error: {error:?}"), Style::default().fg(Color::Red)),
                     ]),
                     None => Spans::from(vec![]),
                 },

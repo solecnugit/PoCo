@@ -98,7 +98,7 @@ impl Backend {
         let config = self.config.clone();
 
         self.runtime
-            .spawn(f(sender1, agent, ipfs_client, config).inspect(move |r| {
+            .spawn(f(sender1, agent, ipfs_client, config).then(async move |r| {
                 if let Err(e) = r {
                     tracing::error!(
                         message = "failed to execute command",
@@ -112,7 +112,7 @@ impl Backend {
                         command_source,
                         CommandExecutionStage::Executed,
                         CommandExecutionStatus::Failed,
-                        Some(format!("{e:?}")),
+                        Some(Box::new(e)),
                     );
                 } else {
                     log_command_execution(
@@ -214,15 +214,15 @@ impl Backend {
 
                             log_string(&sender, format!("File uploaded to ipfs: {file_cid}"));
 
-                            task_config.to_task_config(Some(file_cid))
+                            task_config.to_task_config(Some(file_cid))?
                         } else {
                             anyhow::bail!("Task input file does not exist, {}", file_path.display());
                         }
                     } else {
-                        task_config.to_task_config(None)
+                        task_config.to_task_config(None)?
                     }
                 } else {
-                    task_config.to_task_config(None)
+                    task_config.to_task_config(None)?
                 };
 
                 let round_status = agent.get_round_status().await?;
@@ -231,7 +231,7 @@ impl Backend {
                     anyhow::bail!("Round is not started yet. Please wait for the round to start.");
                 }
 
-                drop(task_config);
+                let (gas, task_id) = agent.publish_task(task_config).await?;
 
                 Ok(())
             },
@@ -763,7 +763,7 @@ impl Backend {
                                         command_source,
                                         CommandExecutionStage::Parsing,
                                         CommandExecutionStatus::Failed,
-                                        Some(format!("{error:?}")),
+                                        Some(Box::new(anyhow::anyhow!(error))),
                                     );
                                 }
                             }

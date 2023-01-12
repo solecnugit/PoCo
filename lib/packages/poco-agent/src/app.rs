@@ -1,4 +1,5 @@
 use std::{sync::Arc, thread::JoinHandle};
+use anyhow::Error;
 
 use tracing::Level;
 
@@ -73,54 +74,7 @@ impl App {
 
             self.backend_channel.0.send(command_source).unwrap();
 
-            'main: loop {
-                match self.ui_channel.1.recv() {
-                    Ok(event) => match event.1 {
-                        UIAction::LogCommand(command_source) => {
-                            println!("{} {}", &command_source.id, &command_source.source);
-                        }
-                        UIAction::LogString(string) => {
-                            println!("{string}");
-                        }
-                        UIAction::LogMultipleStrings(strings) => {
-                            for string in strings {
-                                println!("{string}");
-                            }
-                        }
-                        UIAction::LogTracingEvent(event) => {
-                            println!("{event}");
-                        }
-                        UIAction::Panic(error) => {
-                            println!("{error:?}");
-                            break 'main Err(anyhow::anyhow!(error));
-                        }
-                        UIAction::LogCommandExecution(command_source, stage, status, error) => {
-                            match status {
-                                CommandExecutionStatus::Succeed => {
-                                    println!("Command {} executed successfully", command_source.id);
-                                }
-                                CommandExecutionStatus::Failed => {
-                                    println!(
-                                        "Command {} failed(Stage: {stage})",
-                                        command_source.id
-                                    );
-                                    println!("Error: {error:?}");
-                                }
-                            }
-
-                            break 'main Ok(());
-                        }
-                        UIAction::QuitApp => {
-                            break 'main Ok(());
-                        }
-                    },
-                    Err(error) => {
-                        println!("error: {error}");
-
-                        break 'main Err(error.into());
-                    }
-                }
-            }
+            self.run_simple_ui_action_loop()
         } else {
             tracing::event!(
                 Level::INFO,
@@ -136,6 +90,57 @@ impl App {
         }
 
         result
+    }
+
+    fn run_simple_ui_action_loop(&mut self) -> anyhow::Result<()> {
+        loop {
+            match self.ui_channel.1.recv() {
+                Ok(event) => match event.1 {
+                    UIAction::LogCommand(command_source) => {
+                        println!("{} {}", &command_source.id, &command_source.source);
+                    }
+                    UIAction::LogString(string) => {
+                        println!("{string}");
+                    }
+                    UIAction::LogMultipleStrings(strings) => {
+                        for string in strings {
+                            println!("{string}");
+                        }
+                    }
+                    UIAction::LogTracingEvent(event) => {
+                        println!("{event}");
+                    }
+                    UIAction::Panic(error) => {
+                        println!("{error:?}");
+                        return Err(anyhow::anyhow!(error));
+                    }
+                    UIAction::LogCommandExecution(command_source, stage, status, error) => {
+                        match status {
+                            CommandExecutionStatus::Succeed => {
+                                println!("Command {} executed successfully", command_source.id);
+                            }
+                            CommandExecutionStatus::Failed => {
+                                println!(
+                                    "Command {} failed(Stage: {stage})",
+                                    command_source.id
+                                );
+                                println!("Error: {error:?}");
+                            }
+                        }
+
+                        return Ok(());
+                    }
+                    UIAction::QuitApp => {
+                        return Ok(());
+                    }
+                },
+                Err(error) => {
+                    println!("error: {error}");
+
+                    return Err(error.into());
+                }
+            }
+        }
     }
 
     pub fn get_tracing_layer(&self) -> UITracingLayer {
