@@ -1,7 +1,7 @@
 {
   "input": {
     "type": "IPFS",
-    "file": "example.mp4"
+    "hash": "Qmcs5KX6ADuJhQHxERCiGUg7kPt7dVE2qXQiM7CrqSMJTR"
   },
   "output":{
     "type": "IPFS"

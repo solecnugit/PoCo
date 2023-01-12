@@ -2115,6 +2115,7 @@ dependencies = [
 name = "poco-types"
 version = "0.0.1"
 dependencies = [
+ "anyhow",
  "impl-serde",
  "near-sdk",
  "schemars",

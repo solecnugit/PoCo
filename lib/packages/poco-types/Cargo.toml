@@ -12,3 +12,5 @@ schemars = "0.8.11"
 
 strum = { version = "0.24", features = ["derive"] }
 impl-serde = "0.4.0"
+
+anyhow = "1.0.68"

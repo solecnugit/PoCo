@@ -1,6 +1,5 @@
 use impl_serde::impl_uint_serde;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::serde::{Deserialize, Serialize};
 use schemars::JsonSchema;
 use uint::construct_uint;
 

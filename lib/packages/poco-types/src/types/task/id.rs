@@ -1,7 +1,8 @@
 use crate::types::round::RoundId;
 use crate::types::task::TaskNonce;
+use impl_serde::serde::de::Error;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::serde::de::{Unexpected, Visitor};
+use near_sdk::serde::de::Visitor;
 use near_sdk::serde::{Deserialize, Serialize};
 use schemars::JsonSchema;
 use std::fmt::Display;
@@ -16,8 +17,7 @@ impl Serialize for TaskId {
     where
         S: near_sdk::serde::Serializer,
     {
-        let s: String = self.into();
-        serializer.serialize_str(s.as_str())
+        serializer.serialize_u64(self.into())
     }
 }
 
@@ -31,59 +31,67 @@ impl<'de> Deserialize<'de> for TaskId {
             type Value = TaskId;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                write!(formatter, "task id format: round_id/task_nonce")
+                write!(formatter, "task id should be u64")
             }
 
-            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+            fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
             where
-                E: near_sdk::serde::de::Error,
+                E: Error,
             {
-                let r: Result<TaskId, &'static str> = v.try_into();
-
-                match r {
-                    Ok(r) => Ok(r),
-                    Err(_) => Err(E::invalid_value(Unexpected::Str(v), &self)),
-                }
+                Ok(TaskId::from(v))
             }
         }
 
-        deserializer.deserialize_str(TaskIdVisitor)
+        deserializer.deserialize_u64(TaskIdVisitor)
     }
 }
 
 impl TryFrom<&str> for TaskId {
-    type Error = &'static str;
+    type Error = anyhow::Error;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let index = value.find('/');
+        let value = value.parse::<u64>()?;
 
-        if let Some(index) = index {
-            let (round_id, task_id) = value.split_at(index);
-            let round_id = round_id.parse();
-            let task_id = task_id.parse();
-
-            if let (Ok(round_id), Ok(task_id)) = (round_id, task_id) {
-                Ok(TaskId(round_id, task_id))
-            } else {
-                Err("invalid task id format")
-            }
-        } else {
-            Err("invalid task id format")
-        }
+        Ok(TaskId::from(value))
     }
 }
 
 impl TryFrom<String> for TaskId {
-    type Error = &'static str;
+    type Error = anyhow::Error;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         TryFrom::<&str>::try_from(value.as_str())
     }
 }
 
+impl From<u64> for TaskId {
+    fn from(value: u64) -> Self {
+        let round_id = (value >> 32) as u32;
+        let task_nonce = (value & 0x00000000FFFFFFFF) as u32;
+
+        TaskId(round_id, task_nonce)
+    }
+}
+
+impl From<&TaskId> for u64 {
+    fn from(value: &TaskId) -> Self {
+        let TaskId(round_id, task_id) = value;
+
+        ((*round_id as u64) << 32) | (*task_id as u64)
+    }
+}
+
+impl From<TaskId> for u64 {
+    fn from(value: TaskId) -> Self {
+        From::from(&value)
+    }
+}
+
 impl From<&TaskId> for String {
     fn from(task_id: &TaskId) -> Self {
-        format!("{}/{}", task_id.0, task_id.1)
+        let task_id: u64 = task_id.into();
+
+        format!("{:x}", task_id)
     }
 }
 
@@ -112,6 +120,6 @@ impl TaskId {
 
 impl Display for TaskId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}/{}", self.0, self.1)
+        write!(f, "{:x}", u64::from(self))
     }
 }
