@@ -4,15 +4,16 @@ use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 
-use futures::lock::Mutex;
 use futures::FutureExt;
 use near_primitives::types::AccountId;
 use poco_types::types::round::RoundStatus;
+use tokio::sync::Mutex;
 use tracing::Level;
 
 use crate::agent::agent::PocoAgent;
 use crate::agent::task::config::{RawTaskConfig, RawTaskInputSource};
 use crate::app::backend::command::CommandSource;
+use crate::app::backend::db::PocoDB;
 use crate::app::backend::executor::CommandExecutor;
 use crate::app::backend::parser::CommandParser;
 use crate::app::trace::TracingCategory;
@@ -25,18 +26,21 @@ use crate::util::{pretty_bytes, pretty_gas};
 use super::ui::util::{log_multiple_strings, log_string};
 
 pub mod command;
+
 pub(crate) mod executor;
 pub(crate) mod parser;
 pub(crate) mod cycle;
 pub(crate) mod event;
+pub(crate) mod util;
+pub(crate) mod db;
 
 pub struct Backend {
     mode: AppRunningMode,
     config: Arc<PocoAgentConfig>,
     ui_receiver: crossbeam_channel::Receiver<CommandSource>,
     ui_sender: crossbeam_channel::Sender<UIActionEvent>,
-    runtime: Box<tokio::runtime::Runtime>,
-    db_connection: Arc<Mutex<rusqlite::Connection>>,
+    runtime: tokio::runtime::Runtime,
+    db: PocoDB,
     agent: Arc<PocoAgent>,
     ipfs_client: Arc<IpfsClient>,
 }
@@ -53,10 +57,8 @@ impl Backend {
             .build()
             .unwrap();
 
-        let db_connection = Arc::new(Mutex::new(
-            rusqlite::Connection::open(&config.app.database_path)
-                .expect("Failed to open database connection"),
-        ));
+        let db = PocoDB::new(config.clone())
+            .expect("Failed to initialize database");
 
         let ipfs_client = Arc::new(
             IpfsClient::create_ipfs_client(&config.ipfs.ipfs_endpoint)
@@ -67,8 +69,8 @@ impl Backend {
             mode,
             ui_receiver,
             ui_sender,
-            runtime: Box::new(runtime),
-            db_connection,
+            runtime,
+            db,
             agent: Arc::new(PocoAgent::new(config.clone())),
             ipfs_client,
             config,
@@ -536,9 +538,9 @@ impl Backend {
             let config = self.config.clone();
             let ui_sender = self.ui_sender.clone();
             let agent = self.agent.clone();
-            let db_connection = self.db_connection.clone();
+            let db = self.db.clone();
 
-            self.runtime.spawn(cycle::event_cycle(config, db_connection, agent, ui_sender));
+            self.runtime.spawn(cycle::event_cycle(config, db, agent, ui_sender));
         }
     }
 

@@ -89,9 +89,9 @@ checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
 
 [[package]]
 name = "base64"
-version = "0.20.0"
+version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ea22880d78093b0cbe17c89f64a7d457941e65759157ec6cb31a31d652b05e5"
+checksum = "a4a4ddaa51a5bc52a6948f74c06d20aaaddb71924eab79b8c97a8c556e942d6a"
 
 [[package]]
 name = "bitflags"
@@ -2078,7 +2078,7 @@ name = "poco-agent"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "base64 0.20.0",
+ "base64 0.21.0",
  "chrono",
  "clap",
  "config",
@@ -2096,6 +2096,8 @@ dependencies = [
  "poco-types",
  "reqwest",
  "rusqlite",
+ "sea-query",
+ "sea-query-rusqlite",
  "serde",
  "serde_json",
  "strum",
@@ -2411,6 +2413,8 @@ dependencies = [
  "libsqlite3-sys",
  "serde_json",
  "smallvec",
+ "time 0.3.17",
+ "uuid",
 ]
 
 [[package]]
@@ -2518,6 +2522,42 @@ name = "scratch"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c8132065adcfd6e02db789d9285a0deb2f3fcb04002865ab67d5fb103533898"
+
+[[package]]
+name = "sea-query"
+version = "0.28.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "51416cbc56f6218f50eca250595ef5267f94e64b15cb0fadf799adc7eeb4e6e7"
+dependencies = [
+ "chrono",
+ "sea-query-derive",
+ "serde_json",
+ "time 0.3.17",
+ "uuid",
+]
+
+[[package]]
+name = "sea-query-derive"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "63f62030c60f3a691f5fe251713b4e220b306e50a71e1d6f9cce1f24bb781978"
+dependencies = [
+ "heck",
+ "proc-macro2",
+ "quote",
+ "syn",
+ "thiserror",
+]
+
+[[package]]
+name = "sea-query-rusqlite"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3a5f60fe133c19b0084c3c3932f480d11a435d12c1226b85dcf7733fa9b5a102"
+dependencies = [
+ "rusqlite",
+ "sea-query",
+]
 
 [[package]]
 name = "secp256k1"

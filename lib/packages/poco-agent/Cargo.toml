@@ -19,7 +19,7 @@ chrono = "0.4.23"
 time = "0.3.17"
 
 tracing = "0.1.37"
-tracing-subscriber = { version = "0.3.16", features = ["fmt", "env-filter" ,"local-time", "ansi"] }
+tracing-subscriber = { version = "0.3.16", features = ["fmt", "env-filter", "local-time", "ansi"] }
 tracing-appender = "0.2.2"
 
 clap = { version = "4.0.23", features = ["derive", "color", "help"] }
@@ -28,7 +28,7 @@ config = { version = "0.13.2", features = ["toml"] }
 serde = { version = "1.0.147", features = ["derive"] }
 serde_json = "1.0.89"
 
-base64 = "0.20.0"
+base64 = "0.21.0"
 
 tui = "0.19.0"
 crossterm = "0.25"
@@ -50,7 +50,9 @@ ipfs-api-backend-hyper = { version = "0.6.0", features = ["with-send-sync"] }
 
 crossbeam-channel = "0.5.6"
 
-rusqlite = { verision = "0.28.0", features = ["bundled", "load_extension", "trace", "chrono", "serde_json"] }
+rusqlite = { version = "0.28.0", features = ["bundled", "load_extension", "trace", "chrono", "serde_json"] }
+sea-query = "0.28.2"
+sea-query-rusqlite = { version = "0.2.0", features = ["with-chrono", "with-json", "with-uuid", "with-time"] }
 
 poco-types = { path = "../poco-types" }
 
