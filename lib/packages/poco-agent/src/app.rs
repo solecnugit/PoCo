@@ -1,11 +1,11 @@
-use std::{sync::Arc, thread::JoinHandle};
 use anyhow::Error;
+use std::{sync::Arc, thread::JoinHandle};
 
 use tracing::Level;
 
-use crate::{app::trace::TracingCategory, config::PocoAgentConfig};
 use crate::app::backend::command::CommandSource;
 use crate::app::ui::action::{CommandExecutionStatus, UIAction};
+use crate::{app::trace::TracingCategory, config::PocoAgentConfig};
 
 use self::{
     backend::Backend,
@@ -120,10 +120,7 @@ impl App {
                                 println!("Command {} executed successfully", command_source.id);
                             }
                             CommandExecutionStatus::Failed => {
-                                println!(
-                                    "Command {} failed(Stage: {stage})",
-                                    command_source.id
-                                );
+                                println!("Command {} failed(Stage: {stage})", command_source.id);
                                 println!("Error: {error:?}");
                             }
                         }

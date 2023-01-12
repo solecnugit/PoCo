@@ -3,14 +3,17 @@ use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 
-use futures::FutureExt;
 use futures::lock::Mutex;
+use futures::FutureExt;
 use near_primitives::types::AccountId;
 use poco_types::types::round::RoundStatus;
 use tracing::Level;
 
 use crate::agent::agent::PocoAgent;
 use crate::agent::task::config::{RawTaskConfig, RawTaskInputSource};
+use crate::app::backend::command::BackendCommand::{
+    IpfsFileStatusCommand, IpfsGetFileCommand, StartNewRoundCommand,
+};
 use crate::app::backend::command::{
     BackendCommand::{
         CountEventsCommand, GasPriceCommand, GetUserEndpointCommand, HelpCommand,
@@ -21,7 +24,6 @@ use crate::app::backend::command::{
     CommandSource,
     ParseBackendCommandError::{InvalidCommandParameter, MissingCommandParameter, UnknownCommand},
 };
-use crate::app::backend::command::BackendCommand::{IpfsFileStatusCommand, IpfsGetFileCommand, StartNewRoundCommand};
 use crate::app::trace::TracingCategory;
 use crate::app::ui::action::{CommandExecutionStage, CommandExecutionStatus};
 use crate::app::ui::util::log_command_execution;
@@ -32,7 +34,7 @@ use crate::util::{pretty_bytes, pretty_gas};
 use super::ui::action::UIActionEvent;
 use super::ui::util::{log_multiple_strings, log_string};
 
-use self::command::{BackendCommand, get_internal_command, ParseBackendCommandError};
+use self::command::{get_internal_command, BackendCommand, ParseBackendCommandError};
 
 pub mod command;
 
@@ -79,15 +81,15 @@ impl Backend {
     }
 
     fn execute_command_block<F, R, I>(&mut self, command_source: CommandSource, f: F)
-        where
-            F: FnOnce(
-                crossbeam_channel::Sender<UIActionEvent>,
-                Arc<PocoAgent>,
-                Arc<IpfsClient>,
-                Arc<PocoAgentConfig>,
-            ) -> R,
-            R: Future<Output=anyhow::Result<I>> + Send + 'static,
-            I: Send + 'static
+    where
+        F: FnOnce(
+            crossbeam_channel::Sender<UIActionEvent>,
+            Arc<PocoAgent>,
+            Arc<IpfsClient>,
+            Arc<PocoAgentConfig>,
+        ) -> R,
+        R: Future<Output = anyhow::Result<I>> + Send + 'static,
+        I: Send + 'static,
     {
         let sender1 = self.sender.clone();
         let sender2 = self.sender.clone();
@@ -164,9 +166,9 @@ impl Backend {
                 file_hash,
                 file_path,
             } => self.execute_ipfs_get_file_command(command_source, file_hash, file_path),
-            IpfsFileStatusCommand {
-                file_hash,
-            } => self.execute_ipfs_file_status_command(command_source, file_hash),
+            IpfsFileStatusCommand { file_hash } => {
+                self.execute_ipfs_file_status_command(command_source, file_hash)
+            }
             StartNewRoundCommand => self.execute_start_new_round_command(command_source),
             PublishTaskCommand { task_config_path } => {
                 self.execute_publish_task_command(command_source, task_config_path)
@@ -184,45 +186,53 @@ impl Backend {
             async move |sender, agent, ipfs_client, _config| {
                 let task_config_path = Path::new(&task_config_path);
 
-                if let Ok(true) = task_config_path.try_exists() {} else {
+                if let Ok(true) = task_config_path.try_exists() {
+                } else {
                     anyhow::bail!("Task config file does not exist");
                 }
 
                 let task_config = tokio::fs::read_to_string(task_config_path).await?;
                 let task_config = serde_json::from_str::<RawTaskConfig>(&task_config)?;
-                let task_config = if let RawTaskInputSource::Ipfs { hash, file } = &task_config.input {
-                    if hash.is_some() && file.is_some() {
-                        anyhow::bail!("Both hash and file are specified in task config {}", task_config_path.display());
-                    }
+                let task_config =
+                    if let RawTaskInputSource::Ipfs { hash, file } = &task_config.input {
+                        if hash.is_some() && file.is_some() {
+                            anyhow::bail!(
+                                "Both hash and file are specified in task config {}",
+                                task_config_path.display()
+                            );
+                        }
 
-                    if let Some(file) = file {
-                        let file_path = Path::new(file.as_str());
-                        let file_path = if file_path.is_absolute() {
-                            file_path.to_path_buf()
+                        if let Some(file) = file {
+                            let file_path = Path::new(file.as_str());
+                            let file_path = if file_path.is_absolute() {
+                                file_path.to_path_buf()
+                            } else {
+                                task_config_path.parent().unwrap().join(file_path)
+                            };
+
+                            if let Ok(true) = file_path.try_exists() {
+                                log_string(
+                                    &sender,
+                                    format!("Uploading file to ipfs: {}", file_path.display()),
+                                );
+
+                                let file_cid = ipfs_client.add_file(file_path.as_path()).await?;
+
+                                log_string(&sender, format!("File uploaded to ipfs: {file_cid}"));
+
+                                task_config.to_task_config(Some(file_cid))?
+                            } else {
+                                anyhow::bail!(
+                                    "Task input file does not exist, {}",
+                                    file_path.display()
+                                );
+                            }
                         } else {
-                            task_config_path.parent().unwrap().join(file_path)
-                        };
-
-                        if let Ok(true) = file_path.try_exists() {
-                            log_string(&sender, format!(
-                                "Uploading file to ipfs: {}",
-                                file_path.display()
-                            ));
-
-                            let file_cid = ipfs_client.add_file(file_path.as_path()).await?;
-
-                            log_string(&sender, format!("File uploaded to ipfs: {file_cid}"));
-
-                            task_config.to_task_config(Some(file_cid))?
-                        } else {
-                            anyhow::bail!("Task input file does not exist, {}", file_path.display());
+                            task_config.to_task_config(None)?
                         }
                     } else {
                         task_config.to_task_config(None)?
-                    }
-                } else {
-                    task_config.to_task_config(None)?
-                };
+                    };
 
                 let round_status = agent.get_round_status().await?;
 
@@ -232,7 +242,13 @@ impl Backend {
 
                 let (gas, task_id) = agent.publish_task(task_config).await?;
 
-                log_string(&sender, format!("Task published. Gas used: {}, Task ID: {task_id}", pretty_gas(gas)));
+                log_string(
+                    &sender,
+                    format!(
+                        "Task published. Gas used: {}, Task ID: {task_id}",
+                        pretty_gas(gas)
+                    ),
+                );
 
                 Ok(())
             },
@@ -253,20 +269,27 @@ impl Backend {
         );
     }
 
-    fn execute_ipfs_file_status_command(&mut self, command_source: CommandSource, file_hash: String) {
+    fn execute_ipfs_file_status_command(
+        &mut self,
+        command_source: CommandSource,
+        file_hash: String,
+    ) {
         self.execute_command_block(
             command_source,
             async move |sender, _agent, ipfs_client, _config| {
                 let status = ipfs_client.file_status(file_hash.as_str()).await?;
 
-                log_multiple_strings(&sender, vec![
-                    format!("File hash: {}", status.hash),
-                    format!("File size: {}", pretty_bytes(status.cumulative_size)),
-                    format!("File block size: {}", pretty_bytes(status.block_size)),
-                    format!("File links size: {}", pretty_bytes(status.links_size)),
-                    format!("File data size: {}", pretty_bytes(status.data_size)),
-                    format!("File num links: {}", status.num_links),
-                ]);
+                log_multiple_strings(
+                    &sender,
+                    vec![
+                        format!("File hash: {}", status.hash),
+                        format!("File size: {}", pretty_bytes(status.cumulative_size)),
+                        format!("File block size: {}", pretty_bytes(status.block_size)),
+                        format!("File links size: {}", pretty_bytes(status.links_size)),
+                        format!("File data size: {}", pretty_bytes(status.data_size)),
+                        format!("File num links: {}", status.num_links),
+                    ],
+                );
 
                 Ok(())
             },
@@ -354,10 +377,13 @@ impl Backend {
                     anyhow::bail!("Round is already started");
                 };
 
-                log_string(&sender, format!(
-                    "New round started: {round_id}, gas used: {}",
-                    pretty_gas(gas),
-                ));
+                log_string(
+                    &sender,
+                    format!(
+                        "New round started: {round_id}, gas used: {}",
+                        pretty_gas(gas),
+                    ),
+                );
 
                 Ok(())
             },
@@ -372,14 +398,13 @@ impl Backend {
         self.execute_command_block(
             command_source,
             async move |sender, agent, _ipfs_client, _config| {
-                let gas = agent
-                    .set_user_endpoint(endpoint.as_str())
-                    .await?;
+                let gas = agent.set_user_endpoint(endpoint.as_str()).await?;
 
                 log_string(
                     &sender,
-                    format!("User endpoint set successfully. Gas used: {}",
-                            pretty_gas(gas),
+                    format!(
+                        "User endpoint set successfully. Gas used: {}",
+                        pretty_gas(gas),
                     ),
                 );
 
@@ -396,9 +421,7 @@ impl Backend {
         self.execute_command_block(
             command_source,
             async move |sender, agent, _ipfs_client, _config| {
-                let endpoint = agent
-                    .get_user_endpoint(account_id)
-                    .await?;
+                let endpoint = agent.get_user_endpoint(account_id).await?;
 
                 if let Some(endpoint) = endpoint {
                     log_string(&sender, format!("User endpoint: {endpoint}"));
@@ -420,9 +443,7 @@ impl Backend {
         self.execute_command_block(
             command_source,
             async move |sender, agent, _ipfs_client, _config| {
-                let events = agent
-                    .query_events(from, count)
-                    .await?;
+                let events = agent.query_events(from, count).await?;
 
                 if events.is_empty() {
                     log_string(&sender, "No events found".to_string());
@@ -441,9 +462,7 @@ impl Backend {
         self.execute_command_block(
             command_source,
             async move |sender, agent, _ipfs_client, _config| {
-                let count = agent
-                    .count_events()
-                    .await?;
+                let count = agent.count_events().await?;
 
                 log_string(&sender, format!("Events count: {count}"));
 
@@ -456,9 +475,7 @@ impl Backend {
         self.execute_command_block(
             command_source,
             async move |sender, agent, _ipfs_client, _config| {
-                let round_status = agent
-                    .get_round_status()
-                    .await?;
+                let round_status = agent.get_round_status().await?;
 
                 log_string(&sender, format!("Round status: {round_status}"));
 
@@ -546,10 +563,7 @@ impl Backend {
                     vec![
                         format!("Num Active Peers: {}", status.num_active_peers),
                         format!("Sent Bytes Per Sec: {}", status.sent_bytes_per_sec),
-                        format!(
-                            "Received Bytes Per Sec: {}",
-                            status.received_bytes_per_sec
-                        ),
+                        format!("Received Bytes Per Sec: {}", status.received_bytes_per_sec),
                     ],
                 );
 
@@ -699,9 +713,7 @@ impl Backend {
                 Some((command, _)) => Err(UnknownCommand(format!("ipfs {command}"))),
                 None => Err(UnknownCommand("ipfs".to_string())),
             },
-            Some(("start-new-round", _)) => {
-                Ok(StartNewRoundCommand)
-            }
+            Some(("start-new-round", _)) => Ok(StartNewRoundCommand),
             Some(("publish-task", args)) => {
                 let task_config_path = args.get_one::<String>("task-config-path");
 

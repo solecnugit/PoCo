@@ -3,12 +3,12 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use near_crypto::{InMemorySigner, PublicKey};
-use near_jsonrpc_client::{JsonRpcClient, methods};
 use near_jsonrpc_client::methods::network_info::RpcNetworkInfoResponse;
 use near_jsonrpc_client::methods::status::RpcStatusResponse;
+use near_jsonrpc_client::{methods, JsonRpcClient};
 use near_jsonrpc_primitives::types::query::{QueryResponseKind, RpcQueryResponse};
-use near_primitives::transaction::{Action, Transaction};
 use near_primitives::transaction::FunctionCallAction;
+use near_primitives::transaction::{Action, Transaction};
 use near_primitives::types::{AccountId, Balance, BlockReference, Finality, Gas};
 use near_primitives::views::{AccessKeyView, AccountView, FinalExecutionStatus, QueryRequest};
 use poco_types::types::event::IndexedEvent;
@@ -244,9 +244,9 @@ impl PocoAgent {
         method_name: &str,
         args: &T,
     ) -> anyhow::Result<R>
-        where
-            T: Serialize,
-            R: DeserializeOwned,
+    where
+        T: Serialize,
+        R: DeserializeOwned,
     {
         let args = serde_json::to_string(args).unwrap();
 
@@ -266,9 +266,9 @@ impl PocoAgent {
         gas: u64,
         deposit: u128,
     ) -> anyhow::Result<(Gas, R)>
-        where
-            T: Serialize,
-            R: DeserializeOwned,
+    where
+        T: Serialize,
+        R: DeserializeOwned,
     {
         let args = serde_json::to_string(args)?;
 
@@ -291,8 +291,8 @@ impl PocoAgent {
         gas: u64,
         deposit: u128,
     ) -> anyhow::Result<Gas>
-        where
-            T: Serialize,
+    where
+        T: Serialize,
     {
         let args = serde_json::to_string(args).unwrap();
 
@@ -348,33 +348,31 @@ impl PocoAgent {
             10_000_000_000_000,
             0,
         )
+        .await
+    }
+
+    pub async fn start_new_round(&self) -> anyhow::Result<(Gas, RoundId)> {
+        self.call_change_function_json("start_new_round", &json!({}), 10_000_000_000_000, 0)
             .await
     }
 
-    pub async fn start_new_round(
-        &self
-    ) -> anyhow::Result<(Gas, RoundId)> {
-        self.call_change_function_json(
-            "start_new_round",
-            &json!({}),
-            10_000_000_000_000,
-            0,
-        )
-            .await
-    }
-
-    pub async fn publish_task(
-        &self,
-        task_config: TaskConfig,
-    ) -> anyhow::Result<(Gas, TaskId)> {
+    pub async fn publish_task(&self, task_config: TaskConfig) -> anyhow::Result<(Gas, TaskId)> {
         #[derive(Serialize)]
         struct WrappedTaskConfig {
             config: TaskConfig,
         }
 
-        let task_config = WrappedTaskConfig { config: task_config };
+        let task_config = WrappedTaskConfig {
+            config: task_config,
+        };
 
-        let result = self.call_change_function_json::<WrappedTaskConfig, TaskId>("publish_task", &task_config, 10_000_000_000_000, 0)
+        let result = self
+            .call_change_function_json::<WrappedTaskConfig, TaskId>(
+                "publish_task",
+                &task_config,
+                10_000_000_000_000,
+                0,
+            )
             .await?;
 
         Ok(result)
