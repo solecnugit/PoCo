@@ -1,6 +1,6 @@
-use clap::{Arg, Command};
 use std::path::Path;
 
+use clap::{Arg, Command};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -8,7 +8,7 @@ pub struct AppConfig {
     pub verbose: bool,
     pub database_path: String,
     pub connection_timeout: u64,
-    pub event_cycle_in_ms: u64
+    pub event_cycle_in_ms: u64,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -50,8 +50,15 @@ pub struct PocoAgentConfig {
     pub poco: PocoConfig,
 }
 
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum AppRunningMode {
+    UI,
+    DIRECT,
+    DAEMON,
+}
+
 pub struct AppRunConfig {
-    pub in_ui_mode: bool,
+    pub mode: AppRunningMode,
     pub config_path: String,
 }
 
@@ -66,7 +73,10 @@ pub(crate) fn get_app_command_instance() -> Command {
                 .default_value("config.toml")
                 .required(false),
         )
-        .subcommands([Command::new("ui").about("Run poco-agent in UI mode")])
+        .subcommands([
+            Command::new("ui").about("Run poco-agent in UI mode"),
+            Command::new("daemon").about("Run poco-agent in daemon mode")
+        ])
 }
 
 pub(crate) fn parse() -> AppRunConfig {
@@ -80,11 +90,15 @@ pub(crate) fn parse() -> AppRunConfig {
 
     match arg_matches.subcommand() {
         Some(("ui", _)) => AppRunConfig {
-            in_ui_mode: true,
+            mode: AppRunningMode::UI,
+            config_path,
+        },
+        Some(("daemon", _)) => AppRunConfig {
+            mode: AppRunningMode::DAEMON,
             config_path,
         },
         _ => AppRunConfig {
-            in_ui_mode: false,
+            mode: AppRunningMode::DIRECT,
             config_path,
         },
     }

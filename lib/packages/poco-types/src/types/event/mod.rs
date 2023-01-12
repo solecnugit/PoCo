@@ -11,7 +11,7 @@ use crate::types::task::InternalTaskConfig;
 
 pub type EventNonce = u32;
 
-#[derive(Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(crate = "near_sdk::serde")]
 pub struct IndexedEvent {
     pub event_id: u32,

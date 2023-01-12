@@ -5,6 +5,7 @@ use tracing::Level;
 use crate::app::backend::command::CommandSource;
 use crate::app::ui::event::{CommandExecutionStatus, UIAction};
 use crate::{app::trace::TracingCategory, config::PocoAgentConfig};
+use crate::config::AppRunningMode;
 
 use self::{
     backend::Backend,
@@ -51,8 +52,9 @@ impl App {
         }
     }
 
-    pub fn run(mut self, direct_command_flag: bool) -> anyhow::Result<()> {
+    pub fn run(mut self, mode: AppRunningMode) -> anyhow::Result<()> {
         let backend = Backend::new(
+            mode,
             self.config.clone(),
             self.backend_channel.1.clone(),
             self.ui_channel.0.clone(),
@@ -60,7 +62,7 @@ impl App {
 
         backend.run_backend_thread();
 
-        let result = if direct_command_flag {
+        let result = if mode != AppRunningMode::UI {
             let command = std::env::args()
                 .skip_while(|arg| arg != "--")
                 .skip(1)

@@ -17,9 +17,9 @@ impl CommandExecutor for Backend {
     fn execute_command(&mut self, command_source: CommandSource, command: BackendCommand) {
         match command {
             HelpCommand(help) => {
-                log_multiple_strings(&self.sender, help);
+                log_multiple_strings(&self.ui_sender, help);
                 log_command_execution(
-                    &self.sender,
+                    &self.ui_sender,
                     command_source,
                     CommandExecutionStage::Executed,
                     CommandExecutionStatus::Succeed,

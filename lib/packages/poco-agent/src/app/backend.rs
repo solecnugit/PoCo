@@ -18,7 +18,7 @@ use crate::app::backend::parser::CommandParser;
 use crate::app::trace::TracingCategory;
 use crate::app::ui::event::{CommandExecutionStage, CommandExecutionStatus, UIActionEvent};
 use crate::app::ui::util::log_command_execution;
-use crate::config::PocoAgentConfig;
+use crate::config::{AppRunningMode, PocoAgentConfig};
 use crate::ipfs::client::IpfsClient;
 use crate::util::{pretty_bytes, pretty_gas};
 
@@ -28,12 +28,13 @@ pub mod command;
 pub(crate) mod executor;
 pub(crate) mod parser;
 pub(crate) mod cycle;
-pub(crate)mod event;
+pub(crate) mod event;
 
 pub struct Backend {
+    mode: AppRunningMode,
     config: Arc<PocoAgentConfig>,
-    receiver: crossbeam_channel::Receiver<CommandSource>,
-    sender: crossbeam_channel::Sender<UIActionEvent>,
+    ui_receiver: crossbeam_channel::Receiver<CommandSource>,
+    ui_sender: crossbeam_channel::Sender<UIActionEvent>,
     runtime: Box<tokio::runtime::Runtime>,
     db_connection: Arc<Mutex<rusqlite::Connection>>,
     agent: Arc<PocoAgent>,
@@ -42,9 +43,10 @@ pub struct Backend {
 
 impl Backend {
     pub fn new(
+        mode: AppRunningMode,
         config: Arc<PocoAgentConfig>,
-        receiver: crossbeam_channel::Receiver<CommandSource>,
-        sender: crossbeam_channel::Sender<UIActionEvent>,
+        ui_receiver: crossbeam_channel::Receiver<CommandSource>,
+        ui_sender: crossbeam_channel::Sender<UIActionEvent>,
     ) -> Self {
         let runtime = tokio::runtime::Builder::new_multi_thread()
             .enable_all()
@@ -62,8 +64,9 @@ impl Backend {
         );
 
         Backend {
-            receiver,
-            sender,
+            mode,
+            ui_receiver,
+            ui_sender,
             runtime: Box::new(runtime),
             db_connection,
             agent: Arc::new(PocoAgent::new(config.clone())),
@@ -83,8 +86,8 @@ impl Backend {
         R: Future<Output = anyhow::Result<I>> + Send + 'static,
         I: Send + 'static,
     {
-        let sender1 = self.sender.clone();
-        let sender2 = self.sender.clone();
+        let sender1 = self.ui_sender.clone();
+        let sender2 = self.ui_sender.clone();
 
         let agent = self.agent.clone();
         let ipfs_client = self.ipfs_client.clone();
@@ -528,13 +531,28 @@ impl Backend {
         )
     }
 
+    fn start_backend_jobs(&mut self) {
+        {
+            let config = self.config.clone();
+            let ui_sender = self.ui_sender.clone();
+            let agent = self.agent.clone();
+            let db_connection = self.db_connection.clone();
+
+            self.runtime.spawn(cycle::event_cycle(config, db_connection, agent, ui_sender));
+        }
+    }
+
     pub fn run_backend_thread(mut self) -> std::thread::JoinHandle<()> {
         let builder = std::thread::Builder::new().name("backend".to_string());
 
         builder
             .spawn(move || 'outer: loop {
+                if self.mode != AppRunningMode::DIRECT {
+                    self.start_backend_jobs();
+                }
+
                 loop {
-                    match self.receiver.recv() {
+                    match self.ui_receiver.recv() {
                         Ok(command_source) => {
                             match self.parse_command(command_source.source.trim()) {
                                 Ok(command) => self.execute_command(command_source, command),
@@ -547,7 +565,7 @@ impl Backend {
                                     }
 
                                     log_command_execution(
-                                        &self.sender,
+                                        &self.ui_sender,
                                         command_source,
                                         CommandExecutionStage::Parsing,
                                         CommandExecutionStatus::Failed,

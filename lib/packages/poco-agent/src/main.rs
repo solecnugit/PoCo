@@ -57,7 +57,5 @@ fn main() -> anyhow::Result<()> {
         category = TracingCategory::Agent.to_string()
     );
 
-    let direct_command_flag = !app_run_config.in_ui_mode;
-
-    app.run(direct_command_flag)
+    app.run(app_run_config.mode)
 }
