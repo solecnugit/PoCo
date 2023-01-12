@@ -1,5 +1,5 @@
 use crate::app::backend::command::CommandSource;
-use crate::app::ui::action::{
+use crate::app::ui::event::{
     CommandExecutionStage, CommandExecutionStatus, UIAction, UIActionEvent,
 };
 

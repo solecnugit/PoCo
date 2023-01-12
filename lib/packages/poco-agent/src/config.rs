@@ -8,6 +8,7 @@ pub struct AppConfig {
     pub verbose: bool,
     pub database_path: String,
     pub connection_timeout: u64,
+    pub event_cycle_in_ms: u64
 }
 
 #[derive(Serialize, Deserialize, Debug)]

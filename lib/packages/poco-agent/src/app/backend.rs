@@ -16,18 +16,19 @@ use crate::app::backend::command::CommandSource;
 use crate::app::backend::executor::CommandExecutor;
 use crate::app::backend::parser::CommandParser;
 use crate::app::trace::TracingCategory;
-use crate::app::ui::action::{CommandExecutionStage, CommandExecutionStatus};
+use crate::app::ui::event::{CommandExecutionStage, CommandExecutionStatus, UIActionEvent};
 use crate::app::ui::util::log_command_execution;
 use crate::config::PocoAgentConfig;
 use crate::ipfs::client::IpfsClient;
 use crate::util::{pretty_bytes, pretty_gas};
 
-use super::ui::action::UIActionEvent;
 use super::ui::util::{log_multiple_strings, log_string};
 
 pub mod command;
 pub(crate) mod executor;
 pub(crate) mod parser;
+pub(crate) mod cycle;
+pub(crate)mod event;
 
 pub struct Backend {
     config: Arc<PocoAgentConfig>,

@@ -6,7 +6,7 @@ use crate::app::backend::command::BackendCommand::{
 };
 use crate::app::backend::command::{BackendCommand, CommandSource};
 use crate::app::backend::Backend;
-use crate::app::ui::action::{CommandExecutionStage, CommandExecutionStatus};
+use crate::app::ui::event::{CommandExecutionStage, CommandExecutionStatus};
 use crate::app::ui::util::{log_command_execution, log_multiple_strings};
 
 pub trait CommandExecutor {

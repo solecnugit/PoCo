@@ -2,7 +2,7 @@ use std::time;
 use std::{io, sync::Arc};
 
 use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event},
+    event::{DisableMouseCapture, EnableMouseCapture, Event},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -19,12 +19,12 @@ use crate::config::PocoAgentConfig;
 
 use super::CommandString;
 
-use self::action::UIAction;
-use self::action::UIActionEvent;
+use self::event::UIAction;
+use self::event::UIActionEvent;
 use self::state::UIInputMode;
 use self::state::UIState;
 
-pub mod action;
+pub mod event;
 pub mod state;
 pub mod util;
 
@@ -99,18 +99,18 @@ impl UI {
 
             terminal.draw(|frame| self.draw_ui(frame))?;
 
-            if event::poll(time::Duration::from_millis(100))? {
-                if let Event::Key(key) = event::read()? {
+            if crossterm::event::poll(time::Duration::from_millis(100))? {
+                if let Event::Key(key) = crossterm::event::read()? {
                     match self.state.mode {
                         UIInputMode::Normal => match key.code {
-                            event::KeyCode::Char('i') => {
+                            crossterm::event::KeyCode::Char('i') => {
                                 self.state.mode = UIInputMode::Edit;
                             }
-                            event::KeyCode::Char('q') => return Ok(()),
-                            event::KeyCode::Up => {
+                            crossterm::event::KeyCode::Char('q') => return Ok(()),
+                            crossterm::event::KeyCode::Up => {
                                 self.state.offset += 1;
                             }
-                            event::KeyCode::Down => {
+                            crossterm::event::KeyCode::Down => {
                                 if self.state.offset > 0 {
                                     self.state.offset -= 1;
                                 }
@@ -118,7 +118,7 @@ impl UI {
                             _ => {}
                         },
                         UIInputMode::Edit => match key.code {
-                            event::KeyCode::Enter => {
+                            crossterm::event::KeyCode::Enter => {
                                 self.state.mode = UIInputMode::Normal;
 
                                 if !self.state.input.is_empty() {
@@ -140,13 +140,13 @@ impl UI {
                                 }
                                 self.state.input.clear();
                             }
-                            event::KeyCode::Char(c) => {
+                            crossterm::event::KeyCode::Char(c) => {
                                 self.state.input.push(c);
                             }
-                            event::KeyCode::Backspace => {
+                            crossterm::event::KeyCode::Backspace => {
                                 self.state.input.pop();
                             }
-                            event::KeyCode::Esc => {
+                            crossterm::event::KeyCode::Esc => {
                                 self.state.mode = UIInputMode::Normal;
                                 self.state.input.clear();
                             }

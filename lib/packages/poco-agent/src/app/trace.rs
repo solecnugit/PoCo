@@ -6,7 +6,7 @@ use strum::Display;
 use tracing::{field::Visit, Level, Subscriber};
 use tracing_subscriber::Layer;
 
-use super::ui::action::{UIAction, UIActionEvent};
+use super::ui::event::{UIAction, UIActionEvent};
 
 #[derive(Debug, Clone)]
 pub struct TracingEvent {

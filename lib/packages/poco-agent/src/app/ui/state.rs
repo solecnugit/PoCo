@@ -3,7 +3,7 @@ use std::collections::VecDeque;
 use strum::Display;
 use tui::widgets::ListItem;
 
-use super::action::UIActionEvent;
+use super::event::UIActionEvent;
 
 #[derive(Display)]
 pub(crate) enum UIInputMode {

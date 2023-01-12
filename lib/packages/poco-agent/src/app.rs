@@ -3,13 +3,13 @@ use std::{sync::Arc, thread::JoinHandle};
 use tracing::Level;
 
 use crate::app::backend::command::CommandSource;
-use crate::app::ui::action::{CommandExecutionStatus, UIAction};
+use crate::app::ui::event::{CommandExecutionStatus, UIAction};
 use crate::{app::trace::TracingCategory, config::PocoAgentConfig};
 
 use self::{
     backend::Backend,
     trace::UITracingLayer,
-    ui::{action::UIActionEvent, UI},
+    ui::{event::UIActionEvent, UI},
 };
 
 pub mod backend;
