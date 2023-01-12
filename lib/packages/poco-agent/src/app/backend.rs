@@ -39,7 +39,7 @@ pub struct Backend {
     config: Arc<PocoAgentConfig>,
     ui_receiver: crossbeam_channel::Receiver<CommandSource>,
     ui_sender: crossbeam_channel::Sender<UIActionEvent>,
-    runtime: tokio::runtime::Runtime,
+    runtime: Arc<tokio::runtime::Runtime>,
     db: PocoDB,
     agent: Arc<PocoAgent>,
     ipfs_client: Arc<IpfsClient>,
@@ -52,10 +52,12 @@ impl Backend {
         ui_receiver: crossbeam_channel::Receiver<CommandSource>,
         ui_sender: crossbeam_channel::Sender<UIActionEvent>,
     ) -> Self {
-        let runtime = tokio::runtime::Builder::new_multi_thread()
+        let runtime = Arc::new(
+            tokio::runtime::Builder::new_multi_thread()
             .enable_all()
             .build()
-            .unwrap();
+            .expect("Failed to build Tokio runtime"),
+        );
 
         let db = PocoDB::new(config.clone())
             .expect("Failed to initialize database");
@@ -65,13 +67,18 @@ impl Backend {
                 .expect("Failed to create ipfs client"),
         );
 
+        let agent = Arc::new(
+            PocoAgent::new(config.clone())
+                .expect("Failed to initialize Poco Agent"),
+        );
+
         Backend {
             mode,
             ui_receiver,
             ui_sender,
             runtime,
             db,
-            agent: Arc::new(PocoAgent::new(config.clone())),
+            agent,
             ipfs_client,
             config,
         }
@@ -539,8 +546,9 @@ impl Backend {
             let ui_sender = self.ui_sender.clone();
             let agent = self.agent.clone();
             let db = self.db.clone();
+            let runtime = self.runtime.clone();
 
-            self.runtime.spawn(cycle::event_cycle(config, db, agent, ui_sender));
+            self.runtime.spawn(cycle::event_cycle(config, db, agent, ui_sender, runtime));
         }
     }
 

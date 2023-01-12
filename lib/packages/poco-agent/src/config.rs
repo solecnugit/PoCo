@@ -7,8 +7,7 @@ use serde::{Deserialize, Serialize};
 pub struct AppConfig {
     pub verbose: bool,
     pub database_path: String,
-    pub connection_timeout: u64,
-    pub event_cycle_in_ms: u64,
+    pub connection_timeout: u64
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -36,8 +35,17 @@ pub struct IpfsConfig {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub enum PocoTaskPolicy {
+    AlwaysTaken,
+    AlwaysIgnore
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct PocoConfig {
-    pub poco_contract_account: String,
+    pub contract_account: String,
+    pub event_cycle_in_ms: u64,
+    pub task_policy: PocoTaskPolicy
 }
 
 #[derive(Serialize, Deserialize, Debug)]
