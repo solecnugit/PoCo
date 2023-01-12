@@ -11,19 +11,10 @@ use tracing::Level;
 
 use crate::agent::agent::PocoAgent;
 use crate::agent::task::config::{RawTaskConfig, RawTaskInputSource};
-use crate::app::backend::command::BackendCommand::{
-    IpfsFileStatusCommand, IpfsGetFileCommand, StartNewRoundCommand,
-};
-use crate::app::backend::command::{
-    BackendCommand::{
-        CountEventsCommand, GasPriceCommand, GetUserEndpointCommand, HelpCommand,
-        IpfsAddFileCommand, IpfsCatFileCommand, NetworkStatusCommand, PublishTaskCommand,
-        QueryEventsCommand, RoundStatusCommand, SetUserEndpointCommand, StatusCommand,
-        ViewAccountCommand,
-    },
-    CommandSource,
-    ParseBackendCommandError::{InvalidCommandParameter, MissingCommandParameter, UnknownCommand},
-};
+use crate::app::backend::command::CommandSource;
+use crate::app::backend::parser::CommandParser;
+use crate::app::backend::executor::CommandExecutor;
+use crate::app::backend::parser::ParseBackendCommandError::{InvalidCommandParameter, MissingCommandParameter, UnknownCommand};
 use crate::app::trace::TracingCategory;
 use crate::app::ui::action::{CommandExecutionStage, CommandExecutionStatus};
 use crate::app::ui::util::log_command_execution;
@@ -34,9 +25,11 @@ use crate::util::{pretty_bytes, pretty_gas};
 use super::ui::action::UIActionEvent;
 use super::ui::util::{log_multiple_strings, log_string};
 
-use self::command::{get_internal_command, BackendCommand, ParseBackendCommandError};
+use self::command::{BackendCommand};
 
 pub mod command;
+pub(crate) mod parser;
+pub(crate) mod executor;
 
 pub struct Backend {
     config: Arc<PocoAgentConfig>,
@@ -127,54 +120,6 @@ impl Backend {
             }));
     }
 
-    fn execute_command(&mut self, command_source: CommandSource, command: BackendCommand) {
-        match command {
-            HelpCommand(help) => {
-                log_multiple_strings(&self.sender, help);
-                log_command_execution(
-                    &self.sender,
-                    command_source,
-                    CommandExecutionStage::Executed,
-                    CommandExecutionStatus::Succeed,
-                    None,
-                );
-            }
-            GasPriceCommand => self.execute_gas_price_command(command_source),
-            NetworkStatusCommand => self.execute_network_status_command(command_source),
-            StatusCommand => self.execute_status_command(command_source),
-            ViewAccountCommand { account_id } => {
-                self.execute_view_account_command(command_source, account_id)
-            }
-            RoundStatusCommand => self.execute_round_status_command(command_source),
-            CountEventsCommand => self.execute_count_events_command(command_source),
-            QueryEventsCommand { from, count } => {
-                self.execute_query_events_command(command_source, from, count)
-            }
-            GetUserEndpointCommand { account_id } => {
-                self.execute_get_user_endpoint_command(command_source, account_id)
-            }
-            SetUserEndpointCommand { endpoint } => {
-                self.execute_set_user_endpoint_command(command_source, endpoint)
-            }
-            IpfsAddFileCommand { file_path } => {
-                self.execute_ipfs_add_file_command(command_source, file_path)
-            }
-            IpfsCatFileCommand { file_hash } => {
-                self.execute_ipfs_cat_file_command(command_source, file_hash)
-            }
-            IpfsGetFileCommand {
-                file_hash,
-                file_path,
-            } => self.execute_ipfs_get_file_command(command_source, file_hash, file_path),
-            IpfsFileStatusCommand { file_hash } => {
-                self.execute_ipfs_file_status_command(command_source, file_hash)
-            }
-            StartNewRoundCommand => self.execute_start_new_round_command(command_source),
-            PublishTaskCommand { task_config_path } => {
-                self.execute_publish_task_command(command_source, task_config_path)
-            }
-        }
-    }
 
     fn execute_publish_task_command(
         &mut self,
@@ -583,150 +528,6 @@ impl Backend {
                 Ok(())
             },
         )
-    }
-
-    fn parse_command(&self, command: &str) -> Result<BackendCommand, ParseBackendCommandError> {
-        let arg_matches = get_internal_command().get_matches_from(command.split_whitespace());
-
-        match arg_matches.subcommand() {
-            Some(("help", args)) => {
-                if let Some(command) = args.get_one::<String>("command") {
-                    Ok(HelpCommand(
-                        get_internal_command()
-                            .get_subcommands_mut()
-                            .find(|subcommand| subcommand.get_name() == command)
-                            .unwrap()
-                            .render_help()
-                            .to_string()
-                            .lines()
-                            .map(|e| e.to_string())
-                            .collect(),
-                    ))
-                } else {
-                    Ok(HelpCommand(
-                        get_internal_command()
-                            .render_help()
-                            .to_string()
-                            .lines()
-                            .map(|e| e.to_string())
-                            .collect(),
-                    ))
-                }
-            }
-            Some(("gas-price", _)) => Ok(GasPriceCommand),
-            Some(("network-status", _)) => Ok(NetworkStatusCommand),
-            Some(("status", _)) => Ok(StatusCommand),
-            Some(("view-account", args)) => {
-                if let Some(account_id) = args.get_one::<String>("account-id") {
-                    if let Ok(account_id) = account_id.parse() {
-                        Ok(ViewAccountCommand { account_id })
-                    } else {
-                        Err(InvalidCommandParameter("account-id".to_string()))
-                    }
-                } else {
-                    Err(MissingCommandParameter("account-id".to_string()))
-                }
-            }
-            Some(("round-status", _)) => Ok(RoundStatusCommand),
-            Some(("count-events", _)) => Ok(CountEventsCommand),
-            Some(("query-events", args)) => {
-                if let Some(Ok(from)) = args.get_one::<String>("from").map(|e| e.parse()) {
-                    let count = args
-                        .get_one::<String>("count")
-                        .map(|e| e.parse())
-                        .unwrap()
-                        .unwrap();
-
-                    Ok(QueryEventsCommand { from, count })
-                } else {
-                    Err(MissingCommandParameter("from".to_string()))
-                }
-            }
-            Some(("get-user-endpoint", args)) => {
-                let account_id = args.get_one::<String>("account-id");
-
-                if let Some(account_id) = account_id {
-                    let account_id = account_id.parse();
-
-                    if let Ok(account_id) = account_id {
-                        Ok(GetUserEndpointCommand {
-                            account_id: Some(account_id),
-                        })
-                    } else {
-                        Err(InvalidCommandParameter("account-id".to_string()))
-                    }
-                } else {
-                    Ok(GetUserEndpointCommand { account_id: None })
-                }
-            }
-            Some(("set-user-endpoint", args)) => {
-                let endpoint = args.get_one::<String>("endpoint").cloned();
-
-                if let Some(endpoint) = endpoint {
-                    Ok(SetUserEndpointCommand { endpoint })
-                } else {
-                    Err(MissingCommandParameter("endpoint".to_string()))
-                }
-            }
-            Some(("ipfs", args)) => match args.subcommand() {
-                Some(("add", args)) => {
-                    if let Some(file_path) = args.get_one::<String>("file") {
-                        Ok(IpfsAddFileCommand {
-                            file_path: file_path.to_string(),
-                        })
-                    } else {
-                        Err(MissingCommandParameter("file".to_string()))
-                    }
-                }
-                Some(("cat", args)) => {
-                    if let Some(hash) = args.get_one::<String>("hash") {
-                        Ok(IpfsCatFileCommand {
-                            file_hash: hash.to_string(),
-                        })
-                    } else {
-                        Err(MissingCommandParameter("hash".to_string()))
-                    }
-                }
-                Some(("get", args)) => {
-                    if let Some(hash) = args.get_one::<String>("hash") {
-                        if let Some(file_path) = args.get_one::<String>("file-path") {
-                            Ok(IpfsGetFileCommand {
-                                file_hash: hash.to_string(),
-                                file_path: file_path.to_string(),
-                            })
-                        } else {
-                            Err(MissingCommandParameter("file".to_string()))
-                        }
-                    } else {
-                        Err(MissingCommandParameter("hash".to_string()))
-                    }
-                }
-                Some(("status", args)) => {
-                    if let Some(hash) = args.get_one::<String>("hash") {
-                        Ok(IpfsFileStatusCommand {
-                            file_hash: hash.to_string(),
-                        })
-                    } else {
-                        Err(MissingCommandParameter("hash".to_string()))
-                    }
-                }
-                Some((command, _)) => Err(UnknownCommand(format!("ipfs {command}"))),
-                None => Err(UnknownCommand("ipfs".to_string())),
-            },
-            Some(("start-new-round", _)) => Ok(StartNewRoundCommand),
-            Some(("publish-task", args)) => {
-                let task_config_path = args.get_one::<String>("task-config-path");
-
-                if let Some(task_config_path) = task_config_path {
-                    Ok(PublishTaskCommand {
-                        task_config_path: task_config_path.to_string(),
-                    })
-                } else {
-                    Err(MissingCommandParameter("task-config-path".to_string()))
-                }
-            }
-            _ => Err(UnknownCommand(command.to_string())),
-        }
     }
 
     pub fn run_backend_thread(mut self) -> std::thread::JoinHandle<()> {

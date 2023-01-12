@@ -4,6 +4,62 @@ use clap::{Arg, Command};
 use near_primitives::types::AccountId;
 use strum::Display;
 
+#[derive(Debug, Display)]
+pub enum BackendCommand {
+    HelpCommand(Vec<String>),
+    // Ipfs Commands
+    IpfsAddFileCommand {
+        file_path: String,
+    },
+    IpfsCatFileCommand {
+        file_hash: String,
+    },
+    IpfsGetFileCommand {
+        file_hash: String,
+        file_path: String,
+    },
+    IpfsFileStatusCommand {
+        file_hash: String,
+    },
+    // Near Network
+    GasPriceCommand,
+    NetworkStatusCommand,
+    StatusCommand,
+    ViewAccountCommand {
+        account_id: AccountId,
+    },
+    // PoCo Contract Commands
+    RoundStatusCommand,
+    CountEventsCommand,
+    QueryEventsCommand {
+        from: u32,
+        count: u32,
+    },
+    GetUserEndpointCommand {
+        account_id: Option<AccountId>,
+    },
+    SetUserEndpointCommand {
+        endpoint: String,
+    },
+    StartNewRoundCommand,
+    // Task Related Commands
+    PublishTaskCommand {
+        task_config_path: String,
+    },
+}
+
+#[derive(Debug, Clone)]
+pub struct CommandSource {
+    pub id: String,
+    pub source: String,
+}
+
+impl Display for CommandSource {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.id, self.source)
+    }
+}
+
 pub fn get_command_instance(in_ui_mode: bool) -> Command {
     let subcommand = if in_ui_mode {
         |name: &'static str| {
@@ -126,69 +182,6 @@ pub fn get_command_instance(in_ui_mode: bool) -> Command {
     command.subcommands(subcommands)
 }
 
-pub(crate) fn get_internal_command() -> Command {
+pub(crate) fn commands() -> Command {
     get_command_instance(true)
-}
-
-#[derive(Debug, Display)]
-pub enum BackendCommand {
-    HelpCommand(Vec<String>),
-    // Ipfs Commands
-    IpfsAddFileCommand {
-        file_path: String,
-    },
-    IpfsCatFileCommand {
-        file_hash: String,
-    },
-    IpfsGetFileCommand {
-        file_hash: String,
-        file_path: String,
-    },
-    IpfsFileStatusCommand {
-        file_hash: String,
-    },
-    // Near Network
-    GasPriceCommand,
-    NetworkStatusCommand,
-    StatusCommand,
-    ViewAccountCommand {
-        account_id: AccountId,
-    },
-    // PoCo Contract Commands
-    RoundStatusCommand,
-    CountEventsCommand,
-    QueryEventsCommand {
-        from: u32,
-        count: u32,
-    },
-    GetUserEndpointCommand {
-        account_id: Option<AccountId>,
-    },
-    SetUserEndpointCommand {
-        endpoint: String,
-    },
-    StartNewRoundCommand,
-    // Task Related Commands
-    PublishTaskCommand {
-        task_config_path: String,
-    },
-}
-
-#[derive(Debug, Clone)]
-pub struct CommandSource {
-    pub id: String,
-    pub source: String,
-}
-
-#[derive(Debug, Display)]
-pub enum ParseBackendCommandError {
-    UnknownCommand(String),
-    MissingCommandParameter(String),
-    InvalidCommandParameter(String),
-}
-
-impl Display for CommandSource {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} {}", self.id, self.source)
-    }
 }
