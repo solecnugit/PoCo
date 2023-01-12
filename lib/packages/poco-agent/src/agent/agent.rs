@@ -270,13 +270,15 @@ impl PocoAgent {
             T: Serialize,
             R: DeserializeOwned,
     {
-        let args = serde_json::to_string(args).unwrap();
+        let args = serde_json::to_string(args)?;
 
         let (gas, buffer) = self
             .call_change_function(method_name, args.as_str(), ArgsType::JSON, gas, deposit)
             .await?;
 
-        match serde_json::from_slice(buffer.as_slice()) {
+        let json = serde_json::from_slice(buffer.as_slice());
+
+        match json {
             Ok(result) => Ok((gas, result)),
             Err(_) => anyhow::bail!("Unexpected response: {:?}", String::from_utf8(buffer)),
         }
@@ -365,7 +367,14 @@ impl PocoAgent {
         &self,
         task_config: TaskConfig,
     ) -> anyhow::Result<(Gas, TaskId)> {
-        let result = self.call_change_function_json::<TaskConfig, TaskId>("publish-task", &task_config, 10_000_000_000_000, 0)
+        #[derive(Serialize)]
+        struct WrappedTaskConfig {
+            config: TaskConfig,
+        }
+
+        let task_config = WrappedTaskConfig { config: task_config };
+
+        let result = self.call_change_function_json::<WrappedTaskConfig, TaskId>("publish_task", &task_config, 10_000_000_000_000, 0)
             .await?;
 
         Ok(result)

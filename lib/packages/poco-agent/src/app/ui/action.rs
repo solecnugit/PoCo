@@ -2,6 +2,7 @@ use std::error::Error;
 
 use chrono::{DateTime, Local};
 use strum::Display;
+use thiserror::__private::DisplayAsDisplay;
 use tracing::Level;
 use tui::{
     style::{Color, Style},
@@ -221,10 +222,12 @@ impl UIActionEvent {
                     ),
                 ]),
                 match error {
-                    Some(error) => Spans::from(vec![
-                        Span::raw(" ".repeat(time_string.width() + 1)),
-                        Span::styled(format!("Error: {error:?}"), Style::default().fg(Color::Red)),
-                    ]),
+                    Some(error) => {
+                        Spans::from(vec![
+                            Span::raw(" ".repeat(time_string.width() + 1)),
+                            Span::styled(format!("Error: {error}"), Style::default().fg(Color::Red)),
+                        ])
+                    },
                     None => Spans::from(vec![]),
                 },
             ],

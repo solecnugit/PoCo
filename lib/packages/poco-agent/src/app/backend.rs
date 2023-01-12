@@ -3,7 +3,6 @@ use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 
-use anyhow::anyhow;
 use futures::FutureExt;
 use futures::lock::Mutex;
 use near_primitives::types::AccountId;
@@ -232,6 +231,8 @@ impl Backend {
                 }
 
                 let (gas, task_id) = agent.publish_task(task_config).await?;
+
+                log_string(&sender, format!("Task published. Gas used: {}, Task ID: {task_id}", pretty_gas(gas)));
 
                 Ok(())
             },
