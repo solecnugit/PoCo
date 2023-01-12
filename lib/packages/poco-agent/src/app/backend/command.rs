@@ -80,6 +80,9 @@ pub fn get_command_instance(in_ui_mode: bool) -> Command {
     };
 
     let subcommands = [
+        subcommand("help")
+            .about("Get help for poco-agent")
+            .arg(Arg::new("command").required(false).index(1)),
         subcommand("gas-price").about("Get gas price"),
         subcommand("network-status").about("Get network status"),
         subcommand("status").about("Get Blockchain status"),
@@ -136,8 +139,8 @@ pub fn get_command_instance(in_ui_mode: bool) -> Command {
     let command = if in_ui_mode {
         Command::new("poco")
             .about("Poco Agent")
-            .version("0.0.1")
-            .ignore_errors(true)
+            .version("0.1.0")
+            .ignore_errors(false)
             .no_binary_name(true)
             .subcommand_required(true)
             .arg_required_else_help(false)
@@ -151,32 +154,18 @@ pub fn get_command_instance(in_ui_mode: bool) -> Command {
 {subcommands}
         ",
             )
-            .subcommand(
-                subcommand("help")
-                    .about("Get help for poco-agent")
-                    .arg(Arg::new("command").required(false).index(1)),
-            )
     } else {
         Command::new("poco")
             .about("Poco Agent")
-            .version("0.0.1")
-            .ignore_errors(true)
-            .no_binary_name(false)
+            .version("0.1.0")
+            .ignore_errors(false)
+            .no_binary_name(true)
             .subcommand_required(false)
             .arg_required_else_help(true)
             .disable_help_subcommand(false)
             .disable_help_flag(false)
             .disable_colored_help(false)
             .disable_version_flag(false)
-            .arg(
-                Arg::new("config")
-                    .short('f')
-                    .long("config")
-                    .value_name("CONFIG_FILE")
-                    .default_value("config.toml")
-                    .required(false),
-            )
-            .subcommand(subcommand("ui").about("Start UI"))
     };
 
     command.subcommands(subcommands)

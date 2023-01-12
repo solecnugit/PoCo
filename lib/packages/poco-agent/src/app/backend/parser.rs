@@ -1,23 +1,15 @@
-use strum::Display;
+use clap::error::ErrorKind;
+
+use crate::app::backend::command::BackendCommand::{
+    CountEventsCommand, GasPriceCommand, GetUserEndpointCommand, HelpCommand, IpfsAddFileCommand,
+    IpfsCatFileCommand, IpfsFileStatusCommand, IpfsGetFileCommand, NetworkStatusCommand,
+    PublishTaskCommand, QueryEventsCommand, RoundStatusCommand, SetUserEndpointCommand,
+    StartNewRoundCommand, StatusCommand, ViewAccountCommand,
+};
+use crate::app::backend::command::{commands, BackendCommand};
 use crate::app::backend::Backend;
 
-use crate::app::backend::command::{BackendCommand, commands};
-use crate::app::backend::command::{
-    BackendCommand::{
-        CountEventsCommand, GasPriceCommand, GetUserEndpointCommand, HelpCommand,
-        IpfsAddFileCommand, IpfsCatFileCommand, IpfsFileStatusCommand, IpfsGetFileCommand,
-        NetworkStatusCommand, PublishTaskCommand, QueryEventsCommand, RoundStatusCommand,
-        SetUserEndpointCommand, StartNewRoundCommand, StatusCommand, ViewAccountCommand,
-    },
-};
-use crate::app::backend::parser::ParseBackendCommandError::{InvalidCommandParameter, MissingCommandParameter, UnknownCommand};
-
-#[derive(Debug, Display)]
-pub enum ParseBackendCommandError {
-    UnknownCommand(String),
-    MissingCommandParameter(String),
-    InvalidCommandParameter(String),
-}
+pub type ParseBackendCommandError = clap::Error;
 
 pub trait CommandParser {
     fn parse_command(&self, command: &str) -> Result<BackendCommand, ParseBackendCommandError>;
@@ -25,13 +17,14 @@ pub trait CommandParser {
 
 impl CommandParser for Backend {
     fn parse_command(&self, command: &str) -> Result<BackendCommand, ParseBackendCommandError> {
-        let arg_matches = commands().get_matches_from(command.split_whitespace());
+        let mut command_instance = commands();
+        let arg_matches = command_instance.try_get_matches_from_mut(command.split_whitespace())?;
 
         match arg_matches.subcommand() {
             Some(("help", args)) => {
                 if let Some(command) = args.get_one::<String>("command") {
                     Ok(HelpCommand(
-                        commands()
+                        command_instance
                             .get_subcommands_mut()
                             .find(|subcommand| subcommand.get_name() == command)
                             .unwrap()
@@ -43,7 +36,7 @@ impl CommandParser for Backend {
                     ))
                 } else {
                     Ok(HelpCommand(
-                        commands()
+                        command_instance
                             .render_help()
                             .to_string()
                             .lines()
@@ -56,115 +49,88 @@ impl CommandParser for Backend {
             Some(("network-status", _)) => Ok(NetworkStatusCommand),
             Some(("status", _)) => Ok(StatusCommand),
             Some(("view-account", args)) => {
-                if let Some(account_id) = args.get_one::<String>("account-id") {
-                    if let Ok(account_id) = account_id.parse() {
-                        Ok(ViewAccountCommand { account_id })
-                    } else {
-                        Err(InvalidCommandParameter("account-id".to_string()))
-                    }
-                } else {
-                    Err(MissingCommandParameter("account-id".to_string()))
-                }
+                let account_id = args
+                    .get_one::<String>("account-id")
+                    .and_then(|e| e.parse().ok())
+                    .unwrap();
+
+                Ok(ViewAccountCommand { account_id })
             }
             Some(("round-status", _)) => Ok(RoundStatusCommand),
             Some(("count-events", _)) => Ok(CountEventsCommand),
             Some(("query-events", args)) => {
-                if let Some(Ok(from)) = args.get_one::<String>("from").map(|e| e.parse()) {
-                    let count = args
-                        .get_one::<String>("count")
-                        .map(|e| e.parse())
-                        .unwrap()
-                        .unwrap();
+                let from = args
+                    .get_one::<String>("from")
+                    .and_then(|e| e.parse().ok())
+                    .unwrap();
+                let count = args
+                    .get_one::<String>("count")
+                    .and_then(|e| e.parse().ok())
+                    .unwrap();
 
-                    Ok(QueryEventsCommand { from, count })
-                } else {
-                    Err(MissingCommandParameter("from".to_string()))
-                }
+                Ok(QueryEventsCommand { from, count })
             }
             Some(("get-user-endpoint", args)) => {
-                let account_id = args.get_one::<String>("account-id");
+                let account_id = args.get_one::<String>("account-id").cloned();
 
                 if let Some(account_id) = account_id {
-                    let account_id = account_id.parse();
+                    let parsed_account_id = account_id.parse().ok();
 
-                    if let Ok(account_id) = account_id {
+                    if let Some(account_id) = parsed_account_id {
                         Ok(GetUserEndpointCommand {
                             account_id: Some(account_id),
                         })
                     } else {
-                        Err(InvalidCommandParameter("account-id".to_string()))
+                        Err(clap::error::Error::raw(
+                            ErrorKind::InvalidValue,
+                            format!("Invalid account id: {account_id}"),
+                        ))
                     }
                 } else {
                     Ok(GetUserEndpointCommand { account_id: None })
                 }
             }
             Some(("set-user-endpoint", args)) => {
-                let endpoint = args.get_one::<String>("endpoint").cloned();
+                let endpoint = args.get_one::<String>("endpoint").cloned().unwrap();
 
-                if let Some(endpoint) = endpoint {
-                    Ok(SetUserEndpointCommand { endpoint })
-                } else {
-                    Err(MissingCommandParameter("endpoint".to_string()))
-                }
+                Ok(SetUserEndpointCommand { endpoint })
             }
             Some(("ipfs", args)) => match args.subcommand() {
                 Some(("add", args)) => {
-                    if let Some(file_path) = args.get_one::<String>("file") {
-                        Ok(IpfsAddFileCommand {
-                            file_path: file_path.to_string(),
-                        })
-                    } else {
-                        Err(MissingCommandParameter("file".to_string()))
-                    }
+                    let file_path = args.get_one::<String>("file-path").cloned().unwrap();
+
+                    Ok(IpfsAddFileCommand { file_path })
                 }
                 Some(("cat", args)) => {
-                    if let Some(hash) = args.get_one::<String>("hash") {
-                        Ok(IpfsCatFileCommand {
-                            file_hash: hash.to_string(),
-                        })
-                    } else {
-                        Err(MissingCommandParameter("hash".to_string()))
-                    }
+                    let file_hash = args.get_one::<String>("hash").cloned().unwrap();
+
+                    Ok(IpfsCatFileCommand { file_hash })
                 }
                 Some(("get", args)) => {
-                    if let Some(hash) = args.get_one::<String>("hash") {
-                        if let Some(file_path) = args.get_one::<String>("file-path") {
-                            Ok(IpfsGetFileCommand {
-                                file_hash: hash.to_string(),
-                                file_path: file_path.to_string(),
-                            })
-                        } else {
-                            Err(MissingCommandParameter("file".to_string()))
-                        }
-                    } else {
-                        Err(MissingCommandParameter("hash".to_string()))
-                    }
+                    let file_hash = args.get_one::<String>("hash").cloned().unwrap();
+                    let file_path = args.get_one::<String>("file-path").cloned().unwrap();
+
+                    Ok(IpfsGetFileCommand {
+                        file_hash,
+                        file_path,
+                    })
                 }
                 Some(("status", args)) => {
-                    if let Some(hash) = args.get_one::<String>("hash") {
-                        Ok(IpfsFileStatusCommand {
-                            file_hash: hash.to_string(),
-                        })
-                    } else {
-                        Err(MissingCommandParameter("hash".to_string()))
-                    }
+                    let file_hash = args.get_one::<String>("hash").cloned().unwrap();
+
+                    Ok(IpfsFileStatusCommand { file_hash })
                 }
-                Some((command, _)) => Err(UnknownCommand(format!("ipfs {command}"))),
-                None => Err(UnknownCommand("ipfs".to_string())),
+                _ => unreachable!("clap should have handled this"),
             },
             Some(("start-new-round", _)) => Ok(StartNewRoundCommand),
             Some(("publish-task", args)) => {
-                let task_config_path = args.get_one::<String>("task-config-path");
+                let task_config_path = args.get_one::<String>("task-config-path").cloned().unwrap();
 
-                if let Some(task_config_path) = task_config_path {
-                    Ok(PublishTaskCommand {
-                        task_config_path: task_config_path.to_string(),
-                    })
-                } else {
-                    Err(MissingCommandParameter("task-config-path".to_string()))
-                }
+                Ok(PublishTaskCommand {
+                    task_config_path: task_config_path.to_string(),
+                })
             }
-            _ => Err(UnknownCommand(command.to_string())),
+            _ => unreachable!("clap should have handled this"),
         }
     }
 }

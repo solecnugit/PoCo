@@ -1,8 +1,7 @@
+use clap::{Arg, Command};
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
-
-use crate::app::backend::command::get_command_instance;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AppConfig {
@@ -55,10 +54,24 @@ pub struct AppRunConfig {
     pub config_path: String,
 }
 
-pub(crate) fn parse() -> AppRunConfig {
-    let commands = get_command_instance(false);
+pub(crate) fn get_app_command_instance() -> Command {
+    Command::new("poco-agent")
+        .version("0.1.0")
+        .arg(
+            Arg::new("config")
+                .short('f')
+                .long("config")
+                .value_name("CONFIG_FILE")
+                .default_value("config.toml")
+                .required(false),
+        )
+        .subcommands([Command::new("ui").about("Run poco-agent in UI mode")])
+}
 
-    let arg_matches = commands.get_matches_from(std::env::args());
+pub(crate) fn parse() -> AppRunConfig {
+    let commands = get_app_command_instance();
+    let arg_matches = commands.get_matches_from(std::env::args().take_while(|arg| arg != "--"));
+
     let config_path = arg_matches
         .get_one::<String>("config")
         .map(|s| s.to_string())

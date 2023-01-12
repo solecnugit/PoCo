@@ -1,4 +1,3 @@
-use anyhow::Error;
 use std::{sync::Arc, thread::JoinHandle};
 
 use tracing::Level;
@@ -63,6 +62,7 @@ impl App {
 
         let result = if direct_command_flag {
             let command = std::env::args()
+                .skip_while(|arg| arg != "--")
                 .skip(1)
                 .reduce(|a, b| a + " " + &b)
                 .unwrap_or("help".to_string());

@@ -2,7 +2,6 @@ use crate::app::backend::command::CommandSource;
 use crate::app::ui::action::{
     CommandExecutionStage, CommandExecutionStatus, UIAction, UIActionEvent,
 };
-use std::error::Error;
 
 #[inline]
 pub fn log_string(sender: &crossbeam_channel::Sender<UIActionEvent>, message: String) {

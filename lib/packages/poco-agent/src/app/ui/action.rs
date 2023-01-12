@@ -2,7 +2,7 @@ use std::error::Error;
 
 use chrono::{DateTime, Local};
 use strum::Display;
-use thiserror::__private::DisplayAsDisplay;
+
 use tracing::Level;
 use tui::{
     style::{Color, Style},
@@ -202,8 +202,26 @@ impl UIActionEvent {
                 "Quitting app",
                 Style::default().fg(Color::White),
             ))],
-            UIAction::LogCommandExecution(source, stage, status, error) => vec![
-                Spans::from(vec![
+            UIAction::LogCommandExecution(source, stage, status, error) => {
+                let error_spans = match error {
+                    Some(error) => format!("{error}")
+                        .lines()
+                        .map(|e| {
+                            Spans::from(vec![
+                                Span::raw(" ".repeat(time_string.width() + 1)),
+                                Span::styled(e.to_string(), Style::default().fg(Color::Red)),
+                            ])
+                        })
+                        .collect::<Vec<_>>()
+                        .into_iter()
+                        .rev()
+                        .skip(2)
+                        .rev()
+                        .collect::<Vec<_>>(),
+                    None => vec![],
+                };
+
+                vec![Spans::from(vec![
                     time_span,
                     Span::raw(" "),
                     Span::styled(
@@ -220,15 +238,11 @@ impl UIActionEvent {
                             CommandExecutionStatus::Failed => Color::Red,
                         }),
                     ),
-                ]),
-                match error {
-                    Some(error) => Spans::from(vec![
-                        Span::raw(" ".repeat(time_string.width() + 1)),
-                        Span::styled(format!("Error: {error}"), Style::default().fg(Color::Red)),
-                    ]),
-                    None => Spans::from(vec![]),
-                },
-            ],
+                ])]
+                .into_iter()
+                .chain(error_spans)
+                .collect()
+            }
             UIAction::Panic(_) => unreachable!(),
         }
     }

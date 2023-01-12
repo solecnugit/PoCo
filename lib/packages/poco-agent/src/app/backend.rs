@@ -1,3 +1,4 @@
+use clap::error::ErrorKind;
 use std::future::Future;
 use std::path::Path;
 use std::sync::Arc;
@@ -12,9 +13,8 @@ use tracing::Level;
 use crate::agent::agent::PocoAgent;
 use crate::agent::task::config::{RawTaskConfig, RawTaskInputSource};
 use crate::app::backend::command::CommandSource;
-use crate::app::backend::parser::CommandParser;
 use crate::app::backend::executor::CommandExecutor;
-use crate::app::backend::parser::ParseBackendCommandError::{InvalidCommandParameter, MissingCommandParameter, UnknownCommand};
+use crate::app::backend::parser::CommandParser;
 use crate::app::trace::TracingCategory;
 use crate::app::ui::action::{CommandExecutionStage, CommandExecutionStatus};
 use crate::app::ui::util::log_command_execution;
@@ -25,11 +25,9 @@ use crate::util::{pretty_bytes, pretty_gas};
 use super::ui::action::UIActionEvent;
 use super::ui::util::{log_multiple_strings, log_string};
 
-use self::command::{BackendCommand};
-
 pub mod command;
-pub(crate) mod parser;
 pub(crate) mod executor;
+pub(crate) mod parser;
 
 pub struct Backend {
     config: Arc<PocoAgentConfig>,
@@ -119,7 +117,6 @@ impl Backend {
                 };
             }));
     }
-
 
     fn execute_publish_task_command(
         &mut self,
@@ -541,35 +538,11 @@ impl Backend {
                             match self.parse_command(command_source.source.trim()) {
                                 Ok(command) => self.execute_command(command_source, command),
                                 Err(error) => {
-                                    match &error {
-                                        UnknownCommand(command) => {
-                                            tracing::event!(
-                                                Level::ERROR,
-                                                message = format!("unknown command: {command}"),
-                                                category =
-                                                    format!("{:?}", TracingCategory::Backend)
-                                            );
-                                        }
-                                        MissingCommandParameter(parameter) => {
-                                            tracing::event!(
-                                                Level::ERROR,
-                                                message = format!(
-                                                    "missing command parameter: {parameter}"
-                                                ),
-                                                category =
-                                                    format!("{:?}", TracingCategory::Backend)
-                                            );
-                                        }
-                                        InvalidCommandParameter(parameter) => {
-                                            tracing::event!(
-                                                Level::ERROR,
-                                                message = format!(
-                                                    "invalid command parameter: {parameter}"
-                                                ),
-                                                category =
-                                                    format!("{:?}", TracingCategory::Backend)
-                                            );
-                                        }
+                                    match &error.kind() {
+                                        ErrorKind::DisplayHelp => {}
+                                        ErrorKind::DisplayHelpOnMissingArgumentOrSubcommand => {}
+                                        ErrorKind::DisplayVersion => {}
+                                        _ => tracing::error!(error = ?error, "Failed to parse command"),
                                     }
 
                                     log_command_execution(
