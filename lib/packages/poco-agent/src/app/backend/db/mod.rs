@@ -1,8 +1,9 @@
 use std::cell::RefCell;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
-use chrono::TimeZone;
 
+use chrono::TimeZone;
+use poco_types::types::task::OnChainTaskConfig;
 use rusqlite::params;
 use sea_query::{ColumnDef, Iden, Query, SqliteQueryBuilder, Table};
 use sea_query_rusqlite::RusqliteBinder;
@@ -23,6 +24,13 @@ pub enum AppLog {
     LastRunTime,
     LastBlockHeight,
     LastEventOffset,
+}
+
+#[derive(Iden)]
+pub enum TaskLog {
+    Table,
+    TaskId,
+    TaskConfig
 }
 
 impl PocoDB {
@@ -57,6 +65,15 @@ impl PocoDB {
             .build_rusqlite(SqliteQueryBuilder);
 
         connection.execute(&sql, &*value.as_params())?;
+
+        let sql = Table::create()
+            .table(TaskLog::Table)
+            .if_not_exists()
+            .col(ColumnDef::new(TaskLog::TaskId).integer().not_null().primary_key())
+            .col(ColumnDef::new(TaskLog::TaskConfig).text().not_null())
+            .build(SqliteQueryBuilder);
+
+        connection.execute(&sql, params![])?;
 
         Ok(())
     }
@@ -141,6 +158,19 @@ impl PocoDB {
         let (sql, values) = Query::update()
             .table(AppLog::Table)
             .values(vec![(AppLog::LastEventOffset, event_offset.into())])
+            .build_rusqlite(SqliteQueryBuilder);
+
+        let db = self.inner.lock().unwrap();
+        db.execute(&sql, &*values.as_params())?;
+
+        Ok(())
+    }
+
+    pub fn cache_task_config(&self, task_id: u64, task_config: &OnChainTaskConfig) -> anyhow::Result<()> {
+        let (sql, values) = Query::insert()
+            .into_table(TaskLog::Table)
+            .columns(vec![TaskLog::TaskId, TaskLog::TaskConfig])
+            .values_panic([task_id.into(), serde_json::to_string(task_config)?.into()])
             .build_rusqlite(SqliteQueryBuilder);
 
         let db = self.inner.lock().unwrap();

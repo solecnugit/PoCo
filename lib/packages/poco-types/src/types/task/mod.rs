@@ -62,7 +62,7 @@ pub struct TaskOffer {
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, JsonSchema, Clone, Debug)]
 #[serde(crate = "near_sdk::serde")]
 #[serde(tag = "type")]
-pub enum WorkloadConfig {
+pub enum DomainTaskConfig {
     #[serde(rename = "MEDIA_TRANSCODING")]
     MediaTranscodingConfig {
         source: MediaTranscodingSourceConfig,
@@ -72,14 +72,14 @@ pub enum WorkloadConfig {
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, JsonSchema, Clone, Debug)]
 #[serde(crate = "near_sdk::serde")]
-pub struct InternalTaskConfig {
+pub struct OnChainTaskConfig {
     pub owner: AccountId,
     pub id: TaskId,
     pub input: TaskInputSource,
     pub output: TaskOutputSource,
     pub requirements: Vec<TaskRequirement>,
     pub offer: Vec<TaskOffer>,
-    pub config: WorkloadConfig,
+    pub config: DomainTaskConfig,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
@@ -89,12 +89,12 @@ pub struct TaskConfig {
     pub output: TaskOutputSource,
     pub requirements: Vec<TaskRequirement>,
     pub offer: Vec<TaskOffer>,
-    pub config: WorkloadConfig,
+    pub config: DomainTaskConfig,
 }
 
 impl TaskConfig {
-    pub fn to_internal_config(self, owner: AccountId, id: TaskId) -> InternalTaskConfig {
-        InternalTaskConfig {
+    pub fn to_internal_config(self, owner: AccountId, id: TaskId) -> OnChainTaskConfig {
+        OnChainTaskConfig {
             owner,
             id,
             input: self.input,
@@ -119,7 +119,7 @@ impl TaskRequirement {
     }
 }
 
-impl Display for InternalTaskConfig {
+impl Display for OnChainTaskConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,

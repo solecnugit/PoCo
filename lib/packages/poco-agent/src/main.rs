@@ -1,6 +1,7 @@
 #![feature(async_closure)]
 #![feature(fn_traits)]
 #![feature(box_syntax)]
+#![feature(marker_trait_attr)]
 
 use time::{format_description, UtcOffset};
 use tracing::Level;
@@ -16,6 +17,7 @@ pub mod app;
 pub mod config;
 pub mod ipfs;
 pub mod util;
+pub mod actuator;
 
 fn main() -> anyhow::Result<()> {
     let app_run_config = config::parse();

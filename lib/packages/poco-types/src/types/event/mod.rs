@@ -7,7 +7,7 @@ use std::fmt::{Display, Formatter};
 
 use crate::types::round::RoundId;
 use crate::types::task::id::TaskId;
-use crate::types::task::InternalTaskConfig;
+use crate::types::task::OnChainTaskConfig;
 
 pub type EventNonce = u32;
 
@@ -37,7 +37,7 @@ pub enum Events {
     #[event_version("0.0.1")]
     NewTaskEvent {
         task_id: TaskId,
-        task_config: InternalTaskConfig,
+        task_config: OnChainTaskConfig,
     },
 
     #[event_version("0.0.1")]
