@@ -13,7 +13,7 @@ use near_primitives::transaction::FunctionCallAction;
 use near_primitives::types::{AccountId, Balance, BlockReference, Finality, Gas};
 use near_primitives::views::{AccessKeyView, AccountView, FinalExecutionStatus, QueryRequest};
 use poco_types::types::event::IndexedEvent;
-use poco_types::types::round::{RoundId, RoundStatus};
+use poco_types::types::round::{RoundId, RoundInfo, RoundStatus};
 use poco_types::types::task::id::TaskId;
 use poco_types::types::task::TaskConfig;
 use serde::de::DeserializeOwned;
@@ -297,6 +297,14 @@ impl PocoAgent {
     pub async fn get_round_status(&self) -> anyhow::Result<RoundStatus> {
         let response = self
             .call_view_function_json("get_round_status", &json!({}))
+            .await?;
+
+        Ok(response)
+    }
+
+    pub async fn get_round_info(&self) -> anyhow::Result<RoundInfo> {
+        let response = self
+            .call_view_function_json("get_round_info", &json!({}))
             .await?;
 
         Ok(response)

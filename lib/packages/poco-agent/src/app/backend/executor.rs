@@ -1,11 +1,6 @@
 use crate::app::backend::Backend;
 use crate::app::backend::command::{BackendCommand, CommandSource};
-use crate::app::backend::command::BackendCommand::{
-    CountEventsCommand, GasPriceCommand, GetUserEndpointCommand, HelpCommand, IpfsAddFileCommand,
-    IpfsCatFileCommand, IpfsFileStatusCommand, IpfsGetFileCommand, NetworkStatusCommand,
-    PublishTaskCommand, QueryEventsCommand, RoundStatusCommand, SetUserEndpointCommand,
-    StartNewRoundCommand, StatusCommand, ViewAccountCommand,
-};
+use crate::app::backend::command::BackendCommand::{CountEventsCommand, GasPriceCommand, GetUserEndpointCommand, HelpCommand, IpfsAddFileCommand, IpfsCatFileCommand, IpfsFileStatusCommand, IpfsGetFileCommand, NetworkStatusCommand, PublishTaskCommand, QueryEventsCommand, RoundInfoCommand, RoundStatusCommand, SetUserEndpointCommand, StartNewRoundCommand, StatusCommand, ViewAccountCommand};
 use crate::app::ui::event::{CommandExecutionStage, CommandExecutionStatus};
 use crate::app::ui::util::{log_command_execution, log_multiple_strings};
 
@@ -33,6 +28,7 @@ impl CommandExecutor for Backend {
                 self.execute_view_account_command(command_source, account_id)
             }
             RoundStatusCommand => self.execute_round_status_command(command_source),
+            RoundInfoCommand => self.execute_round_info_command(command_source),
             CountEventsCommand => self.execute_count_events_command(command_source),
             QueryEventsCommand { from, count } => {
                 self.execute_query_events_command(command_source, from, count)

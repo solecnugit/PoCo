@@ -30,6 +30,7 @@ pub enum BackendCommand {
     },
     // PoCo Contract Commands
     RoundStatusCommand,
+    RoundInfoCommand,
     CountEventsCommand,
     QueryEventsCommand {
         from: u32,
@@ -90,6 +91,7 @@ pub fn get_command_instance(in_ui_mode: bool) -> Command {
             .about("View account")
             .arg(Arg::new("account-id").required(true).index(1)),
         subcommand("round-status").about("Get round status"),
+        subcommand("round-info").about("Get round info"),
         subcommand("count-events").about("Count events"),
         subcommand("query-events")
             .about("Query events")
