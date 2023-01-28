@@ -1,16 +1,14 @@
-pub mod config;
-pub mod id;
+use std::fmt::{Debug, Display};
 
-use crate::types::task::config::media::{
-    MediaTranscodingSourceConfig, MediaTranscodingTargetConfig,
-};
-use crate::types::task::id::TaskId;
-use crate::types::uint::U256;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::AccountId;
 use schemars::JsonSchema;
-use std::fmt::{Debug, Display};
+
+use crate::types::task::id::TaskId;
+use crate::types::uint::U256;
+
+pub mod id;
 
 pub type TaskNonce = u32;
 
@@ -61,17 +59,6 @@ pub struct TaskOffer {
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, JsonSchema, Clone, Debug)]
 #[serde(crate = "near_sdk::serde")]
-#[serde(tag = "type")]
-pub enum DomainTaskConfig {
-    #[serde(rename = "MEDIA_TRANSCODING")]
-    MediaTranscodingConfig {
-        source: MediaTranscodingSourceConfig,
-        target: MediaTranscodingTargetConfig,
-    },
-}
-
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, JsonSchema, Clone, Debug)]
-#[serde(crate = "near_sdk::serde")]
 pub struct OnChainTaskConfig {
     pub owner: AccountId,
     pub id: TaskId,
@@ -79,7 +66,8 @@ pub struct OnChainTaskConfig {
     pub output: TaskOutputSource,
     pub requirements: Vec<TaskRequirement>,
     pub offer: Vec<TaskOffer>,
-    pub config: DomainTaskConfig,
+    pub config: Vec<u8>,
+    pub r#type: String,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
@@ -89,12 +77,17 @@ pub struct TaskConfig {
     pub output: TaskOutputSource,
     pub requirements: Vec<TaskRequirement>,
     pub offer: Vec<TaskOffer>,
-    pub config: DomainTaskConfig,
+    pub config: Vec<u8>,
+    pub r#type: String,
 }
 
 impl TaskConfig {
-    pub fn to_internal_config(self, owner: AccountId, id: TaskId) -> OnChainTaskConfig {
-        OnChainTaskConfig {
+    pub fn to_on_chain_task_config(
+        self,
+        owner: AccountId,
+        id: TaskId,
+    ) -> anyhow::Result<OnChainTaskConfig> {
+        Ok(OnChainTaskConfig {
             owner,
             id,
             input: self.input,
@@ -102,7 +95,8 @@ impl TaskConfig {
             requirements: self.requirements,
             offer: self.offer,
             config: self.config,
-        }
+            r#type: self.r#type,
+        })
     }
 }
 
@@ -123,8 +117,8 @@ impl Display for OnChainTaskConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "TaskConfig {{ owner: {}, id: {}, input: {:?}, output: {:?}, requirements: {:?}, offer: {:?}, config: {:?} }}",
-            self.owner, self.id, self.input, self.output, self.requirements, self.offer, self.config
+            "TaskConfig {{ owner: {}, id: {}, input: {:?}, output: {:?}, requirements: {:?}, offer: {:?}, config: {:?}, type: {:?} }}",
+            self.owner, self.id, self.input, self.output, self.requirements, self.offer, self.config, self.r#type
         )
     }
 }

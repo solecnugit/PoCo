@@ -1,13 +1,13 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::store::{LookupMap, Vector};
-use near_sdk::AccountId;
+use near_sdk::{AccountId, env};
 use poco_types::types::round::RoundId;
 use poco_types::types::task::id::TaskId;
-use poco_types::types::task::{InternalTaskConfig, TaskConfig};
+use poco_types::types::task::{OnChainTaskConfig, TaskConfig};
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct TaskManager {
-    tasks: LookupMap<RoundId, Vector<InternalTaskConfig>>,
+    tasks: LookupMap<RoundId, Vector<OnChainTaskConfig>>,
     count: u64,
 }
 
@@ -24,7 +24,7 @@ impl TaskManager {
         round_id: RoundId,
         owner: AccountId,
         config: TaskConfig,
-    ) -> (TaskId, InternalTaskConfig) {
+    ) -> (TaskId, OnChainTaskConfig) {
         let tasks_for_round = self.tasks.entry(round_id).or_insert_with(|| {
             Vector::new(
                 format!("task-manager:tasks:{}", round_id)
@@ -33,14 +33,18 @@ impl TaskManager {
             )
         });
 
-        let task_id = TaskId::new(round_id, tasks_for_round.len());
-        let config = config.to_internal_config(owner, task_id.clone());
+        let task_id = TaskId::new(round_id, tasks_for_round.len() as u32);
+        let config = config.to_on_chain_task_config(owner, task_id.clone());
 
-        tasks_for_round.push(config.clone());
+        if let Ok(config) = config {
+            tasks_for_round.push(config.clone());
 
-        self.count += 1;
+            self.count += 1;
 
-        (task_id, config)
+            (task_id, config)
+        } else {
+            env::panic_str("Failed to publish task");
+        }
     }
 
     #[inline]

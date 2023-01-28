@@ -19,8 +19,8 @@
       "requirements": []
     }
   ],
+  "type": "MEDIA_TRANSCODING",
   "config": {
-    "type": "MEDIA_TRANSCODING",
     "source": {
       "video": {
         "codec": "H.264"
