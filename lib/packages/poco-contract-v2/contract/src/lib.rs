@@ -1,7 +1,7 @@
 use near_sdk::{AccountId, near_bindgen};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use poco_types::types::event::{Events, IndexedEvent};
-use poco_types::types::round::{RoundId, RoundStatus};
+use poco_types::types::round::{RoundId, RoundInfo, RoundStatus};
 use poco_types::types::task::id::TaskId;
 use poco_types::types::task::TaskConfig;
 use poco_types::types::user::UserProfile;
@@ -31,7 +31,7 @@ pub struct Contract {
 impl Default for Contract {
     fn default() -> Self {
         let initial_round_id = 0;
-        let initial_round_duration = 1000 * 60 * 30;
+        let initial_round_duration = (1000 * 60 * 30).into();
 
         Self {
             user_manager: UserManager::new(),
@@ -60,6 +60,25 @@ impl Contract {
 
     pub fn get_round_status(&self) -> RoundStatus {
         self.round_manager.get_round_status()
+    }
+
+    pub fn get_round_info(&self) -> RoundInfo {
+        let id = self.round_manager.get_round_id();
+        let status = self.round_manager.get_round_status();
+        let start_time = self.round_manager.get_round_start_time();
+        let duration = self.round_manager.get_round_duration();
+
+        let event_count = self.event_bus.len() - self.round_manager.get_round_event_offset();
+        let task_count = self.task_manager.round_count(id);
+
+        RoundInfo {
+            id,
+            status,
+            start_time,
+            duration,
+            event_count,
+            task_count,
+        }
     }
 
     pub fn get_round_id_and_status(&self) -> (RoundId, RoundStatus) {
