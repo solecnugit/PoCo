@@ -4,12 +4,12 @@ use std::time::Duration;
 
 use base64::Engine;
 use near_crypto::{InMemorySigner, PublicKey};
-use near_jsonrpc_client::{JsonRpcClient, methods};
 use near_jsonrpc_client::methods::network_info::RpcNetworkInfoResponse;
 use near_jsonrpc_client::methods::status::RpcStatusResponse;
+use near_jsonrpc_client::{methods, JsonRpcClient};
 use near_jsonrpc_primitives::types::query::{QueryResponseKind, RpcQueryResponse};
-use near_primitives::transaction::{Action, Transaction};
 use near_primitives::transaction::FunctionCallAction;
+use near_primitives::transaction::{Action, Transaction};
 use near_primitives::types::{AccountId, Balance, BlockReference, Finality, Gas};
 use near_primitives::views::{AccessKeyView, AccountView, FinalExecutionStatus, QueryRequest};
 use poco_types::types::event::IndexedEvent;
@@ -55,34 +55,20 @@ impl PocoAgent {
 
         let rpc_client = JsonRpcClient::with(client).connect(config.near.rpc_endpoint.as_str());
 
-        let account_id = config
-            .near
-            .signer_account_id
-            .parse()?;
+        let account_id = config.near.signer_account_id.parse()?;
 
-        let secret_key = config
-            .near
-            .signer_secret_key
-            .parse()?;
+        let secret_key = config.near.signer_secret_key.parse()?;
 
-        let signer = InMemorySigner::from_secret_key(
-            account_id,
-            secret_key,
-        );
+        let signer = InMemorySigner::from_secret_key(account_id, secret_key);
 
-        let contract_id = config
-            .poco
-            .contract_account
-            .parse()?;
+        let contract_id = config.poco.contract_account.parse()?;
 
-        Ok(
-            PocoAgent {
-                config,
-                inner: rpc_client,
-                signer,
-                contract_id,
-            }
-        )
+        Ok(PocoAgent {
+            config,
+            inner: rpc_client,
+            signer,
+            contract_id,
+        })
     }
 
     pub async fn gas_price(&self) -> anyhow::Result<Balance> {
@@ -152,7 +138,9 @@ impl PocoAgent {
                 .to_string()
                 .into_bytes(),
             ArgsType::TEXT => args.to_string().into_bytes(),
-            ArgsType::BASE64 => base64::engine::general_purpose::STANDARD.decode(args.as_bytes()).unwrap(),
+            ArgsType::BASE64 => base64::engine::general_purpose::STANDARD
+                .decode(args.as_bytes())
+                .unwrap(),
         }
     }
 
@@ -248,9 +236,9 @@ impl PocoAgent {
         method_name: &str,
         args: &T,
     ) -> anyhow::Result<R>
-        where
-            T: Serialize,
-            R: DeserializeOwned,
+    where
+        T: Serialize,
+        R: DeserializeOwned,
     {
         let args = serde_json::to_string(args).unwrap();
 
@@ -270,9 +258,9 @@ impl PocoAgent {
         gas: u64,
         deposit: u128,
     ) -> anyhow::Result<(Gas, R)>
-        where
-            T: Serialize,
-            R: DeserializeOwned,
+    where
+        T: Serialize,
+        R: DeserializeOwned,
     {
         let args = serde_json::to_string(args)?;
 
@@ -295,8 +283,8 @@ impl PocoAgent {
         gas: u64,
         deposit: u128,
     ) -> anyhow::Result<Gas>
-        where
-            T: Serialize,
+    where
+        T: Serialize,
     {
         let args = serde_json::to_string(args).unwrap();
 
@@ -352,7 +340,7 @@ impl PocoAgent {
             10_000_000_000_000,
             0,
         )
-            .await
+        .await
     }
 
     pub async fn start_new_round(&self) -> anyhow::Result<(Gas, RoundId)> {

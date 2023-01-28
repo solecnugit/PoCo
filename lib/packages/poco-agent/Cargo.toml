@@ -37,6 +37,7 @@ unicode-width = "0.1"
 tokio = { version = "1.21.2", features = ["rt-multi-thread", "time", "sync", "signal", "fs", "io-util", "macros"] }
 tokio-util = { version = "0.7.4", features = ["compat"] }
 futures = "0.3.25"
+async-trait = "0.1.63"
 
 reqwest = "0.11.13"
 
@@ -44,6 +45,7 @@ near-jsonrpc-client = "0.4.1"
 near-jsonrpc-primitives = "0.15.0"
 near-crypto = "0.15.0"
 near-primitives = "0.15.0"
+borsh = "0.10.0"
 
 ipfs-api-prelude = "0.6.0"
 ipfs-api-backend-hyper = { version = "0.6.0", features = ["with-send-sync"] }
