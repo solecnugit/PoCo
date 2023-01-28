@@ -27,13 +27,13 @@ impl TaskManager {
     ) -> (TaskId, OnChainTaskConfig) {
         let tasks_for_round = self.tasks.entry(round_id).or_insert_with(|| {
             Vector::new(
-                format!("task-manager:tasks:{}", round_id)
+                format!("task-manager:tasks:{round_id}")
                     .as_bytes()
                     .to_vec(),
             )
         });
 
-        let task_id = TaskId::new(round_id, tasks_for_round.len() as u32);
+        let task_id = TaskId::new(round_id, tasks_for_round.len());
         let config = config.to_on_chain_task_config(owner, task_id.clone());
 
         if let Ok(config) = config {
@@ -58,7 +58,7 @@ impl TaskManager {
     }
 
     #[inline]
-    pub fn round_len(&self, round_id: RoundId) -> u32 {
+    pub fn round_count(&self, round_id: RoundId) -> u32 {
         self.tasks
             .get(&round_id)
             .map(|tasks| tasks.len())
@@ -67,6 +67,12 @@ impl TaskManager {
 
     #[inline]
     pub fn is_round_empty(&self, round_id: RoundId) -> bool {
-        self.round_len(round_id) == 0
+        self.round_count(round_id) == 0
+    }
+}
+
+impl Default for TaskManager {
+    fn default() -> Self {
+        Self::new()
     }
 }

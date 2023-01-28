@@ -48,3 +48,9 @@ impl EventBus {
             .collect()
     }
 }
+
+impl Default for EventBus {
+    fn default() -> Self {
+        Self::new()
+    }
+}

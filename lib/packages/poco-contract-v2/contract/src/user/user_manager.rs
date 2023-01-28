@@ -43,3 +43,9 @@ impl UserManager {
             .and_then(|e| e.get_endpoint().as_ref().map(|e| e.as_str()))
     }
 }
+
+impl Default for UserManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
