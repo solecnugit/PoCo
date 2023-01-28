@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 pub struct AppConfig {
     pub verbose: bool,
     pub database_path: String,
-    pub connection_timeout: u64
+    pub connection_timeout: u64,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -34,18 +34,18 @@ pub struct IpfsConfig {
     pub ipfs_endpoint: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 #[serde(rename_all = "camelCase")]
 pub enum PocoTaskPolicy {
     AlwaysTaken,
-    AlwaysIgnore
+    AlwaysIgnore,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PocoConfig {
     pub contract_account: String,
     pub event_cycle_in_ms: u64,
-    pub task_policy: PocoTaskPolicy
+    pub task_policy: PocoTaskPolicy,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -83,7 +83,7 @@ pub(crate) fn get_app_command_instance() -> Command {
         )
         .subcommands([
             Command::new("ui").about("Run poco-agent in UI mode"),
-            Command::new("daemon").about("Run poco-agent in daemon mode")
+            Command::new("daemon").about("Run poco-agent in daemon mode"),
         ])
 }
 
