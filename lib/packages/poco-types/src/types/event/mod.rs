@@ -1,9 +1,10 @@
+use std::fmt::{Display, Formatter};
+
+use near_sdk::AccountId;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::near_bindgen;
 use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::AccountId;
 use schemars::JsonSchema;
-use std::fmt::{Display, Formatter};
 
 use crate::types::round::RoundId;
 use crate::types::task::id::TaskId;

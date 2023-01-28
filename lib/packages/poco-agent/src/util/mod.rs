@@ -1,4 +1,5 @@
-mod format;
-mod toy;
+pub use format::{pretty_bytes, pretty_gas};
 
-pub use format::{pretty_gas, pretty_bytes};
+mod format;
+mod misc;
+

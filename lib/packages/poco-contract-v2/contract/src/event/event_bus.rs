@@ -1,5 +1,4 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-
 use near_sdk::store::Vector;
 use poco_types::types::event::{Events, IndexedEvent};
 

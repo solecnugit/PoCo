@@ -4,8 +4,8 @@ use std::path::Path;
 use std::sync::Arc;
 
 use futures::{TryFutureExt, TryStreamExt};
-use ipfs_api_backend_hyper::response::ObjectStatResponse;
 use ipfs_api_backend_hyper::{IpfsApi, TryFromUri};
+use ipfs_api_backend_hyper::response::ObjectStatResponse;
 use tokio::io::AsyncWriteExt;
 use tokio_util::compat::TokioAsyncReadCompatExt;
 

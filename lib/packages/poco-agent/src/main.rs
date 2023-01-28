@@ -4,15 +4,13 @@
 #![feature(box_into_inner)]
 #![feature(marker_trait_attr)]
 
-use crate::actuator::media::{MediaTranscodingActuator, MEDIA_TRANSCODING_TASK_TYPE};
-use crate::actuator::{register_actuator, BoxedTaskActuator};
 use time::{format_description, UtcOffset};
-use tracing::Level;
 use tracing_subscriber::fmt::time::OffsetTime;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
-use crate::app::trace::TracingCategory;
+use crate::actuator::{BoxedTaskActuator, register_actuator};
+use crate::actuator::media::{MEDIA_TRANSCODING_TASK_TYPE, MediaTranscodingActuator};
 use crate::app::App;
 
 pub mod actuator;

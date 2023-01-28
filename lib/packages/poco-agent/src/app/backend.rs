@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::future::Future;
 use std::path::Path;
 use std::sync::Arc;
@@ -8,7 +7,6 @@ use clap::error::ErrorKind;
 use futures::FutureExt;
 use near_primitives::types::AccountId;
 use poco_types::types::round::RoundStatus;
-use poco_types::types::task::TaskInputSource;
 use tracing::Level;
 
 use crate::actuator::{get_actuator, TaskActuator};
@@ -157,46 +155,42 @@ impl Backend {
 
                 // Encode task config
                 let task_config = match &task_config.input {
-                    RawTaskInputSource::Ipfs { hash, file } => {
-                        match (hash, file) {
-                            (None, None) => unreachable!(),
-                            (Some(_), Some(_)) => {
-                                anyhow::bail!(
-                                    "Both hash and file are specified in task config {}",
-                                    task_config_path.display()
+                    RawTaskInputSource::Ipfs { hash, file } => match (hash, file) {
+                        (None, None) => unreachable!(),
+                        (Some(_), Some(_)) => {
+                            anyhow::bail!(
+                                "Both hash and file are specified in task config {}",
+                                task_config_path.display()
+                            );
+                        }
+                        (Some(_hash), None) => build_task_config(&task_config, None, &actuator)?,
+                        (None, Some(file)) => {
+                            let file_path = Path::new(file.as_str());
+                            let file_path = if file_path.is_absolute() {
+                                file_path.to_path_buf()
+                            } else {
+                                task_config_path.parent().unwrap().join(file_path)
+                            };
+
+                            if let Ok(true) = file_path.try_exists() {
+                                log_string(
+                                    &sender,
+                                    format!("Uploading file to ipfs: {}", file_path.display()),
                                 );
-                            }
-                            (Some(hash), None) => {
-                                build_task_config(&task_config, None, &actuator)?
-                            }
-                            (None, Some(file)) => {
-                                let file_path = Path::new(file.as_str());
-                                let file_path = if file_path.is_absolute() {
-                                    file_path.to_path_buf()
-                                } else {
-                                    task_config_path.parent().unwrap().join(file_path)
-                                };
 
-                                if let Ok(true) = file_path.try_exists() {
-                                    log_string(
-                                        &sender,
-                                        format!("Uploading file to ipfs: {}", file_path.display()),
-                                    );
+                                let file_cid = ipfs_client.add_file(file_path.as_path()).await?;
 
-                                    let file_cid = ipfs_client.add_file(file_path.as_path()).await?;
+                                log_string(&sender, format!("File uploaded to ipfs: {file_cid}"));
 
-                                    log_string(&sender, format!("File uploaded to ipfs: {file_cid}"));
-
-                                    build_task_config(&task_config, Some(file_cid), &actuator)?
-                                } else {
-                                    anyhow::bail!(
+                                build_task_config(&task_config, Some(file_cid), &actuator)?
+                            } else {
+                                anyhow::bail!(
                                     "Task input file does not exist, {}",
                                     file_path.display()
                                 );
-                                }
                             }
                         }
-                    }
+                    },
                     RawTaskInputSource::Link { .. } => {
                         build_task_config(&task_config, None, &actuator)?
                     }

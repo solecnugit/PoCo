@@ -1,13 +1,13 @@
 use clap::error::ErrorKind;
 
+use crate::app::backend::Backend;
+use crate::app::backend::command::{BackendCommand, commands};
 use crate::app::backend::command::BackendCommand::{
     CountEventsCommand, GasPriceCommand, GetUserEndpointCommand, HelpCommand, IpfsAddFileCommand,
     IpfsCatFileCommand, IpfsFileStatusCommand, IpfsGetFileCommand, NetworkStatusCommand,
     PublishTaskCommand, QueryEventsCommand, RoundStatusCommand, SetUserEndpointCommand,
     StartNewRoundCommand, StatusCommand, ViewAccountCommand,
 };
-use crate::app::backend::command::{commands, BackendCommand};
-use crate::app::backend::Backend;
 
 pub type ParseBackendCommandError = clap::Error;
 

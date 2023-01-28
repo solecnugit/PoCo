@@ -1,12 +1,14 @@
-pub mod media;
-
-use crate::agent::task::config::DomainTaskConfig;
-use async_trait::async_trait;
-use lazy_static::lazy_static;
-use poco_types::types::task::TaskConfig;
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::{Arc, RwLock};
+
+use async_trait::async_trait;
+use lazy_static::lazy_static;
+use poco_types::types::task::TaskConfig;
+
+use crate::agent::task::config::DomainTaskConfig;
+
+pub mod media;
 
 pub type ActuatorPredicate = fn(&TaskConfig) -> bool;
 

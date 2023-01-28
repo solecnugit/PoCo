@@ -1,9 +1,9 @@
+use near_sdk::{AccountId, env};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::store::{LookupMap, Vector};
-use near_sdk::{AccountId, env};
 use poco_types::types::round::RoundId;
-use poco_types::types::task::id::TaskId;
 use poco_types::types::task::{OnChainTaskConfig, TaskConfig};
+use poco_types::types::task::id::TaskId;
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct TaskManager {

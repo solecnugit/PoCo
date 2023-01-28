@@ -1,3 +1,4 @@
+pub use queue::CircularQueue;
+
 mod queue;
 
-pub use queue::CircularQueue;

@@ -1,20 +1,22 @@
-pub mod event;
-pub mod round;
-pub mod task;
-pub mod user;
-pub mod util;
-
-use crate::round::RoundManager;
-use crate::task::TaskManager;
-use crate::user::UserManager;
-use event::EventBus;
+use near_sdk::{AccountId, near_bindgen};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::{near_bindgen, AccountId};
 use poco_types::types::event::{Events, IndexedEvent};
 use poco_types::types::round::{RoundId, RoundStatus};
 use poco_types::types::task::id::TaskId;
 use poco_types::types::task::TaskConfig;
 use poco_types::types::user::UserProfile;
+
+use event::EventBus;
+
+use crate::round::RoundManager;
+use crate::task::TaskManager;
+use crate::user::UserManager;
+
+pub mod event;
+pub mod round;
+pub mod task;
+pub mod user;
+pub mod util;
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]

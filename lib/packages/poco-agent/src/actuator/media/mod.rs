@@ -1,11 +1,12 @@
-use crate::actuator::{TaskActuator, TaskConfigFactory};
-use crate::agent::task::config::DomainTaskConfig;
 use async_trait::async_trait;
 use borsh::{BorshDeserialize, BorshSerialize};
 use poco_types::types::task::TaskConfig;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
+
+use crate::actuator::{TaskActuator, TaskConfigFactory};
+use crate::agent::task::config::DomainTaskConfig;
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug)]
 pub struct MediaTranscodingTaskConfig {
@@ -48,7 +49,7 @@ impl TaskConfigFactory for MediaTranscodingActuator {
 
 #[async_trait]
 impl TaskActuator for MediaTranscodingActuator {
-    async fn execute(&mut self, config: &TaskConfig) -> anyhow::Result<()> {
+    async fn execute(&mut self, _config: &TaskConfig) -> anyhow::Result<()> {
         todo!()
     }
 

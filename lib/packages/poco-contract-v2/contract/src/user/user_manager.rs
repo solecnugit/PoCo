@@ -1,6 +1,6 @@
+use near_sdk::AccountId;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::store::LookupMap;
-use near_sdk::AccountId;
 use poco_types::types::user::{InternalUserProfile, UserProfile};
 
 #[derive(BorshDeserialize, BorshSerialize)]

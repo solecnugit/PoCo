@@ -1,8 +1,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use poco_types::types::event::{Events, IndexedEvent};
-use tokio::sync::Mutex;
+use poco_types::types::event::Events;
 use tokio::task::JoinHandle;
 
 use crate::agent::agent::PocoAgent;
