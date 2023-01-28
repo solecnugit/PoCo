@@ -1,4 +1,8 @@
+#[cfg(feature = "all")]
+use std::fmt::{Display, Formatter};
 use std::ops::{Add, Sub};
+#[cfg(feature = "all")]
+use chrono::TimeZone;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
 use schemars::JsonSchema;
@@ -97,4 +101,26 @@ pub struct RoundInfo {
     pub duration: RoundDuration,
     pub task_count: u32,
     pub event_count: u32,
+}
+
+#[cfg(feature = "all")]
+impl Display for RoundInfo {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let start_time = chrono::Local.timestamp_millis_opt(self.start_time.timestamp_in_ms as i64).unwrap();
+        let end_time = chrono::Local.timestamp_millis_opt((self.start_time.timestamp_in_ms + self.duration.duration_in_ms) as i64).unwrap();
+
+        let start_time = start_time.format("%Y-%m-%d %H:%M:%S");
+        let end_time = end_time.format("%Y-%m-%d %H:%M:%S");
+
+        write!(
+            f,
+            "Round #{}: {} ({} - {})\n Tasks: {}\n  Events: {}",
+            self.id,
+            self.status,
+            start_time,
+            end_time,
+            self.task_count,
+            self.event_count
+        )
+    }
 }

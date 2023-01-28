@@ -30,11 +30,11 @@ impl InternalUserProfile {
     #[inline]
     pub fn new(account: &AccountId) -> Self {
         let prefix = account.to_string();
-        let props = UnorderedMap::new(format!("{}:props", prefix).as_bytes().to_vec());
+        let props = UnorderedMap::new(format!("{prefix}:props").as_bytes().to_vec());
 
         InternalUserProfile {
             props,
-            endpoint: LazyOption::new(format!("{}:endpoint", prefix).as_bytes().to_vec(), None),
+            endpoint: LazyOption::new(format!("{prefix}:endpoint").as_bytes().to_vec(), None),
         }
     }
 

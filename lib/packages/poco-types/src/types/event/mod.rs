@@ -1,3 +1,4 @@
+#[cfg(feature = "all")]
 use std::fmt::{Display, Formatter};
 
 use near_sdk::AccountId;
@@ -19,6 +20,7 @@ pub struct IndexedEvent {
     pub payload: Events,
 }
 
+#[cfg(feature = "all")]
 impl Display for IndexedEvent {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -56,11 +58,12 @@ impl Events {
     }
 }
 
+#[cfg(feature = "all")]
 impl Display for Events {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Events::NewRoundEvent { round_id } => {
-                write!(f, "NewRoundEvent {{ round_id: {} }}", round_id)
+                write!(f, "NewRoundEvent {{ round_id: {round_id} }}")
             }
             Events::NewTaskEvent {
                 task_id,

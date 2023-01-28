@@ -14,3 +14,8 @@ strum = { version = "0.24", features = ["derive"] }
 impl-serde = "0.4.0"
 
 anyhow = "1.0.68"
+
+chrono = { version = "0.4.23", optional = true }
+
+[features]
+all = ["chrono"]

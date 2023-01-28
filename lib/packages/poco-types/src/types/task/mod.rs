@@ -1,3 +1,4 @@
+#[cfg(feature = "all")]
 use std::fmt::{Debug, Display};
 
 use near_sdk::AccountId;
@@ -113,6 +114,7 @@ impl TaskRequirement {
     }
 }
 
+#[cfg(feature = "all")]
 impl Display for OnChainTaskConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
