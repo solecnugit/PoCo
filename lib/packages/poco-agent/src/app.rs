@@ -4,8 +4,8 @@ use tracing::Level;
 
 use crate::app::backend::command::CommandSource;
 use crate::app::ui::event::{CommandExecutionStatus, UIAction};
-use crate::{app::trace::TracingCategory, config::PocoAgentConfig};
 use crate::config::AppRunningMode;
+use crate::{app::trace::TracingCategory, config::PocoAgentConfig};
 
 use self::{
     backend::Backend,

@@ -1,17 +1,19 @@
-use clap::error::ErrorKind;
+use std::collections::HashMap;
 use std::future::Future;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 
+use clap::error::ErrorKind;
 use futures::FutureExt;
 use near_primitives::types::AccountId;
 use poco_types::types::round::RoundStatus;
-use tokio::sync::Mutex;
+use poco_types::types::task::TaskInputSource;
 use tracing::Level;
 
+use crate::actuator::{get_actuator, TaskActuator};
 use crate::agent::agent::PocoAgent;
-use crate::agent::task::config::{RawTaskConfig, RawTaskInputSource};
+use crate::agent::task::config::{build_task_config, RawTaskConfigFile, RawTaskInputSource};
 use crate::app::backend::command::CommandSource;
 use crate::app::backend::db::PocoDB;
 use crate::app::backend::executor::CommandExecutor;
@@ -27,12 +29,12 @@ use super::ui::util::{log_multiple_strings, log_string};
 
 pub mod command;
 
+pub(crate) mod cycle;
+pub(crate) mod db;
+pub(crate) mod event;
 pub(crate) mod executor;
 pub(crate) mod parser;
-pub(crate) mod cycle;
-pub(crate) mod event;
 pub(crate) mod util;
-pub(crate) mod db;
 
 pub struct Backend {
     mode: AppRunningMode,
@@ -54,23 +56,20 @@ impl Backend {
     ) -> Self {
         let runtime = Arc::new(
             tokio::runtime::Builder::new_multi_thread()
-            .enable_all()
-            .build()
-            .expect("Failed to build Tokio runtime"),
+                .enable_all()
+                .build()
+                .expect("Failed to build Tokio runtime"),
         );
 
-        let db = PocoDB::new(config.clone())
-            .expect("Failed to initialize database");
+        let db = PocoDB::new(config.clone()).expect("Failed to initialize database");
 
         let ipfs_client = Arc::new(
             IpfsClient::create_ipfs_client(&config.ipfs.ipfs_endpoint)
                 .expect("Failed to create ipfs client"),
         );
 
-        let agent = Arc::new(
-            PocoAgent::new(config.clone())
-                .expect("Failed to initialize Poco Agent"),
-        );
+        let agent =
+            Arc::new(PocoAgent::new(config.clone()).expect("Failed to initialize Poco Agent"));
 
         Backend {
             mode,
@@ -85,15 +84,15 @@ impl Backend {
     }
 
     fn execute_command_block<F, R, I>(&mut self, command_source: CommandSource, f: F)
-    where
-        F: FnOnce(
-            crossbeam_channel::Sender<UIActionEvent>,
-            Arc<PocoAgent>,
-            Arc<IpfsClient>,
-            Arc<PocoAgentConfig>,
-        ) -> R,
-        R: Future<Output = anyhow::Result<I>> + Send + 'static,
-        I: Send + 'static,
+        where
+            F: FnOnce(
+                crossbeam_channel::Sender<UIActionEvent>,
+                Arc<PocoAgent>,
+                Arc<IpfsClient>,
+                Arc<PocoAgentConfig>,
+            ) -> R,
+            R: Future<Output=anyhow::Result<I>> + Send + 'static,
+            I: Send + 'static,
     {
         let sender1 = self.ui_sender.clone();
         let sender2 = self.ui_sender.clone();
@@ -141,60 +140,76 @@ impl Backend {
             async move |sender, agent, ipfs_client, _config| {
                 let task_config_path = Path::new(&task_config_path);
 
-                if let Ok(true) = task_config_path.try_exists() {
-                } else {
+                // Check if task config file exists
+                if let Ok(true) = task_config_path.try_exists() {} else {
                     anyhow::bail!("Task config file does not exist");
                 }
 
+                // Read task config file
                 let task_config = tokio::fs::read_to_string(task_config_path).await?;
-                let task_config = serde_json::from_str::<RawTaskConfig>(&task_config)?;
-                let task_config =
-                    if let RawTaskInputSource::Ipfs { hash, file } = &task_config.input {
-                        if hash.is_some() && file.is_some() {
-                            anyhow::bail!(
-                                "Both hash and file are specified in task config {}",
-                                task_config_path.display()
-                            );
-                        }
+                let task_config = serde_json::from_str::<RawTaskConfigFile>(&task_config)?;
 
-                        if let Some(file) = file {
-                            let file_path = Path::new(file.as_str());
-                            let file_path = if file_path.is_absolute() {
-                                file_path.to_path_buf()
-                            } else {
-                                task_config_path.parent().unwrap().join(file_path)
-                            };
+                let actuator = if let Some(actuator) = get_actuator(&task_config.r#type) {
+                    actuator
+                } else {
+                    anyhow::bail!("Unsupported task type: {}", task_config.r#type);
+                };
 
-                            if let Ok(true) = file_path.try_exists() {
-                                log_string(
-                                    &sender,
-                                    format!("Uploading file to ipfs: {}", file_path.display()),
-                                );
-
-                                let file_cid = ipfs_client.add_file(file_path.as_path()).await?;
-
-                                log_string(&sender, format!("File uploaded to ipfs: {file_cid}"));
-
-                                task_config.to_task_config(Some(file_cid))?
-                            } else {
+                // Encode task config
+                let task_config = match &task_config.input {
+                    RawTaskInputSource::Ipfs { hash, file } => {
+                        match (hash, file) {
+                            (None, None) => unreachable!(),
+                            (Some(_), Some(_)) => {
                                 anyhow::bail!(
+                                    "Both hash and file are specified in task config {}",
+                                    task_config_path.display()
+                                );
+                            }
+                            (Some(hash), None) => {
+                                build_task_config(&task_config, None, &actuator)?
+                            }
+                            (None, Some(file)) => {
+                                let file_path = Path::new(file.as_str());
+                                let file_path = if file_path.is_absolute() {
+                                    file_path.to_path_buf()
+                                } else {
+                                    task_config_path.parent().unwrap().join(file_path)
+                                };
+
+                                if let Ok(true) = file_path.try_exists() {
+                                    log_string(
+                                        &sender,
+                                        format!("Uploading file to ipfs: {}", file_path.display()),
+                                    );
+
+                                    let file_cid = ipfs_client.add_file(file_path.as_path()).await?;
+
+                                    log_string(&sender, format!("File uploaded to ipfs: {file_cid}"));
+
+                                    build_task_config(&task_config, Some(file_cid), &actuator)?
+                                } else {
+                                    anyhow::bail!(
                                     "Task input file does not exist, {}",
                                     file_path.display()
                                 );
+                                }
                             }
-                        } else {
-                            task_config.to_task_config(None)?
                         }
-                    } else {
-                        task_config.to_task_config(None)?
-                    };
+                    }
+                    RawTaskInputSource::Link { .. } => {
+                        build_task_config(&task_config, None, &actuator)?
+                    }
+                };
 
+                // Check if round is started
                 let round_status = agent.get_round_status().await?;
 
                 if let RoundStatus::Pending = round_status {
                     anyhow::bail!("Round is not started yet. Please wait for the round to start.");
                 }
 
+                // Publish task
                 let (gas, task_id) = agent.publish_task(task_config).await?;
 
                 log_string(
@@ -548,7 +563,8 @@ impl Backend {
             let db = self.db.clone();
             let runtime = self.runtime.clone();
 
-            self.runtime.spawn(cycle::event_cycle(config, db, agent, ui_sender, runtime));
+            self.runtime
+                .spawn(cycle::event_cycle(config, db, agent, ui_sender, runtime));
         }
     }
 
