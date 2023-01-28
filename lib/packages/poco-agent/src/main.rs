@@ -1,8 +1,11 @@
 #![feature(async_closure)]
 #![feature(fn_traits)]
 #![feature(box_syntax)]
+#![feature(box_into_inner)]
 #![feature(marker_trait_attr)]
 
+use crate::actuator::media::{MediaTranscodingActuator, MEDIA_TRANSCODING_TASK_TYPE};
+use crate::actuator::{register_actuator, BoxedTaskActuator};
 use time::{format_description, UtcOffset};
 use tracing::Level;
 use tracing_subscriber::fmt::time::OffsetTime;
@@ -12,12 +15,12 @@ use tracing_subscriber::util::SubscriberInitExt;
 use crate::app::trace::TracingCategory;
 use crate::app::App;
 
+pub mod actuator;
 pub mod agent;
 pub mod app;
 pub mod config;
 pub mod ipfs;
 pub mod util;
-pub mod actuator;
 
 fn main() -> anyhow::Result<()> {
     let app_run_config = config::parse();
@@ -47,17 +50,10 @@ fn main() -> anyhow::Result<()> {
         .with(app.get_tracing_layer())
         .init();
 
-    tracing::event!(
-        Level::INFO,
-        message = "start loading poco-agent config",
-        category = TracingCategory::Agent.to_string()
-    );
-
-    tracing::event!(
-        Level::INFO,
-        message = "finish loading poco-agent config",
-        category = TracingCategory::Agent.to_string()
-    );
+    register_actuator(
+        MEDIA_TRANSCODING_TASK_TYPE,
+        BoxedTaskActuator::new(MediaTranscodingActuator::new()),
+    )?;
 
     app.run(app_run_config.mode)
 }

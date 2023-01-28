@@ -30,7 +30,7 @@ pub enum AppLog {
 pub enum TaskLog {
     Table,
     TaskId,
-    TaskConfig
+    TaskConfig,
 }
 
 impl PocoDB {
@@ -43,14 +43,22 @@ impl PocoDB {
             Self::setup_db(&connection)?;
         }
 
-        Ok(Self { inner: Arc::new(Mutex::new(connection)) })
+        Ok(Self {
+            inner: Arc::new(Mutex::new(connection)),
+        })
     }
 
     pub fn setup_db(connection: &rusqlite::Connection) -> anyhow::Result<()> {
         let sql = Table::create()
             .table(AppLog::Table)
             .if_not_exists()
-            .col(ColumnDef::new(AppLog::Id).integer().not_null().auto_increment().primary_key())
+            .col(
+                ColumnDef::new(AppLog::Id)
+                    .integer()
+                    .not_null()
+                    .auto_increment()
+                    .primary_key(),
+            )
             .col(ColumnDef::new(AppLog::LastRunTime).integer().not_null())
             .col(ColumnDef::new(AppLog::LastBlockHeight).integer().not_null())
             .col(ColumnDef::new(AppLog::LastEventOffset).integer().not_null())
@@ -60,7 +68,11 @@ impl PocoDB {
 
         let (sql, value) = Query::insert()
             .into_table(AppLog::Table)
-            .columns(vec![AppLog::LastRunTime, AppLog::LastBlockHeight, AppLog::LastEventOffset])
+            .columns(vec![
+                AppLog::LastRunTime,
+                AppLog::LastBlockHeight,
+                AppLog::LastEventOffset,
+            ])
             .values_panic([chrono::Local::now().timestamp().into(), 0.into(), 0.into()])
             .build_rusqlite(SqliteQueryBuilder);
 
@@ -69,7 +81,12 @@ impl PocoDB {
         let sql = Table::create()
             .table(TaskLog::Table)
             .if_not_exists()
-            .col(ColumnDef::new(TaskLog::TaskId).integer().not_null().primary_key())
+            .col(
+                ColumnDef::new(TaskLog::TaskId)
+                    .integer()
+                    .not_null()
+                    .primary_key(),
+            )
             .col(ColumnDef::new(TaskLog::TaskConfig).text().not_null())
             .build(SqliteQueryBuilder);
 
@@ -93,14 +110,20 @@ impl PocoDB {
 
         match chrono::Local.timestamp_opt(last_run_time, 0) {
             chrono::LocalResult::Single(dt) => Ok(dt),
-            _ => Err(anyhow::anyhow!("Invalid last run time"))
+            _ => Err(anyhow::anyhow!("Invalid last run time")),
         }
     }
 
-    pub fn set_last_run_time(&self, last_run_time: chrono::DateTime<chrono::Local>) -> anyhow::Result<()> {
+    pub fn set_last_run_time(
+        &self,
+        last_run_time: chrono::DateTime<chrono::Local>,
+    ) -> anyhow::Result<()> {
         let (sql, values) = Query::update()
             .table(AppLog::Table)
-            .values(vec![(AppLog::LastRunTime, last_run_time.timestamp().into())])
+            .values(vec![(
+                AppLog::LastRunTime,
+                last_run_time.timestamp().into(),
+            )])
             .build_rusqlite(SqliteQueryBuilder);
 
         let db = self.inner.lock().unwrap();
@@ -166,7 +189,11 @@ impl PocoDB {
         Ok(())
     }
 
-    pub fn cache_task_config(&self, task_id: u64, task_config: &OnChainTaskConfig) -> anyhow::Result<()> {
+    pub fn cache_task_config(
+        &self,
+        task_id: u64,
+        task_config: &OnChainTaskConfig,
+    ) -> anyhow::Result<()> {
         let (sql, values) = Query::insert()
             .into_table(TaskLog::Table)
             .columns(vec![TaskLog::TaskId, TaskLog::TaskConfig])
