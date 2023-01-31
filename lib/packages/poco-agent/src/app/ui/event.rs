@@ -54,6 +54,24 @@ pub enum UIAction {
     QuitApp,
 }
 
+pub trait UIActionSender {
+    type Error: std::error::Error;
+
+    fn panic(&self, message: String) -> Result<(), Self::Error>;
+    fn log_string(&self, message: String) -> Result<(), Self::Error>;
+    fn log_multiple_strings(&self, messages: Vec<String>) -> Result<(), Self::Error>;
+    fn log_tracing_event(&self, event: TracingEvent) -> Result<(), Self::Error>;
+    fn log_command(&self, command: CommandSource) -> Result<(), Self::Error>;
+    fn log_command_execution(
+        &self,
+        command: CommandSource,
+        stage: CommandExecutionStage,
+        status: CommandExecutionStatus,
+        error: Option<Box<anyhow::Error>>,
+    ) -> Result<(), Self::Error>;
+    fn quit_app(&self) -> Result<(), Self::Error>;
+}
+
 impl UIActionEvent {
     fn render_wrapped_string<'a>(
         &'a self,
