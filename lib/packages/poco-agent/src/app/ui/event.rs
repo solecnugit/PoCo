@@ -209,11 +209,6 @@ impl UIActionEvent {
                                 Span::styled(e.to_string(), Style::default().fg(Color::Red)),
                             ])
                         })
-                        .collect::<Vec<_>>()
-                        .into_iter()
-                        .rev()
-                        .skip(2)
-                        .rev()
                         .collect::<Vec<_>>(),
                     None => vec![],
                 };
