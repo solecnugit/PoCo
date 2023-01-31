@@ -4,7 +4,7 @@ use std::sync::{Arc, RwLock};
 
 use async_trait::async_trait;
 use lazy_static::lazy_static;
-use poco_types::types::task::TaskConfig;
+use poco_types::types::task::{OnChainTaskConfig, TaskConfig};
 
 use crate::agent::task::config::DomainTaskConfig;
 
@@ -56,12 +56,9 @@ pub trait TaskMeasurer {
 
 #[async_trait]
 pub trait TaskActuator: Send + Sync {
-    async fn execute(&mut self, config: &TaskConfig) -> anyhow::Result<()>;
+    async fn execute(&mut self, config: &OnChainTaskConfig) -> anyhow::Result<()>;
 
-    fn encode_domain_config_json_value(
-        &self,
-        config: &serde_json::Value,
-    ) -> anyhow::Result<Vec<u8>>;
+    fn encode_task_config(&self, config: serde_json::Value) -> anyhow::Result<Vec<u8>>;
 
     fn r#type(&self) -> &'static str;
 }

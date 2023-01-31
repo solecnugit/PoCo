@@ -56,6 +56,6 @@ rusqlite = { version = "0.28.0", features = ["bundled", "load_extension", "trace
 sea-query = "0.28.2"
 sea-query-rusqlite = { version = "0.2.0", features = ["with-chrono", "with-json", "with-uuid", "with-time"] }
 
-poco-types = { path = "../poco-types" }
+poco-types = { path = "../poco-types", features = ["all"] }
 
 [build-dependencies]

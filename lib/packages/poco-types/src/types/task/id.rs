@@ -3,22 +3,22 @@ use std::fmt::Display;
 
 use impl_serde::serde::de::Error;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::serde::de::Visitor;
+use near_sdk::serde::{Deserialize, Serialize};
 use schemars::JsonSchema;
 
 use crate::types::round::RoundId;
 use crate::types::task::TaskNonce;
 
 #[derive(
-BorshDeserialize, BorshSerialize, JsonSchema, PartialEq, PartialOrd, Hash, Clone, Debug,
+    BorshDeserialize, BorshSerialize, JsonSchema, PartialEq, PartialOrd, Hash, Clone, Debug,
 )]
 pub struct TaskId(RoundId, TaskNonce);
 
 impl Serialize for TaskId {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: near_sdk::serde::Serializer,
+    where
+        S: near_sdk::serde::Serializer,
     {
         serializer.serialize_u64(self.into())
     }
@@ -26,8 +26,8 @@ impl Serialize for TaskId {
 
 impl<'de> Deserialize<'de> for TaskId {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: near_sdk::serde::Deserializer<'de>,
+    where
+        D: near_sdk::serde::Deserializer<'de>,
     {
         struct TaskIdVisitor;
         impl<'de> Visitor<'de> for TaskIdVisitor {
@@ -38,8 +38,8 @@ impl<'de> Deserialize<'de> for TaskId {
             }
 
             fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
-                where
-                    E: Error,
+            where
+                E: Error,
             {
                 Ok(TaskId::from(v))
             }

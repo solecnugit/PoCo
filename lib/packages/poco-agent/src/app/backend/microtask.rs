@@ -10,7 +10,7 @@ use crate::app::ui::event::UIActionEvent;
 use crate::app::ui::util::log_string;
 use crate::config::{PocoAgentConfig, PocoTaskPolicy};
 
-pub async fn event_cycle(
+pub async fn event_microtask(
     config: Arc<PocoAgentConfig>,
     db: PocoDB,
     agent: Arc<PocoAgent>,

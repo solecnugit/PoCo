@@ -3,13 +3,13 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use poco_types::types::task::{
     TaskConfig, TaskInputSource, TaskOffer, TaskOutputSource, TaskRequirement,
 };
-use serde::{Deserialize, Serialize};
 use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 
 use crate::actuator::{BoxedTaskActuator, TaskActuator};
 
 pub trait DomainTaskConfig:
-Serialize + DeserializeOwned + BorshDeserialize + BorshSerialize
+    Serialize + DeserializeOwned + BorshDeserialize + BorshSerialize
 {
     fn to_bytes(&self) -> anyhow::Result<Vec<u8>> {
         self.try_to_vec().map_err(|e| anyhow::anyhow!(e))
@@ -41,45 +41,58 @@ pub struct RawTaskConfigFile {
     pub r#type: String,
 }
 
+#[derive(thiserror::Error, Debug)]
+pub enum TaskInputSourceBuildError {
+    #[error("Both hash and file are set")]
+    BothHashAndFileAreSet,
+    #[error("Neither hash nor file are set")]
+    NeitherHashNorFileAreSet,
+    #[error("IPFS CID is not set")]
+    IpfsCidIsNotSet,
+}
+
 impl RawTaskInputSource {
-    pub(crate) fn to_task_input_source(
-        &self,
+    pub(crate) fn build_task_input_source(
+        self,
         ipfs_cid: Option<String>,
-    ) -> anyhow::Result<TaskInputSource> {
+    ) -> Result<TaskInputSource, TaskInputSourceBuildError> {
         match self {
             RawTaskInputSource::Ipfs { hash, file } => {
-                if hash.is_some() && file.is_some() {
-                    anyhow::bail!("Both hash and file are set");
-                } else if let Some(hash) = hash {
-                    Ok(TaskInputSource::Ipfs { hash: hash.clone() })
-                } else if file.is_some() {
-                    let ipfs_cid = ipfs_cid.ok_or_else(|| anyhow!("IPFS CID is not set"))?;
-
-                    Ok(TaskInputSource::Ipfs { hash: ipfs_cid })
-                } else {
-                    anyhow::bail!("Neither hash nor file are set");
-                }
+                return match (hash, file) {
+                    (Some(_), Some(_)) => Err(TaskInputSourceBuildError::BothHashAndFileAreSet),
+                    (None, None) => Err(TaskInputSourceBuildError::NeitherHashNorFileAreSet),
+                    (Some(hash), None) => Ok(TaskInputSource::Ipfs { hash }),
+                    (None, Some(_)) => {
+                        if let Some(ipfs_cid) = ipfs_cid {
+                            Ok(TaskInputSource::Ipfs { hash: ipfs_cid })
+                        } else {
+                            Err(TaskInputSourceBuildError::IpfsCidIsNotSet)
+                        }
+                    }
+                };
             }
-            RawTaskInputSource::Link { url } => Ok(TaskInputSource::Link { url: url.clone() }),
+            RawTaskInputSource::Link { url } => Ok(TaskInputSource::Link { url }),
         }
     }
 }
 
-pub fn build_task_config(
-    raw_task_config: &RawTaskConfigFile,
-    ipfs_cid: Option<String>,
-    actuator: &BoxedTaskActuator,
-) -> anyhow::Result<TaskConfig> {
-    let input = raw_task_config.input.to_task_input_source(ipfs_cid)?;
-    let config = actuator.encode_domain_config_json_value(&raw_task_config.config)?;
-    let r#type = actuator.r#type().to_string();
+impl RawTaskConfigFile {
+    pub(crate) fn build_task_config(
+        self,
+        ipfs_cid: Option<String>,
+        actuator: &BoxedTaskActuator,
+    ) -> anyhow::Result<TaskConfig> {
+        let input = self.input.build_task_input_source(ipfs_cid)?;
+        let config = actuator.encode_task_config(self.config)?;
+        let r#type = actuator.r#type().to_string();
 
-    Ok(TaskConfig {
-        input,
-        output: raw_task_config.output.clone(),
-        requirements: raw_task_config.requirements.clone(),
-        offer: raw_task_config.offer.clone(),
-        config,
-        r#type,
-    })
+        Ok(TaskConfig {
+            input,
+            output: self.output.clone(),
+            requirements: self.requirements.clone(),
+            offer: self.offer.clone(),
+            config,
+            r#type,
+        })
+    }
 }

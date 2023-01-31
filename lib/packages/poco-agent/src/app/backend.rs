@@ -11,7 +11,7 @@ use tracing::Level;
 
 use crate::actuator::{get_actuator, TaskActuator};
 use crate::agent::agent::PocoAgent;
-use crate::agent::task::config::{build_task_config, RawTaskConfigFile, RawTaskInputSource};
+use crate::agent::task::config::{RawTaskConfigFile, RawTaskInputSource};
 use crate::app::backend::command::CommandSource;
 use crate::app::backend::db::PocoDB;
 use crate::app::backend::executor::CommandExecutor;
@@ -27,7 +27,7 @@ use super::ui::util::{log_multiple_strings, log_string};
 
 pub mod command;
 
-pub(crate) mod cycle;
+pub(crate) mod microtask;
 pub(crate) mod db;
 pub(crate) mod event;
 pub(crate) mod executor;
@@ -67,7 +67,7 @@ impl Backend {
         );
 
         let agent =
-            Arc::new(PocoAgent::new(config.clone()).expect("Failed to initialize Poco Agent"));
+            Arc::new(PocoAgent::build(config.clone()).expect("Failed to initialize Poco Agent"));
 
         Backend {
             mode,
@@ -101,29 +101,32 @@ impl Backend {
 
         self.runtime
             .spawn(f(sender1, agent, ipfs_client, config).then(async move |r| {
-                if let Err(e) = r {
-                    tracing::error!(
-                        message = "failed to execute command",
-                        command = format!("{command_source:?}"),
-                        category = format!("{:?}", TracingCategory::Backend),
-                        error = format!("{e:?}")
-                    );
+                match r {
+                    Ok(_) => {
+                        log_command_execution(
+                            &sender2,
+                            command_source,
+                            CommandExecutionStage::Executed,
+                            CommandExecutionStatus::Succeed,
+                            None,
+                        );
+                    }
+                    Err(e) => {
+                        tracing::error!(
+                            message = "failed to execute command",
+                            command = format!("{command_source:?}"),
+                            category = format!("{:?}", TracingCategory::Backend),
+                            error = format!("{e:?}")
+                        );
 
-                    log_command_execution(
-                        &sender2,
-                        command_source,
-                        CommandExecutionStage::Executed,
-                        CommandExecutionStatus::Failed,
-                        Some(Box::new(e)),
-                    );
-                } else {
-                    log_command_execution(
-                        &sender2,
-                        command_source,
-                        CommandExecutionStage::Executed,
-                        CommandExecutionStatus::Succeed,
-                        None,
-                    );
+                        log_command_execution(
+                            &sender2,
+                            command_source,
+                            CommandExecutionStage::Executed,
+                            CommandExecutionStatus::Failed,
+                            Some(Box::new(e)),
+                        );
+                    }
                 };
             }));
     }
@@ -139,8 +142,10 @@ impl Backend {
                 let task_config_path = Path::new(&task_config_path);
 
                 // Check if task config file exists
-                if let Ok(true) = task_config_path.try_exists() {} else {
-                    anyhow::bail!("Task config file does not exist");
+                match task_config_path.try_exists() {
+                    Ok(true) => {}
+                    Ok(false) => anyhow::bail!("Task config file does not exist"),
+                    Err(e) => anyhow::bail!("Failed to check if task config file exists: {}", e),
                 }
 
                 // Read task config file
@@ -163,7 +168,7 @@ impl Backend {
                                 task_config_path.display()
                             );
                         }
-                        (Some(_hash), None) => build_task_config(&task_config, None, &actuator)?,
+                        (Some(_hash), None) => task_config.build_task_config(None, &actuator)?,
                         (None, Some(file)) => {
                             let file_path = Path::new(file.as_str());
                             let file_path = if file_path.is_absolute() {
@@ -182,7 +187,7 @@ impl Backend {
 
                                 log_string(&sender, format!("File uploaded to ipfs: {file_cid}"));
 
-                                build_task_config(&task_config, Some(file_cid), &actuator)?
+                                task_config.build_task_config(Some(file_cid), &actuator)?
                             } else {
                                 anyhow::bail!(
                                     "Task input file does not exist, {}",
@@ -192,7 +197,7 @@ impl Backend {
                         }
                     },
                     RawTaskInputSource::Link { .. } => {
-                        build_task_config(&task_config, None, &actuator)?
+                        task_config.build_task_config(None, &actuator)?
                     }
                 };
 
@@ -435,6 +440,19 @@ impl Backend {
         )
     }
 
+    fn execute_round_info_command(&mut self, command_source: CommandSource) {
+        self.execute_command_block(
+            command_source,
+            async move |sender, agent, _ipfs_client, _config| {
+                let round_info = agent.get_round_info().await?;
+
+                log_string(&sender, format!("Round info: {round_info}"));
+
+                Ok(())
+            },
+        )
+    }
+
     fn execute_round_status_command(&mut self, command_source: CommandSource) {
         self.execute_command_block(
             command_source,
@@ -549,8 +567,10 @@ impl Backend {
         )
     }
 
-    fn start_backend_jobs(&mut self) {
+    fn start_backend_microtask(&mut self) {
         {
+            // event microtask
+
             let config = self.config.clone();
             let ui_sender = self.ui_sender.clone();
             let agent = self.agent.clone();
@@ -558,7 +578,7 @@ impl Backend {
             let runtime = self.runtime.clone();
 
             self.runtime
-                .spawn(cycle::event_cycle(config, db, agent, ui_sender, runtime));
+                .spawn(microtask::event_microtask(config, db, agent, ui_sender, runtime));
         }
     }
 
@@ -568,7 +588,7 @@ impl Backend {
         builder
             .spawn(move || 'outer: loop {
                 if self.mode != AppRunningMode::DIRECT {
-                    self.start_backend_jobs();
+                    self.start_backend_microtask();
                 }
 
                 loop {

@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use borsh::{BorshDeserialize, BorshSerialize};
-use poco_types::types::task::TaskConfig;
+use poco_types::types::task::{OnChainTaskConfig, TaskConfig};
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
@@ -15,23 +15,23 @@ pub struct MediaTranscodingTaskConfig {
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug)]
-pub struct VideoConfig {
+struct VideoConfig {
     codec: String,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug)]
-pub struct AudioConfig {
+struct AudioConfig {
     codec: String,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug)]
-pub struct MediaTranscodingConfig {
+struct MediaTranscodingConfig {
     video: VideoConfig,
     audio: AudioConfig,
 }
 
-pub type MediaTranscodingSourceConfig = MediaTranscodingConfig;
-pub type MediaTranscodingTargetConfig = MediaTranscodingConfig;
+type MediaTranscodingSourceConfig = MediaTranscodingConfig;
+type MediaTranscodingTargetConfig = MediaTranscodingConfig;
 
 pub const MEDIA_TRANSCODING_TASK_TYPE: &str = "MEDIA_TRANSCODING";
 
@@ -49,12 +49,12 @@ impl TaskConfigFactory for MediaTranscodingActuator {
 
 #[async_trait]
 impl TaskActuator for MediaTranscodingActuator {
-    async fn execute(&mut self, _config: &TaskConfig) -> anyhow::Result<()> {
+    async fn execute(&mut self, _config: &OnChainTaskConfig) -> anyhow::Result<()> {
         todo!()
     }
 
-    fn encode_domain_config_json_value(&self, config: &Value) -> anyhow::Result<Vec<u8>> {
-        let config: <Self as TaskConfigFactory>::Config = serde_json::from_value(config.clone())?;
+    fn encode_task_config(&self, config: Value) -> anyhow::Result<Vec<u8>> {
+        let config: <Self as TaskConfigFactory>::Config = serde_json::from_value(config)?;
 
         config.to_bytes()
     }
