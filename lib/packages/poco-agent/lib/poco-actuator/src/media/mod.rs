@@ -5,8 +5,8 @@ use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
 
-use crate::{TaskActuator, TaskConfigFactory};
 use crate::config::DomainTaskConfig;
+use crate::{TaskActuator, TaskConfigFactory};
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug)]
 pub struct MediaTranscodingTaskConfig {

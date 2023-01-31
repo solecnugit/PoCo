@@ -5,12 +5,12 @@ use std::time::Duration;
 
 use base64::Engine;
 use near_crypto::{InMemorySigner, PublicKey};
-use near_jsonrpc_client::{JsonRpcClient, methods};
 use near_jsonrpc_client::methods::network_info::RpcNetworkInfoResponse;
 use near_jsonrpc_client::methods::status::RpcStatusResponse;
+use near_jsonrpc_client::{methods, JsonRpcClient};
 use near_jsonrpc_primitives::types::query::{QueryResponseKind, RpcQueryResponse};
-use near_primitives::transaction::{Action, Transaction};
 use near_primitives::transaction::FunctionCallAction;
+use near_primitives::transaction::{Action, Transaction};
 use near_primitives::types::{AccountId, Balance, BlockReference, Finality, Gas};
 use near_primitives::views::{AccessKeyView, AccountView, FinalExecutionStatus, QueryRequest};
 use poco_types::types::event::IndexedEvent;
@@ -89,7 +89,7 @@ pub enum PocoAgentError {
 }
 
 impl<T: Debug + Display + Send + Sync + 'static> From<near_jsonrpc_client::errors::JsonRpcError<T>>
-for PocoAgentError
+    for PocoAgentError
 {
     fn from(e: near_jsonrpc_client::errors::JsonRpcError<T>) -> Self {
         PocoAgentError::JsonRpcError(Box::new(e))
@@ -302,9 +302,9 @@ impl PocoAgent {
         method_name: &str,
         args: &T,
     ) -> Result<R, PocoAgentError>
-        where
-            T: Serialize,
-            R: DeserializeOwned,
+    where
+        T: Serialize,
+        R: DeserializeOwned,
     {
         let args = serde_json::to_string(args).unwrap();
 
@@ -324,9 +324,9 @@ impl PocoAgent {
         gas: u64,
         deposit: u128,
     ) -> Result<(Gas, R), PocoAgentError>
-        where
-            T: Serialize,
-            R: DeserializeOwned,
+    where
+        T: Serialize,
+        R: DeserializeOwned,
     {
         let args = serde_json::to_string(args)?;
 
@@ -349,8 +349,8 @@ impl PocoAgent {
         gas: u64,
         deposit: u128,
     ) -> Result<Gas, PocoAgentError>
-        where
-            T: Serialize,
+    where
+        T: Serialize,
     {
         let args = serde_json::to_string(args)?;
 
@@ -418,7 +418,7 @@ impl PocoAgent {
             10_000_000_000_000,
             0,
         )
-            .await
+        .await
     }
 
     pub async fn start_new_round(&self) -> Result<(Gas, RoundId), PocoAgentError> {

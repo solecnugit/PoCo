@@ -2,13 +2,13 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use poco_types::types::task::{
     TaskConfig, TaskInputSource, TaskOffer, TaskOutputSource, TaskRequirement,
 };
-use serde::{Deserialize, Serialize};
 use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 
 use crate::BoxedTaskActuator;
 
 pub trait DomainTaskConfig:
-Serialize + DeserializeOwned + BorshDeserialize + BorshSerialize
+    Serialize + DeserializeOwned + BorshDeserialize + BorshSerialize
 {
     fn to_bytes(&self) -> anyhow::Result<Vec<u8>> {
         self.try_to_vec().map_err(|e| anyhow::anyhow!(e))

@@ -4,8 +4,8 @@ use std::path::Path;
 use std::sync::Arc;
 
 use futures::{TryFutureExt, TryStreamExt};
-use ipfs_api_backend_hyper::{IpfsApi, TryFromUri};
 use ipfs_api_backend_hyper::response::ObjectStatResponse;
+use ipfs_api_backend_hyper::{IpfsApi, TryFromUri};
 use tokio::io::AsyncWriteExt;
 use tokio_util::compat::TokioAsyncReadCompatExt;
 
@@ -171,12 +171,15 @@ impl IpfsClient {
 
                         downloaded += chunk.len() as u64;
 
-                        if let Err(_) = sender.send(GetFileProgress::new(downloaded, file_size)).await {
+                        if let Err(_) = sender
+                            .send(GetFileProgress::new(downloaded, file_size))
+                            .await
+                        {
                             return Err(ipfs_api_backend_hyper::Error::IpfsClientError(
                                 ipfs_api_prelude::Error::Io(std::io::Error::new(
                                     std::io::ErrorKind::Other,
                                     "failed to send progress",
-                                ))
+                                )),
                             ));
                         }
 
@@ -186,7 +189,10 @@ impl IpfsClient {
                 .map_err(IpfsClientError::InnerError)
                 .await?;
 
-            if let Err(_) = sender2.send(GetFileProgress::new(file_size, file_size)).await {
+            if let Err(_) = sender2
+                .send(GetFileProgress::new(file_size, file_size))
+                .await
+            {
                 return Err(IpfsClientError::IoError(std::io::Error::new(
                     std::io::ErrorKind::Other,
                     "failed to send progress",

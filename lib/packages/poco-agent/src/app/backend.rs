@@ -1,6 +1,8 @@
 use std::future::Future;
+use std::ops::Deref;
 use std::sync::Arc;
 
+use anyhow::Error;
 use clap::error::ErrorKind;
 use futures::FutureExt;
 use tracing::Level;
@@ -12,8 +14,10 @@ use poco_ipfs::client::IpfsClient;
 use crate::app::backend::command::CommandSource;
 use crate::app::backend::executor::CommandExecutor;
 use crate::app::backend::parser::CommandParser;
-use crate::app::trace::TracingCategory;
-use crate::app::ui::event::{CommandExecutionStage, CommandExecutionStatus, UIActionEvent};
+use crate::app::trace::{TracingCategory, TracingEvent};
+use crate::app::ui::event::{
+    CommandExecutionStage, CommandExecutionStatus, UIAction, UIActionEvent, UIActionSender,
+};
 use crate::app::ui::util::log_command_execution;
 use crate::config::{AppRunningMode, PocoClientConfig};
 
@@ -23,9 +27,11 @@ pub(crate) mod event;
 pub(crate) mod executor;
 pub(crate) mod microtask;
 pub(crate) mod parser;
+pub(crate) mod ui;
 
-pub struct Backend {
-    mode: AppRunningMode,
+#[derive(Clone)]
+pub struct InnerBackend {
+    running_mode: AppRunningMode,
     config: Arc<PocoClientConfig>,
     ui_receiver: crossbeam_channel::Receiver<CommandSource>,
     ui_sender: crossbeam_channel::Sender<UIActionEvent>,
@@ -35,9 +41,46 @@ pub struct Backend {
     ipfs_client: Arc<IpfsClient>,
 }
 
+impl InnerBackend {
+    fn new(
+        running_mode: AppRunningMode,
+        config: Arc<PocoClientConfig>,
+        ui_receiver: crossbeam_channel::Receiver<CommandSource>,
+        ui_sender: crossbeam_channel::Sender<UIActionEvent>,
+        runtime: Arc<tokio::runtime::Runtime>,
+        db: PocoDB,
+        agent: Arc<PocoAgent>,
+        ipfs_client: Arc<IpfsClient>,
+    ) -> Self {
+        Self {
+            running_mode,
+            config,
+            ui_receiver,
+            ui_sender,
+            runtime,
+            db,
+            agent,
+            ipfs_client,
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct Backend {
+    inner: Arc<InnerBackend>,
+}
+
+impl Deref for Backend {
+    type Target = InnerBackend;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
 impl Backend {
     pub fn new(
-        mode: AppRunningMode,
+        running_mode: AppRunningMode,
         config: Arc<PocoClientConfig>,
         ui_receiver: crossbeam_channel::Receiver<CommandSource>,
         ui_sender: crossbeam_channel::Sender<UIActionEvent>,
@@ -61,69 +104,61 @@ impl Backend {
                 .expect("Failed to initialize Poco Agent"),
         );
 
-        Backend {
-            mode,
+        let inner = Arc::new(InnerBackend::new(
+            running_mode,
+            config,
             ui_receiver,
             ui_sender,
             runtime,
             db,
             agent,
             ipfs_client,
-            config,
-        }
+        ));
+
+        Backend { inner }
     }
 
-    fn execute_command_block<F, R, I>(&mut self, command_source: CommandSource, f: F)
+    fn execute_command_block<F, R, I>(&self, command_source: CommandSource, f: F)
         where
-            F: FnOnce(
-                crossbeam_channel::Sender<UIActionEvent>,
-                Arc<PocoAgent>,
-                Arc<IpfsClient>,
-                Arc<PocoClientConfig>,
-            ) -> R,
+            F: FnOnce(Backend) -> R,
             R: Future<Output=anyhow::Result<I>> + Send + 'static,
             I: Send + 'static,
     {
-        let sender1 = self.ui_sender.clone();
-        let sender2 = self.ui_sender.clone();
+        let backend = self.clone();
+        let sender = self.ui_sender.clone();
 
-        let agent = self.agent.clone();
-        let ipfs_client = self.ipfs_client.clone();
-        let config = self.config.clone();
+        self.runtime.spawn(f(backend).then(async move |r| {
+            match r {
+                Ok(_) => {
+                    log_command_execution(
+                        &sender,
+                        command_source,
+                        CommandExecutionStage::Executed,
+                        CommandExecutionStatus::Succeed,
+                        None,
+                    );
+                }
+                Err(e) => {
+                    tracing::error!(
+                        message = "failed to execute command",
+                        command = format!("{command_source:?}"),
+                        category = format!("{:?}", TracingCategory::Backend),
+                        error = format!("{e:?}")
+                    );
 
-        self.runtime
-            .spawn(f(sender1, agent, ipfs_client, config).then(async move |r| {
-                match r {
-                    Ok(_) => {
-                        log_command_execution(
-                            &sender2,
-                            command_source,
-                            CommandExecutionStage::Executed,
-                            CommandExecutionStatus::Succeed,
-                            None,
-                        );
-                    }
-                    Err(e) => {
-                        tracing::error!(
-                            message = "failed to execute command",
-                            command = format!("{command_source:?}"),
-                            category = format!("{:?}", TracingCategory::Backend),
-                            error = format!("{e:?}")
-                        );
-
-                        log_command_execution(
-                            &sender2,
-                            command_source,
-                            CommandExecutionStage::Executed,
-                            CommandExecutionStatus::Failed,
-                            Some(Box::new(e)),
-                        );
-                    }
-                };
-            }));
+                    log_command_execution(
+                        &sender,
+                        command_source,
+                        CommandExecutionStage::Executed,
+                        CommandExecutionStatus::Failed,
+                        Some(Box::new(e)),
+                    );
+                }
+            };
+        }));
     }
 
-    fn start_backend_microtask(&mut self) {
+    fn start_backend_microtasks(&self) {
         {
             // event microtask
 
@@ -139,13 +174,13 @@ impl Backend {
         }
     }
 
-    pub fn run_backend_thread(mut self) -> std::thread::JoinHandle<()> {
+    pub fn run_backend_thread(self) -> std::thread::JoinHandle<()> {
         let builder = std::thread::Builder::new().name("backend".to_string());
 
         builder
             .spawn(move || 'outer: loop {
-                if self.mode != AppRunningMode::DIRECT {
-                    self.start_backend_microtask();
+                if self.running_mode != AppRunningMode::DIRECT {
+                    self.start_backend_microtasks();
                 }
 
                 loop {
