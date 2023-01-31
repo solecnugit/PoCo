@@ -1,15 +1,14 @@
-use anyhow::anyhow;
 use borsh::{BorshDeserialize, BorshSerialize};
 use poco_types::types::task::{
     TaskConfig, TaskInputSource, TaskOffer, TaskOutputSource, TaskRequirement,
 };
-use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
+use serde::de::DeserializeOwned;
 
-use crate::actuator::{BoxedTaskActuator, TaskActuator};
+use crate::BoxedTaskActuator;
 
 pub trait DomainTaskConfig:
-    Serialize + DeserializeOwned + BorshDeserialize + BorshSerialize
+Serialize + DeserializeOwned + BorshDeserialize + BorshSerialize
 {
     fn to_bytes(&self) -> anyhow::Result<Vec<u8>> {
         self.try_to_vec().map_err(|e| anyhow::anyhow!(e))
@@ -77,7 +76,7 @@ impl RawTaskInputSource {
 }
 
 impl RawTaskConfigFile {
-    pub(crate) fn build_task_config(
+    pub fn build_task_config(
         self,
         ipfs_cid: Option<String>,
         actuator: &BoxedTaskActuator,

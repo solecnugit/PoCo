@@ -1,8 +1,9 @@
 use std::fmt::{Display, Formatter};
 
 use clap::{Arg, Command};
-use near_primitives::types::AccountId;
 use strum::Display;
+
+use poco_agent::types::AccountId;
 
 #[derive(Debug, Display)]
 pub enum BackendCommand {

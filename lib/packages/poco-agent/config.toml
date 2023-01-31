@@ -1,25 +1,26 @@
 [app]
 verbose = true
-database_path = "poco.db"
-connection_timeout = 1000
+microtaskIntervalInMs = 5000
+taskPolicy = "alwaysTaken"
 
 [log]
 directory = "log/"
-prefix = "poco.log"
-time_format = "[year]-[month]-[day] [hour]:[minute]:[second].[subsecond digits:3]"
+logPrefix = "poco.log"
+timeFormat = "[year]-[month]-[day] [hour]:[minute]:[second].[subsecond digits:3]"
 
 [ui]
-time_format = "%H:%M:%S"
-
-[near]
-rpc_endpoint = "http://49.52.27.50:8332"
-signer_account_id = "test.near"
-signer_secret_key = "ed25519:2ykcMLiM7vCmsSECcgfmUzihBtNdBv7v2CxNi94sNt4R8ar4xsrMMYvtsSNGQDfSRhNWXEnZvgx2wzS9ViBiS9jW"
+timeFormat = "%H:%M:%S"
 
 [ipfs]
-ipfs_endpoint = "http://49.52.27.50:5001"
+ipfsEndpoint = "http://49.52.27.50:5001"
 
-[poco]
-contract_account = "dev-1674905258481-61645437217567"
-event_cycle_in_ms = 1000
-task_policy = "alwaysTaken"
+[agent]
+verbose = true
+connectionTimeoutInMs = 1000
+nearRpcEndpoint = "http://49.52.27.50:8332"
+nearSignerAccountId = "test.near"
+nearSignerSecretKey = "ed25519:2ykcMLiM7vCmsSECcgfmUzihBtNdBv7v2CxNi94sNt4R8ar4xsrMMYvtsSNGQDfSRhNWXEnZvgx2wzS9ViBiS9jW"
+pocoContractAccount = "dev-1674905258481-61645437217567"
+
+[db]
+dbPath = "poco.db"

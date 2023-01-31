@@ -1,7 +1,15 @@
 [package]
-name = "poco-agent"
+name = "poco-client"
 version = "0.1.0"
 edition = "2021"
+
+[workspace]
+members = [
+    "lib/poco-agent",
+    "lib/poco-actuator",
+    "lib/poco-ipfs",
+    "lib/poco-db"
+]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -28,8 +36,6 @@ config = { version = "0.13.2", features = ["toml"] }
 serde = { version = "1.0.147", features = ["derive"] }
 serde_json = "1.0.89"
 
-base64 = "0.21.0"
-
 tui = "0.19.0"
 crossterm = "0.25"
 unicode-width = "0.1"
@@ -39,23 +45,12 @@ tokio-util = { version = "0.7.4", features = ["compat"] }
 futures = "0.3.25"
 async-trait = "0.1.63"
 
-reqwest = "0.11.13"
-
-near-jsonrpc-client = "0.4.1"
-near-jsonrpc-primitives = "0.15.0"
-near-crypto = "0.15.0"
-near-primitives = "0.15.0"
-borsh = "0.10.0"
-
-ipfs-api-prelude = "0.6.0"
-ipfs-api-backend-hyper = { version = "0.6.0", features = ["with-send-sync"] }
-
 crossbeam-channel = "0.5.6"
 
-rusqlite = { version = "0.28.0", features = ["bundled", "load_extension", "trace", "chrono", "serde_json"] }
-sea-query = "0.28.2"
-sea-query-rusqlite = { version = "0.2.0", features = ["with-chrono", "with-json", "with-uuid", "with-time"] }
-
 poco-types = { path = "../poco-types", features = ["all"] }
+poco-agent = { path = "lib/poco-agent" }
+poco-actuator = { path = "lib/poco-actuator" }
+poco-ipfs = { path = "lib/poco-ipfs" }
+poco-db = { path = "lib/poco-db" }
 
 [build-dependencies]

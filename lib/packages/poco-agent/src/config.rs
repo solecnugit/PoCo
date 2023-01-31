@@ -3,35 +3,30 @@ use std::path::Path;
 use clap::{Arg, Command};
 use serde::{Deserialize, Serialize};
 
+use poco_agent::config::PocoAgentConfig;
+use poco_db::config::PocoDBConfig;
+use poco_ipfs::config::PoCoIpfsConfig;
+
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct AppConfig {
     pub verbose: bool,
-    pub database_path: String,
-    pub connection_timeout: u64,
+    pub microtask_interval_in_ms: u64,
+    pub task_policy: PocoTaskPolicy,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct LogConfig {
     pub directory: String,
-    pub prefix: String,
+    pub log_prefix: String,
     pub time_format: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct UIConfig {
     pub time_format: String,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct NearConfig {
-    pub rpc_endpoint: String,
-    pub signer_account_id: String,
-    pub signer_secret_key: String,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct IpfsConfig {
-    pub ipfs_endpoint: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
@@ -49,13 +44,13 @@ pub struct PocoConfig {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct PocoAgentConfig {
+pub struct PocoClientConfig {
     pub app: AppConfig,
     pub log: LogConfig,
     pub ui: UIConfig,
-    pub ipfs: IpfsConfig,
-    pub near: NearConfig,
-    pub poco: PocoConfig,
+    pub ipfs: PoCoIpfsConfig,
+    pub agent: PocoAgentConfig,
+    pub db: PocoDBConfig,
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -113,7 +108,7 @@ pub(crate) fn parse() -> AppRunConfig {
 }
 
 impl AppRunConfig {
-    pub(crate) fn get_config(&self) -> Result<PocoAgentConfig, config::ConfigError> {
+    pub(crate) fn get_config(&self) -> Result<PocoClientConfig, config::ConfigError> {
         let config_path = Path::new(self.config_path.as_str());
 
         let config = config::Config::builder()
@@ -121,6 +116,6 @@ impl AppRunConfig {
             .add_source(config::Environment::with_prefix("POCO"))
             .build()?;
 
-        config.try_deserialize::<PocoAgentConfig>()
+        config.try_deserialize::<PocoClientConfig>()
     }
 }

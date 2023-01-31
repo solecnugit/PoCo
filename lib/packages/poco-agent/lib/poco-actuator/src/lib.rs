@@ -6,8 +6,9 @@ use async_trait::async_trait;
 use lazy_static::lazy_static;
 use poco_types::types::task::{OnChainTaskConfig, TaskConfig};
 
-use crate::agent::task::config::DomainTaskConfig;
+use crate::config::DomainTaskConfig;
 
+pub mod config;
 pub mod media;
 
 pub type ActuatorPredicate = fn(&TaskConfig) -> bool;

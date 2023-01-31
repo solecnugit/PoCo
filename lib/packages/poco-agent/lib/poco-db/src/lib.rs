@@ -7,7 +7,9 @@ use rusqlite::params;
 use sea_query::{ColumnDef, Iden, Query, SqliteQueryBuilder, Table};
 use sea_query_rusqlite::RusqliteBinder;
 
-use crate::config::PocoAgentConfig;
+use crate::config::PocoDBConfig;
+
+pub mod config;
 
 #[derive(Clone)]
 pub struct PocoDB {
@@ -33,10 +35,10 @@ pub enum TaskLog {
 }
 
 impl PocoDB {
-    pub fn new(config: Arc<PocoAgentConfig>) -> anyhow::Result<Self> {
-        let db_path = Path::new(&config.app.database_path);
+    pub fn new(config: Arc<PocoDBConfig>) -> anyhow::Result<Self> {
+        let db_path = Path::new(&config.db_path);
         let is_db_file_exists = db_path.exists();
-        let connection = rusqlite::Connection::open(&config.app.database_path)?;
+        let connection = rusqlite::Connection::open(&config.db_path)?;
 
         if !is_db_file_exists {
             Self::setup_db(&connection)?;

@@ -9,22 +9,22 @@ use tracing_subscriber::fmt::time::OffsetTime;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
-use crate::actuator::media::{MediaTranscodingActuator, MEDIA_TRANSCODING_TASK_TYPE};
-use crate::actuator::{register_actuator, BoxedTaskActuator};
+use poco_actuator::BoxedTaskActuator;
+use poco_actuator::media::MEDIA_TRANSCODING_TASK_TYPE;
+use poco_actuator::media::MediaTranscodingActuator;
+use poco_actuator::register_actuator;
+
 use crate::app::App;
 
-pub mod actuator;
-pub mod agent;
 pub mod app;
 pub mod config;
-pub mod ipfs;
 pub mod util;
 
 fn main() -> anyhow::Result<()> {
     let app_run_config = config::parse();
     let config = app_run_config.get_config().expect("Failed to load config");
     let log_file_appender =
-        tracing_appender::rolling::daily(&config.log.directory, &config.log.prefix);
+        tracing_appender::rolling::daily(&config.log.directory, &config.log.log_prefix);
     let (non_blocking_appender, _guard) = tracing_appender::non_blocking(log_file_appender);
     let format = Box::leak(Box::new(config.log.time_format.to_string()));
 

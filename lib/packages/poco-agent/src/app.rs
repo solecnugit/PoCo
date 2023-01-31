@@ -3,9 +3,9 @@ use std::{sync::Arc, thread::JoinHandle};
 use tracing::Level;
 
 use crate::app::backend::command::CommandSource;
+use crate::app::trace::TracingCategory;
 use crate::app::ui::event::{CommandExecutionStatus, UIAction};
-use crate::config::AppRunningMode;
-use crate::{app::trace::TracingCategory, config::PocoAgentConfig};
+use crate::config::{AppRunningMode, PocoClientConfig};
 
 use self::{
     backend::Backend,
@@ -20,7 +20,7 @@ pub mod ui;
 type CommandString = String;
 
 pub struct App {
-    config: Arc<PocoAgentConfig>,
+    config: Arc<PocoClientConfig>,
     ui: UI,
     ui_channel: (
         crossbeam_channel::Sender<UIActionEvent>,
@@ -34,7 +34,7 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(config: PocoAgentConfig) -> App {
+    pub fn new(config: PocoClientConfig) -> App {
         let (ui_action_sender, ui_action_receiver) = crossbeam_channel::unbounded();
         let (ui_command_sender, ui_command_receiver) = crossbeam_channel::unbounded();
         let config = Arc::new(config);

@@ -1,5 +1,3 @@
-use std::error::Error;
-
 use chrono::{DateTime, Local};
 use strum::Display;
 use tracing::Level;
@@ -229,7 +227,7 @@ impl UIActionEvent {
                                 format!("Command {source} executed successfully")
                             }
                             CommandExecutionStatus::Failed => {
-                                format!("Command {source} failed (Stage: {stage})",)
+                                format!("Command {source} failed (Stage: {stage})", )
                             }
                         },
                         Style::default().fg(match status {
@@ -238,9 +236,9 @@ impl UIActionEvent {
                         }),
                     ),
                 ])]
-                .into_iter()
-                .chain(error_spans)
-                .collect()
+                    .into_iter()
+                    .chain(error_spans)
+                    .collect()
             }
             UIAction::Panic(_) => unreachable!(),
         }

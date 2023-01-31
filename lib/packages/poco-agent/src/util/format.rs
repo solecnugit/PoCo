@@ -1,4 +1,4 @@
-use near_primitives::types::Gas;
+use poco_agent::types::Gas;
 
 pub fn pretty_bytes(bytes: u64) -> String {
     if bytes < 1024 {

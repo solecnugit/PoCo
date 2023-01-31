@@ -1,12 +1,12 @@
 use async_trait::async_trait;
 use borsh::{BorshDeserialize, BorshSerialize};
-use poco_types::types::task::{OnChainTaskConfig, TaskConfig};
+use poco_types::types::task::OnChainTaskConfig;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
 
-use crate::actuator::{TaskActuator, TaskConfigFactory};
-use crate::agent::task::config::DomainTaskConfig;
+use crate::{TaskActuator, TaskConfigFactory};
+use crate::config::DomainTaskConfig;
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug)]
 pub struct MediaTranscodingTaskConfig {

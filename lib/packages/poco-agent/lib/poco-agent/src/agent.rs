@@ -1,21 +1,16 @@
 use std::fmt::{Debug, Display};
-use std::io::Read;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 
-use crate::agent::agent::PocoAgentError::{
-    UnexpectedResponseData, UnexpectedResponseKind, UnexpectedTxExecutionStatus,
-};
 use base64::Engine;
-use either::Either;
 use near_crypto::{InMemorySigner, PublicKey};
+use near_jsonrpc_client::{JsonRpcClient, methods};
 use near_jsonrpc_client::methods::network_info::RpcNetworkInfoResponse;
 use near_jsonrpc_client::methods::status::RpcStatusResponse;
-use near_jsonrpc_client::{methods, JsonRpcClient};
 use near_jsonrpc_primitives::types::query::{QueryResponseKind, RpcQueryResponse};
-use near_primitives::transaction::FunctionCallAction;
 use near_primitives::transaction::{Action, Transaction};
+use near_primitives::transaction::FunctionCallAction;
 use near_primitives::types::{AccountId, Balance, BlockReference, Finality, Gas};
 use near_primitives::views::{AccessKeyView, AccountView, FinalExecutionStatus, QueryRequest};
 use poco_types::types::event::IndexedEvent;
@@ -27,6 +22,9 @@ use serde::Serialize;
 use serde_json::json;
 use strum::Display;
 
+use crate::agent::PocoAgentError::{
+    UnexpectedResponseData, UnexpectedResponseKind, UnexpectedTxExecutionStatus,
+};
 use crate::config::PocoAgentConfig;
 
 pub struct PocoAgent {
@@ -91,7 +89,7 @@ pub enum PocoAgentError {
 }
 
 impl<T: Debug + Display + Send + Sync + 'static> From<near_jsonrpc_client::errors::JsonRpcError<T>>
-    for PocoAgentError
+for PocoAgentError
 {
     fn from(e: near_jsonrpc_client::errors::JsonRpcError<T>) -> Self {
         PocoAgentError::JsonRpcError(Box::new(e))
@@ -108,25 +106,25 @@ impl PocoAgent {
         );
 
         let client = reqwest::Client::builder()
-            .connection_verbose(config.app.verbose)
-            .connect_timeout(Duration::from_millis(config.app.connection_timeout))
+            .connection_verbose(config.verbose)
+            .connect_timeout(Duration::from_millis(config.connection_timeout_in_ms))
             .default_headers(headers)
             .build()?;
 
-        let rpc_client = JsonRpcClient::with(client).connect(config.near.rpc_endpoint.as_str());
+        let rpc_client = JsonRpcClient::with(client).connect(&config.near_rpc_endpoint);
 
-        let account_id = config.near.signer_account_id.parse().map_err(|_| {
-            PocoAgentBuildError::AccountIdParseError(config.near.signer_account_id.to_string())
+        let account_id = config.near_signer_account_id.parse().map_err(|_| {
+            PocoAgentBuildError::AccountIdParseError(config.near_signer_account_id.to_string())
         })?;
 
-        let secret_key = config.near.signer_secret_key.parse().map_err(|_| {
-            PocoAgentBuildError::SecretKeyParseError(config.near.signer_secret_key.to_string())
+        let secret_key = config.near_signer_secret_key.parse().map_err(|_| {
+            PocoAgentBuildError::SecretKeyParseError(config.near_signer_secret_key.to_string())
         })?;
 
         let signer = InMemorySigner::from_secret_key(account_id, secret_key);
 
-        let contract_id = config.poco.contract_account.parse().map_err(|_| {
-            PocoAgentBuildError::AccountIdParseError(config.poco.contract_account.to_string())
+        let contract_id = config.poco_contract_account.parse().map_err(|_| {
+            PocoAgentBuildError::AccountIdParseError(config.poco_contract_account.to_string())
         })?;
 
         Ok(PocoAgent {
@@ -304,9 +302,9 @@ impl PocoAgent {
         method_name: &str,
         args: &T,
     ) -> Result<R, PocoAgentError>
-    where
-        T: Serialize,
-        R: DeserializeOwned,
+        where
+            T: Serialize,
+            R: DeserializeOwned,
     {
         let args = serde_json::to_string(args).unwrap();
 
@@ -326,9 +324,9 @@ impl PocoAgent {
         gas: u64,
         deposit: u128,
     ) -> Result<(Gas, R), PocoAgentError>
-    where
-        T: Serialize,
-        R: DeserializeOwned,
+        where
+            T: Serialize,
+            R: DeserializeOwned,
     {
         let args = serde_json::to_string(args)?;
 
@@ -351,8 +349,8 @@ impl PocoAgent {
         gas: u64,
         deposit: u128,
     ) -> Result<Gas, PocoAgentError>
-    where
-        T: Serialize,
+        where
+            T: Serialize,
     {
         let args = serde_json::to_string(args)?;
 
@@ -420,7 +418,7 @@ impl PocoAgent {
             10_000_000_000_000,
             0,
         )
-        .await
+            .await
     }
 
     pub async fn start_new_round(&self) -> Result<(Gas, RoundId), PocoAgentError> {
