@@ -15,6 +15,39 @@ pub struct IpfsClient {
     inner: Arc<ipfs_api_backend_hyper::IpfsClient>,
 }
 
+pub struct GetFileProgress {
+    downloaded_size_in_bytes: u64,
+    total_size_in_bytes: u64,
+}
+
+impl Default for GetFileProgress {
+    fn default() -> Self {
+        GetFileProgress {
+            downloaded_size_in_bytes: 0,
+            total_size_in_bytes: 0,
+        }
+    }
+}
+
+impl GetFileProgress {
+    pub fn new(downloaded_size_in_bytes: u64, total_size_in_bytes: u64) -> Self {
+        GetFileProgress {
+            downloaded_size_in_bytes,
+            total_size_in_bytes,
+        }
+    }
+
+    #[inline]
+    pub fn downloaded_size_in_bytes(&self) -> u64 {
+        self.downloaded_size_in_bytes
+    }
+
+    #[inline]
+    pub fn total_size_in_bytes(&self) -> u64 {
+        self.total_size_in_bytes
+    }
+}
+
 #[derive(Debug)]
 pub enum IpfsClientError {
     InvalidUrlError(String),
@@ -116,7 +149,7 @@ impl IpfsClient {
         &'a self,
         hash: &'a str,
         path: impl AsRef<Path> + 'a,
-        progress_callback_sender: Option<tokio::sync::mpsc::Sender<(u64, u64)>>,
+        progress_callback_sender: Option<tokio::sync::mpsc::Sender<GetFileProgress>>,
     ) -> Result<(), IpfsClientError> {
         let file_status = self.file_status(hash).await?;
         let file_size = file_status.cumulative_size;
@@ -137,7 +170,15 @@ impl IpfsClient {
                         }
 
                         downloaded += chunk.len() as u64;
-                        sender.send((downloaded, file_size)).await.unwrap();
+
+                        if let Err(_) = sender.send(GetFileProgress::new(downloaded, file_size)).await {
+                            return Err(ipfs_api_backend_hyper::Error::IpfsClientError(
+                                ipfs_api_prelude::Error::Io(std::io::Error::new(
+                                    std::io::ErrorKind::Other,
+                                    "failed to send progress",
+                                ))
+                            ));
+                        }
 
                         Ok((file, downloaded, sender))
                     },
@@ -145,7 +186,12 @@ impl IpfsClient {
                 .map_err(IpfsClientError::InnerError)
                 .await?;
 
-            sender2.send((file_size, file_size)).await.unwrap();
+            if let Err(_) = sender2.send(GetFileProgress::new(file_size, file_size)).await {
+                return Err(IpfsClientError::IoError(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "failed to send progress",
+                )));
+            }
         } else {
             self.inner
                 .cat(hash)

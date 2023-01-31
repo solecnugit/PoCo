@@ -5,6 +5,7 @@ use poco_types::types::round::RoundStatus;
 use poco_actuator::config::{RawTaskConfigFile, RawTaskInputSource};
 use poco_actuator::get_actuator;
 use poco_agent::types::AccountId;
+use poco_ipfs::client::GetFileProgress;
 
 use crate::app::backend::Backend;
 use crate::app::backend::command::{BackendCommand, CommandSource};
@@ -12,7 +13,7 @@ use crate::app::backend::command::BackendCommand::{
     CountEventsCommand, GasPriceCommand, GetUserEndpointCommand, HelpCommand, IpfsAddFileCommand,
     IpfsCatFileCommand, IpfsFileStatusCommand, IpfsGetFileCommand, NetworkStatusCommand,
     PublishTaskCommand, QueryEventsCommand, RoundInfoCommand, RoundStatusCommand,
-    SetUserEndpointCommand, StartNewRoundCommand, StatusCommand, ViewAccountCommand,
+    SetUserEndpointCommand, StartRoundCommand, StatusCommand, ViewAccountCommand,
 };
 use crate::app::ui::event::{CommandExecutionStage, CommandExecutionStatus};
 use crate::app::ui::util::{log_command_execution, log_multiple_strings, log_string};
@@ -53,7 +54,7 @@ pub trait CommandExecutor {
             IpfsFileStatusCommand { file_hash } => {
                 self.execute_ipfs_file_status_command(command_source, file_hash)
             }
-            StartNewRoundCommand => self.execute_start_new_round_command(command_source),
+            StartRoundCommand => self.execute_start_round_command(command_source),
             PublishTaskCommand { task_config_path } => {
                 self.execute_publish_task_command(command_source, task_config_path)
             }
@@ -78,7 +79,7 @@ pub trait CommandExecutor {
         file_path: String,
     );
     fn execute_ipfs_add_file_command(&mut self, command_source: CommandSource, file_path: String);
-    fn execute_start_new_round_command(&mut self, command_source: CommandSource);
+    fn execute_start_round_command(&mut self, command_source: CommandSource);
     fn execute_set_user_endpoint_command(
         &mut self,
         command_source: CommandSource,
@@ -259,12 +260,13 @@ impl CommandExecutor for Backend {
                 log_string(&sender, format!("Downloading file from ipfs: {file_hash}"));
 
                 tokio::spawn(async move {
-                    let mut last_progress = (0, 0);
+                    let mut last_progress: GetFileProgress = Default::default();
 
                     loop {
                         tokio::select! {
                             _ = interval.tick() => {
-                                let (downloaded, total) = last_progress;
+                                let downloaded = last_progress.downloaded_size_in_bytes();
+                                let total = last_progress.total_size_in_bytes();
 
                                 if downloaded != 0 {
                                     let percent = (downloaded as f64 / total as f64) * 100.0;
@@ -313,7 +315,7 @@ impl CommandExecutor for Backend {
         );
     }
 
-    fn execute_start_new_round_command(&mut self, command_source: CommandSource) {
+    fn execute_start_round_command(&mut self, command_source: CommandSource) {
         self.execute_command_block(
             command_source,
             async move |sender, agent, _ipfs_client, _config| {

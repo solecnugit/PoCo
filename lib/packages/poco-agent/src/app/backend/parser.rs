@@ -6,7 +6,7 @@ use crate::app::backend::command::BackendCommand::{
     CountEventsCommand, GasPriceCommand, GetUserEndpointCommand, HelpCommand, IpfsAddFileCommand,
     IpfsCatFileCommand, IpfsFileStatusCommand, IpfsGetFileCommand, NetworkStatusCommand,
     PublishTaskCommand, QueryEventsCommand, RoundInfoCommand, RoundStatusCommand,
-    SetUserEndpointCommand, StartNewRoundCommand, StatusCommand, ViewAccountCommand,
+    SetUserEndpointCommand, StartRoundCommand, StatusCommand, ViewAccountCommand,
 };
 
 pub type ParseBackendCommandError = clap::Error;
@@ -123,7 +123,7 @@ impl CommandParser for Backend {
                 }
                 _ => unreachable!("clap should have handled this"),
             },
-            Some(("start-new-round", _)) => Ok(StartNewRoundCommand),
+            Some(("start-round", _)) => Ok(StartRoundCommand),
             Some(("publish-task", args)) => {
                 let task_config_path = args.get_one::<String>("task-config-path").cloned().unwrap();
 

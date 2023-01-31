@@ -43,7 +43,7 @@ pub enum BackendCommand {
     SetUserEndpointCommand {
         endpoint: String,
     },
-    StartNewRoundCommand,
+    StartRoundCommand,
     // Task Related Commands
     PublishTaskCommand {
         task_config_path: String,
@@ -133,7 +133,7 @@ pub fn get_command_instance(in_ui_mode: bool) -> Command {
                     .about("Get file status from IPFS")
                     .arg(Arg::new("hash").required(false).index(1)),
             ]),
-        subcommand("start-new-round").about("Start new round"),
+        subcommand("start-round").about("Start new round"),
         subcommand("publish-task")
             .about("Publish task")
             .arg(Arg::new("task-config-path").required(true).index(1)),
