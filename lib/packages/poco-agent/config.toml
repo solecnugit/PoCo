@@ -20,7 +20,7 @@ connectionTimeoutInMs = 1000
 nearRpcEndpoint = "http://49.52.27.50:8332"
 nearSignerAccountId = "test.near"
 nearSignerSecretKey = "ed25519:2ykcMLiM7vCmsSECcgfmUzihBtNdBv7v2CxNi94sNt4R8ar4xsrMMYvtsSNGQDfSRhNWXEnZvgx2wzS9ViBiS9jW"
-pocoContractAccount = "dev-1674905258481-61645437217567"
+pocoContractAccount = "dev-1675229835031-47999882804967"
 
 [db]
 dbPath = "poco.db"
