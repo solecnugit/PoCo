@@ -7,6 +7,7 @@ use schemars::JsonSchema;
 use std::fmt::{Display, Formatter};
 use std::ops::{Add, Sub};
 use strum::Display;
+use crate::types::event::EventNonce;
 
 pub type RoundId = u32;
 
@@ -122,6 +123,7 @@ pub struct RoundInfo {
     pub duration: RoundDuration,
     pub task_count: u32,
     pub event_count: u32,
+    pub event_offset: EventNonce
 }
 
 #[cfg(feature = "all")]
@@ -141,8 +143,8 @@ impl Display for RoundInfo {
 
         write!(
             f,
-            "Round #{}: {} ({} - {})\n Tasks: {}\n  Events: {}",
-            self.id, self.status, start_time, end_time, self.task_count, self.event_count
+            "Round #{}: {} ({} - {})\n Tasks: {}\n  Events: {}(from {}))",
+            self.id, self.status, start_time, end_time, self.task_count, self.event_count, self.event_offset
         )
     }
 }

@@ -68,7 +68,8 @@ impl Contract {
         let start_time = self.round_manager.get_round_start_time();
         let duration = self.round_manager.get_round_duration();
 
-        let event_count = self.event_bus.len() - self.round_manager.get_round_event_offset();
+        let event_offset = self.round_manager.get_round_event_offset();
+        let event_count = self.event_bus.len() - event_offset;
         let task_count = self.task_manager.round_count(id);
 
         RoundInfo {
@@ -77,6 +78,7 @@ impl Contract {
             start_time,
             duration,
             event_count,
+            event_offset,
             task_count,
         }
     }
