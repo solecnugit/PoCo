@@ -40,7 +40,7 @@ pub enum CommandExecutionStatus {
 
 #[derive(Debug)]
 pub enum UIAction {
-    Panic(String),
+    Panic(anyhow::Error),
     LogString(String),
     LogMultipleStrings(Vec<String>),
     LogTracingEvent(TracingEvent),
@@ -57,7 +57,7 @@ pub enum UIAction {
 pub trait UIActionSender {
     type Error: std::error::Error;
 
-    fn panic(&self, message: String) -> Result<(), Self::Error>;
+    fn panic(&self, error: anyhow::Error) -> Result<(), Self::Error>;
     fn log_string(&self, message: String) -> Result<(), Self::Error>;
     fn log_multiple_strings(&self, messages: Vec<String>) -> Result<(), Self::Error>;
     fn log_tracing_event(&self, event: TracingEvent) -> Result<(), Self::Error>;
@@ -240,7 +240,7 @@ impl UIActionEvent {
                                 format!("Command {source} executed successfully")
                             }
                             CommandExecutionStatus::Failed => {
-                                format!("Command {source} failed (Stage: {stage})", )
+                                format!("Command {source} failed (Stage: {stage})",)
                             }
                         },
                         Style::default().fg(match status {
@@ -249,9 +249,9 @@ impl UIActionEvent {
                         }),
                     ),
                 ])]
-                    .into_iter()
-                    .chain(error_spans)
-                    .collect()
+                .into_iter()
+                .chain(error_spans)
+                .collect()
             }
             UIAction::Panic(_) => unreachable!(),
         }

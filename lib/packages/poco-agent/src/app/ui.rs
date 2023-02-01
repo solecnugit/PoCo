@@ -1,17 +1,19 @@
-use std::{io, sync::Arc};
 use std::time;
+use std::{io, sync::Arc};
+use anyhow::anyhow;
 
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture, Event},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use tui::{Frame, Terminal};
+use serde::de::Error;
 use tui::backend::{Backend, CrosstermBackend};
 use tui::layout::{Constraint, Direction, Layout};
 use tui::style::{Color, Modifier, Style};
 use tui::text::{Span, Spans, Text};
 use tui::widgets::{Block, Borders, List, Paragraph};
+use tui::{Frame, Terminal};
 use unicode_width::UnicodeWidthStr;
 
 use crate::app::backend::command::CommandSource;
@@ -55,16 +57,16 @@ impl UI {
         }
     }
 
-    pub fn retrieve_events(&mut self) -> bool {
+    pub fn retrieve_events(&mut self) -> anyhow::Result<()> {
         while let Ok(event) = self.receiver.try_recv() {
-            if let UIAction::Panic(_) = event.1 {
-                return false;
+            if let UIAction::Panic(err) = event.1 {
+                return Err(err);
             } else {
                 self.state.push_event(event);
             }
         }
 
-        true
+        Ok(())
     }
 
     pub fn run_ui(&mut self) -> anyhow::Result<()> {
@@ -93,9 +95,7 @@ impl UI {
 
     pub fn ui_loop<B: Backend>(&mut self, terminal: &mut Terminal<B>) -> anyhow::Result<()> {
         loop {
-            if !self.retrieve_events() {
-                return Err(anyhow::anyhow!("UI panicked"));
-            }
+            self.retrieve_events()?;
 
             terminal.draw(|frame| self.draw_ui(frame))?;
 
@@ -167,7 +167,7 @@ impl UI {
                     Constraint::Length(3),
                     Constraint::Length(1),
                 ]
-                    .as_ref(),
+                .as_ref(),
             )
             .split(frame.size());
 
@@ -209,7 +209,7 @@ impl UI {
 
         match self.state.mode {
             UIInputMode::Normal =>
-            // Hide the cursor. `Frame` does this by default, so we don't need to do anything here
+                // Hide the cursor. `Frame` does this by default, so we don't need to do anything here
                 {}
 
             UIInputMode::Edit => {

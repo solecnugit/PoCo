@@ -1,13 +1,15 @@
-use crate::app::backend::Backend;
 use crate::app::backend::command::CommandSource;
+use crate::app::backend::Backend;
 use crate::app::trace::TracingEvent;
-use crate::app::ui::event::{CommandExecutionStage, CommandExecutionStatus, UIAction, UIActionEvent, UIActionSender};
+use crate::app::ui::event::{
+    CommandExecutionStage, CommandExecutionStatus, UIAction, UIActionEvent, UIActionSender,
+};
 
 impl UIActionSender for Backend {
     type Error = crossbeam_channel::SendError<UIActionEvent>;
 
-    fn panic(&self, message: String) -> Result<(), Self::Error> {
-        self.ui_sender.send(UIAction::Panic(message).into())
+    fn panic(&self, error: anyhow::Error) -> Result<(), Self::Error> {
+        self.ui_sender.send(UIAction::Panic(error).into())
     }
 
     fn log_string(&self, message: String) -> Result<(), Self::Error> {

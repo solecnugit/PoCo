@@ -18,7 +18,6 @@ use crate::app::trace::{TracingCategory, TracingEvent};
 use crate::app::ui::event::{
     CommandExecutionStage, CommandExecutionStatus, UIAction, UIActionEvent, UIActionSender,
 };
-use crate::app::ui::util::log_command_execution;
 use crate::config::{AppRunningMode, PocoClientConfig};
 
 pub mod command;
@@ -119,24 +118,24 @@ impl Backend {
     }
 
     fn execute_command_block<F, R, I>(&self, command_source: CommandSource, f: F)
-        where
-            F: FnOnce(Backend) -> R,
-            R: Future<Output=anyhow::Result<I>> + Send + 'static,
-            I: Send + 'static,
+    where
+        F: FnOnce(Backend) -> R,
+        R: Future<Output = anyhow::Result<I>> + Send + 'static,
+        I: Send + 'static,
     {
-        let backend = self.clone();
-        let sender = self.ui_sender.clone();
+        let it = self.clone();
+        let it2 = self.clone();
 
-        self.runtime.spawn(f(backend).then(async move |r| {
+        self.runtime.spawn(f(it).then(async move |r| {
             match r {
                 Ok(_) => {
-                    log_command_execution(
-                        &sender,
+                    it2.log_command_execution(
                         command_source,
                         CommandExecutionStage::Executed,
                         CommandExecutionStatus::Succeed,
                         None,
-                    );
+                    )
+                    .unwrap();
                 }
                 Err(e) => {
                     tracing::error!(
@@ -146,31 +145,44 @@ impl Backend {
                         error = format!("{e:?}")
                     );
 
-                    log_command_execution(
-                        &sender,
+                    it2.log_command_execution(
                         command_source,
                         CommandExecutionStage::Executed,
                         CommandExecutionStatus::Failed,
                         Some(Box::new(e)),
-                    );
+                    )
+                    .unwrap();
                 }
             };
         }));
     }
 
+    fn setup_db_if_needed(&self) -> anyhow::Result<()> {
+        if self.running_mode == AppRunningMode::DIRECT {
+            return Ok(());
+        }
+
+        if self.db.is_initialized() {
+            return Ok(());
+        }
+
+        tracing::event!(
+            Level::INFO,
+            message = "initializing database",
+            category = format!("{:?}", TracingCategory::Backend)
+        );
+
+        self.runtime.block_on(async {
+            let round_info = self.agent.get_round_info().await?;
+
+            Ok(())
+        })
+    }
+
     fn start_backend_microtasks(&self) {
         {
             // event microtask
-
-            let config = self.config.clone();
-            let ui_sender = self.ui_sender.clone();
-            let agent = self.agent.clone();
-            let db = self.db.clone();
-            let runtime = self.runtime.clone();
-
-            self.runtime.spawn(microtask::event_microtask(
-                config, db, agent, ui_sender, runtime,
-            ));
+            self.runtime.spawn(microtask::event_microtask(self.clone()));
         }
     }
 
@@ -179,6 +191,14 @@ impl Backend {
 
         builder
             .spawn(move || 'outer: loop {
+                if let Err(err) = self.setup_db_if_needed() {
+                    tracing::error!(error = ?err, "Failed to setup database");
+
+                    self.panic(anyhow::anyhow!("Failed to setup database")).unwrap();
+
+                    break;
+                }
+
                 if self.running_mode != AppRunningMode::DIRECT {
                     self.start_backend_microtasks();
                 }
@@ -196,13 +216,12 @@ impl Backend {
                                         _ => tracing::error!(error = ?error, "Failed to parse command"),
                                     }
 
-                                    log_command_execution(
-                                        &self.ui_sender,
+                                    self.log_command_execution(
                                         command_source,
                                         CommandExecutionStage::Parsing,
                                         CommandExecutionStatus::Failed,
                                         Some(Box::new(anyhow::anyhow!(error))),
-                                    );
+                                    ).unwrap();
                                 }
                             }
                         }
