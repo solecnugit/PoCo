@@ -20,4 +20,6 @@ anyhow = "1.0.68"
 chrono = { version = "0.4.23", optional = true }
 
 [features]
-all = ["chrono", "near-primitives"]
+native = ["chrono", "near-primitives" ]
+protocol = []
+default = []

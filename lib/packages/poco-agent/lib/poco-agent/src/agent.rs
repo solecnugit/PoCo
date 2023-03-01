@@ -16,7 +16,7 @@ use near_primitives::views::{AccessKeyView, AccountView, FinalExecutionStatus, Q
 use poco_types::types::event::IndexedEvent;
 use poco_types::types::round::{RoundId, RoundInfo, RoundStatus};
 use poco_types::types::task::id::TaskId;
-use poco_types::types::task::TaskConfig;
+use poco_types::types::task::TaskConfigRequest;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::json;
@@ -428,11 +428,11 @@ impl PocoAgent {
 
     pub async fn publish_task(
         &self,
-        task_config: TaskConfig,
+        task_config: TaskConfigRequest,
     ) -> Result<(Gas, TaskId), PocoAgentError> {
         #[derive(Serialize)]
         struct WrappedTaskConfig {
-            config: TaskConfig,
+            config: TaskConfigRequest,
         }
 
         let task_config = WrappedTaskConfig {

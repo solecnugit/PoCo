@@ -2,21 +2,21 @@ use std::path::Path;
 
 use poco_types::types::round::RoundStatus;
 
-use poco_actuator::config::{RawTaskConfigFile, RawTaskInputSource};
-use poco_actuator::get_actuator;
+// use poco_actuator::config::{RawTaskConfigFile, RawTaskInputSource};
+// use poco_actuator::get_actuator;
 use poco_agent::types::AccountId;
 use poco_ipfs::client::GetFileProgress;
 
-use crate::app::backend::Backend;
-use crate::app::backend::command::{BackendCommand, CommandSource};
 use crate::app::backend::command::BackendCommand::{
     CountEventsCommand, GasPriceCommand, GetUserEndpointCommand, HelpCommand, IpfsAddFileCommand,
     IpfsCatFileCommand, IpfsFileStatusCommand, IpfsGetFileCommand, NetworkStatusCommand,
     PublishTaskCommand, QueryEventsCommand, RoundInfoCommand, RoundStatusCommand,
     SetUserEndpointCommand, StartRoundCommand, StatusCommand, ViewAccountCommand,
 };
-use crate::app::ui::event::{CommandExecutionStage, CommandExecutionStatus};
+use crate::app::backend::command::{BackendCommand, CommandSource};
+use crate::app::backend::Backend;
 use crate::app::ui::event::UIActionSender;
+use crate::app::ui::event::{CommandExecutionStage, CommandExecutionStatus};
 use crate::util::{pretty_bytes, pretty_gas};
 
 pub trait CommandExecutor {
@@ -96,83 +96,83 @@ impl CommandExecutor for Backend {
         task_config_path: String,
     ) {
         self.execute_command_block(command_source, async move |it| {
-            let task_config_path = Path::new(&task_config_path);
-
-            // Check if task config file exists
-            match task_config_path.try_exists() {
-                Ok(true) => {}
-                Ok(false) => anyhow::bail!("Task config file does not exist"),
-                Err(e) => anyhow::bail!("Failed to check if task config file exists: {}", e),
-            }
-
-            // Read task config file
-            let task_config = tokio::fs::read_to_string(task_config_path).await?;
-            let task_config = serde_json::from_str::<RawTaskConfigFile>(&task_config)?;
-
-            let actuator = if let Some(actuator) = get_actuator(&task_config.r#type) {
-                actuator
-            } else {
-                anyhow::bail!("Unsupported task type: {}", task_config.r#type);
-            };
-
-            // Encode task config
-            let task_config = match &task_config.input {
-                RawTaskInputSource::Ipfs { hash, file } => match (hash, file) {
-                    (None, None) => unreachable!(),
-                    (Some(_), Some(_)) => {
-                        anyhow::bail!(
-                            "Both hash and file are specified in task config {}",
-                            task_config_path.display()
-                        );
-                    }
-                    (Some(_hash), None) => task_config.build_task_config(None, &actuator)?,
-                    (None, Some(file)) => {
-                        let file_path = Path::new(file.as_str());
-                        let file_path = if file_path.is_absolute() {
-                            file_path.to_path_buf()
-                        } else {
-                            task_config_path.parent().unwrap().join(file_path)
-                        };
-
-                        if let Ok(true) = file_path.try_exists() {
-                            it.log_string(format!(
-                                "Uploading file to ipfs: {}",
-                                file_path.display()
-                            ))?;
-
-                            let file_cid = it.ipfs_client.add_file(file_path.as_path()).await?;
-
-                            it.log_string(format!("File uploaded to ipfs: {file_cid}"))?;
-
-                            task_config.build_task_config(Some(file_cid), &actuator)?
-                        } else {
-                            anyhow::bail!(
-                                "Task input file does not exist, {}",
-                                file_path.display()
-                            );
-                        }
-                    }
-                },
-                RawTaskInputSource::Link { .. } => {
-                    task_config.build_task_config(None, &actuator)?
-                }
-            };
-
-            // Check if round is started
-            let round_status = it.agent.get_round_status().await?;
-
-            if let RoundStatus::Pending = round_status {
-                anyhow::bail!("Round is not started yet. Please wait for the round to start.");
-            }
-
-            // Publish task
-            let (gas, task_id) = it.agent.publish_task(task_config).await?;
-
-            it.log_string(format!(
-                "Task published. Gas used: {}, Task ID: {task_id}",
-                pretty_gas(gas)
-            ))?;
-
+            // let task_config_path = Path::new(&task_config_path);
+            //
+            // // Check if task config file exists
+            // match task_config_path.try_exists() {
+            //     Ok(true) => {}
+            //     Ok(false) => anyhow::bail!("Task config file does not exist"),
+            //     Err(e) => anyhow::bail!("Failed to check if task config file exists: {}", e),
+            // }
+            //
+            // // Read task config file
+            // let task_config = tokio::fs::read_to_string(task_config_path).await?;
+            // let task_config = serde_json::from_str::<RawTaskConfigFile>(&task_config)?;
+            //
+            // let actuator = if let Some(actuator) = get_actuator(&task_config.r#type) {
+            //     actuator
+            // } else {
+            //     anyhow::bail!("Unsupported task type: {}", task_config.r#type);
+            // };
+            //
+            // // Encode task config
+            // let task_config = match &task_config.input {
+            //     RawTaskInputSource::Ipfs { hash, file } => match (hash, file) {
+            //         (None, None) => unreachable!(),
+            //         (Some(_), Some(_)) => {
+            //             anyhow::bail!(
+            //                 "Both hash and file are specified in task config {}",
+            //                 task_config_path.display()
+            //             );
+            //         }
+            //         (Some(_hash), None) => task_config.build_task_config(None, &actuator)?,
+            //         (None, Some(file)) => {
+            //             let file_path = Path::new(file.as_str());
+            //             let file_path = if file_path.is_absolute() {
+            //                 file_path.to_path_buf()
+            //             } else {
+            //                 task_config_path.parent().unwrap().join(file_path)
+            //             };
+            //
+            //             if let Ok(true) = file_path.try_exists() {
+            //                 it.log_string(format!(
+            //                     "Uploading file to ipfs: {}",
+            //                     file_path.display()
+            //                 ))?;
+            //
+            //                 let file_cid = it.ipfs_client.add_file(file_path.as_path()).await?;
+            //
+            //                 it.log_string(format!("File uploaded to ipfs: {file_cid}"))?;
+            //
+            //                 task_config.build_task_config(Some(file_cid), &actuator)?
+            //             } else {
+            //                 anyhow::bail!(
+            //                     "Task input file does not exist, {}",
+            //                     file_path.display()
+            //                 );
+            //             }
+            //         }
+            //     },
+            //     RawTaskInputSource::Link { .. } => {
+            //         task_config.build_task_config(None, &actuator)?
+            //     }
+            // };
+            //
+            // // Check if round is started
+            // let round_status = it.agent.get_round_status().await?;
+            //
+            // if let RoundStatus::Pending = round_status {
+            //     anyhow::bail!("Round is not started yet. Please wait for the round to start.");
+            // }
+            //
+            // // Publish task
+            // let (gas, task_id) = it.agent.publish_task(task_config).await?;
+            //
+            // it.log_string(format!(
+            //     "Task published. Gas used: {}, Task ID: {task_id}",
+            //     pretty_gas(gas)
+            // ))?;
+            //
             Ok(())
         });
     }

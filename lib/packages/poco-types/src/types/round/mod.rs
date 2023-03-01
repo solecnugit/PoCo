@@ -1,9 +1,9 @@
-#[cfg(feature = "all")]
+#[cfg(feature = "native")]
 use chrono::TimeZone;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
 use schemars::JsonSchema;
-#[cfg(feature = "all")]
+#[cfg(feature = "native")]
 use std::fmt::{Display, Formatter};
 use std::ops::{Add, Sub};
 use strum::Display;
@@ -126,7 +126,7 @@ pub struct RoundInfo {
     pub event_offset: EventNonce
 }
 
-#[cfg(feature = "all")]
+#[cfg(feature = "native")]
 impl Display for RoundInfo {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let start_time = chrono::Local

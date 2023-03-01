@@ -9,10 +9,10 @@ use tracing_subscriber::fmt::time::OffsetTime;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
-use poco_actuator::BoxedTaskActuator;
-use poco_actuator::media::MEDIA_TRANSCODING_TASK_TYPE;
-use poco_actuator::media::MediaTranscodingActuator;
-use poco_actuator::register_actuator;
+// use poco_actuator::media::MediaTranscodingActuator;
+// use poco_actuator::media::MEDIA_TRANSCODING_TASK_TYPE;
+// use poco_actuator::register_actuator;
+// use poco_actuator::BoxedTaskActuator;
 
 use crate::app::App;
 
@@ -48,10 +48,10 @@ fn main() -> anyhow::Result<()> {
         .with(app.get_tracing_layer())
         .init();
 
-    register_actuator(
-        MEDIA_TRANSCODING_TASK_TYPE,
-        BoxedTaskActuator::new(MediaTranscodingActuator::new()),
-    )?;
+    // register_actuator(
+    //     MEDIA_TRANSCODING_TASK_TYPE,
+    //     BoxedTaskActuator::new(MediaTranscodingActuator::new()),
+    // )?;
 
     app.run(app_run_config.mode)
 }

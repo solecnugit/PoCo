@@ -6,7 +6,7 @@ edition = "2021"
 [workspace]
 members = [
     "lib/poco-agent",
-    "lib/poco-actuator",
+    "lib/poco-service",
     "lib/poco-ipfs",
     "lib/poco-db"
 ]
@@ -47,9 +47,9 @@ async-trait = "0.1.63"
 
 crossbeam-channel = "0.5.6"
 
-poco-types = { path = "../poco-types", features = ["all"] }
+poco-types = { path = "../poco-types", features = ["native"] }
 poco-agent = { path = "lib/poco-agent" }
-poco-actuator = { path = "lib/poco-actuator" }
+poco-service = { path = "lib/poco-service" }
 poco-ipfs = { path = "lib/poco-ipfs" }
 poco-db = { path = "lib/poco-db" }
 

@@ -1,4 +1,4 @@
-#[cfg(feature = "all")]
+#[cfg(feature = "native")]
 use std::fmt::{Display, Formatter};
 
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
@@ -10,17 +10,18 @@ use schemars::JsonSchema;
 use crate::types::round::RoundId;
 use crate::types::task::id::TaskId;
 use crate::types::task::OnChainTaskConfig;
+use crate::types::task::service::TaskService;
 
 pub type EventNonce = u32;
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(crate = "near_sdk::serde")]
 pub struct IndexedEvent {
-    pub event_id: u32,
+    pub event_id: EventNonce,
     pub payload: Events,
 }
 
-#[cfg(feature = "all")]
+#[cfg(feature = "native")]
 impl Display for IndexedEvent {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -40,7 +41,7 @@ pub enum Events {
     #[event_version("0.0.1")]
     NewTaskEvent {
         task_id: TaskId,
-        task_config: OnChainTaskConfig,
+        task_service: TaskService,
     },
 
     #[event_version("0.0.1")]
@@ -52,13 +53,12 @@ pub enum Events {
 }
 
 impl Events {
-    #[inline]
-    pub fn log_event(&self) {
-        self.emit()
+    pub fn emit_event(&self) {
+        self.emit();
     }
 }
 
-#[cfg(feature = "all")]
+#[cfg(feature = "native")]
 impl Display for Events {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -67,11 +67,11 @@ impl Display for Events {
             }
             Events::NewTaskEvent {
                 task_id,
-                task_config,
+                task_service,
             } => write!(
                 f,
-                "NewTaskEvent {{ task_id: {}, task_config: {} }}",
-                task_id, task_config
+                "NewTaskEvent {{ task_id: {}, task_service: {} }}",
+                task_id, task_service
             ),
             Events::UserProfileFieldUpdateEvent {
                 user_id,

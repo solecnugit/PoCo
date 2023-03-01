@@ -2119,20 +2119,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6ac9a59f73473f1b8d852421e59e64809f025994837ef743615c6d0c5b305160"
 
 [[package]]
-name = "poco-actuator"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "borsh 0.10.0",
- "lazy_static",
- "poco-types",
- "serde",
- "serde_json",
- "thiserror",
-]
-
-[[package]]
 name = "poco-agent"
 version = "0.1.0"
 dependencies = [
@@ -2144,7 +2130,7 @@ dependencies = [
  "near-jsonrpc-client",
  "near-jsonrpc-primitives",
  "near-primitives 0.15.0",
- "poco-actuator",
+ "poco-service",
  "poco-types",
  "reqwest",
  "serde",
@@ -2167,10 +2153,10 @@ dependencies = [
  "either",
  "futures",
  "lazy_static",
- "poco-actuator",
  "poco-agent",
  "poco-db",
  "poco-ipfs",
+ "poco-service",
  "poco-types",
  "serde",
  "serde_json",
@@ -2212,6 +2198,20 @@ dependencies = [
  "serde",
  "tokio",
  "tokio-util",
+]
+
+[[package]]
+name = "poco-service"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "borsh 0.10.0",
+ "lazy_static",
+ "poco-types",
+ "serde",
+ "serde_json",
+ "thiserror",
 ]
 
 [[package]]

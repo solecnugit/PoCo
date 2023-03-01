@@ -7,9 +7,10 @@ use schemars::JsonSchema;
 use crate::types::uint::U256;
 
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct InternalUserProfile {
+pub struct OnchainUserProfile {
     props: UnorderedMap<String, U256>,
     endpoint: LazyOption<String>,
+    region: LazyOption<String>,
 }
 
 #[derive(Serialize, JsonSchema)]
@@ -26,15 +27,16 @@ pub struct UserProfile<'a> {
     endpoint: &'a Option<String>,
 }
 
-impl InternalUserProfile {
+impl OnchainUserProfile {
     #[inline]
     pub fn new(account: &AccountId) -> Self {
         let prefix = account.to_string();
         let props = UnorderedMap::new(format!("{prefix}:props").as_bytes().to_vec());
 
-        InternalUserProfile {
+        OnchainUserProfile {
             props,
             endpoint: LazyOption::new(format!("{prefix}:endpoint").as_bytes().to_vec(), None),
+            region: LazyOption::new(format!("{prefix}:region").as_bytes().to_vec(), None),
         }
     }
 
@@ -49,6 +51,26 @@ impl InternalUserProfile {
     }
 
     #[inline]
+    pub fn unset_endpoint(&mut self) {
+        self.endpoint.set(None);
+    }
+
+    #[inline]
+    pub fn get_region(&self) -> &Option<String> {
+        self.region.get()
+    }
+
+    #[inline]
+    pub fn set_region(&mut self, region: String) {
+        self.region.replace(region);
+    }
+
+    #[inline]
+    pub fn unset_region(&mut self) {
+        self.region.set(None)
+    }
+
+    #[inline]
     pub fn get_prop(&self, name: &str) -> Option<&U256> {
         self.props.get(name)
     }
@@ -59,8 +81,8 @@ impl InternalUserProfile {
     }
 }
 
-impl<'a, 'b: 'a> From<&'b InternalUserProfile> for UserProfile<'a> {
-    fn from(profile: &'b InternalUserProfile) -> Self {
+impl<'a, 'b: 'a> From<&'b OnchainUserProfile> for UserProfile<'a> {
+    fn from(profile: &'b OnchainUserProfile) -> Self {
         UserProfile {
             props: profile
                 .props

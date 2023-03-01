@@ -1,5 +1,13 @@
 # POCO
 
+## Important
+
+We are currently migrating the current project to the NEAR platform and implementing and verifying new solution.
+
+## DEMO
+
+PLACEHOLDER
+
 ## 项目目录结构
 
 - `lib/`：项目的各部分组件

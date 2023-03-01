@@ -118,10 +118,10 @@ impl Backend {
     }
 
     fn execute_command_block<F, R, I>(&self, command_source: CommandSource, f: F)
-    where
-        F: FnOnce(Backend) -> R,
-        R: Future<Output = anyhow::Result<I>> + Send + 'static,
-        I: Send + 'static,
+        where
+            F: FnOnce(Backend) -> R,
+            R: Future<Output=anyhow::Result<I>> + Send + 'static,
+            I: Send + 'static,
     {
         let it = self.clone();
         let it2 = self.clone();
@@ -135,7 +135,7 @@ impl Backend {
                         CommandExecutionStatus::Succeed,
                         None,
                     )
-                    .unwrap();
+                        .unwrap();
                 }
                 Err(e) => {
                     tracing::error!(
@@ -151,7 +151,7 @@ impl Backend {
                         CommandExecutionStatus::Failed,
                         Some(Box::new(e)),
                     )
-                    .unwrap();
+                        .unwrap();
                 }
             };
         }));
@@ -173,7 +173,16 @@ impl Backend {
         );
 
         self.runtime.block_on(async {
+            let stats = self.agent.status().await?;
             let round_info = self.agent.get_round_info().await?;
+            let now = chrono::Local::now();
+
+            self.db.initialize_app_metadata(
+                &now,
+                &round_info.id,
+                &stats.sync_info.latest_block_height,
+                &round_info.event_offset,
+            );
 
             Ok(())
         })

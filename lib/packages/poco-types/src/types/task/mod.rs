@@ -1,22 +1,27 @@
-#[cfg(feature = "all")]
+#[cfg(feature = "native")]
 use std::fmt::{Debug, Display};
+use std::fmt::Formatter;
+use std::mem;
 
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::AccountId;
 use schemars::JsonSchema;
+use crate::types::region::RegionId;
 
 use crate::types::task::id::TaskId;
+use crate::types::task::service::{TaskService, TaskServiceType};
 use crate::types::uint::U256;
 
 pub mod id;
+pub mod service;
 
 pub type TaskNonce = u32;
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, JsonSchema, Clone, Debug)]
 #[serde(crate = "near_sdk::serde")]
 #[serde(tag = "type")]
-#[serde(rename_all = "UPPERCASE")]
+#[serde(rename_all = "camelCase")]
 pub enum TaskInputSource {
     Ipfs { hash: String },
     Link { url: String },
@@ -25,7 +30,7 @@ pub enum TaskInputSource {
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, JsonSchema, Clone, Debug)]
 #[serde(crate = "near_sdk::serde")]
 #[serde(tag = "type")]
-#[serde(rename_all = "UPPERCASE")]
+#[serde(rename_all = "camelCase")]
 pub enum TaskOutputSource {
     Ipfs,
     Link { url: String },
@@ -63,45 +68,59 @@ pub struct TaskOffer {
 pub struct OnChainTaskConfig {
     pub owner: AccountId,
     pub id: TaskId,
-    pub input: TaskInputSource,
-    pub output: TaskOutputSource,
-    pub requirements: Vec<TaskRequirement>,
-    pub offer: Vec<TaskOffer>,
-    pub config: Vec<u8>,
-    pub r#type: String,
+    pub service: TaskService,
+    pub config: Vec<u8>
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, JsonSchema, Clone, Debug)]
 #[serde(crate = "near_sdk::serde")]
-pub struct TaskConfig {
-    pub input: TaskInputSource,
-    pub output: TaskOutputSource,
-    pub requirements: Vec<TaskRequirement>,
-    pub offer: Vec<TaskOffer>,
-    pub config: Vec<u8>,
-    pub r#type: String,
+pub struct TaskConfigRequest {
+    pub service: TaskService,
+    pub config: Vec<u8>
 }
 
-impl TaskConfig {
-    pub fn to_on_chain_task_config(
-        self,
-        owner: AccountId,
-        id: TaskId,
-    ) -> anyhow::Result<OnChainTaskConfig> {
+impl TaskConfigRequest {
+    #[cfg(feature = "protocol")]
+    pub fn to_on_chain_task_config(mut self, owner: AccountId, task_id: TaskId) -> anyhow::Result<OnChainTaskConfig> {
         Ok(OnChainTaskConfig {
             owner,
-            id,
-            input: self.input,
-            output: self.output,
-            requirements: self.requirements,
-            offer: self.offer,
-            config: self.config,
-            r#type: self.r#type,
+            id: task_id,
+            service: mem::take(&mut self.service),
+            config: mem::take(&mut self.config),
+        })
+    }
+}
+
+#[derive(BorshSerialize, Serialize, Deserialize, JsonSchema, Clone, Debug)]
+#[serde(crate = "near_sdk::serde")]
+#[serde(rename_all = "camelCase")]
+pub struct RawTaskConfig<S : TaskServiceType> {
+    pub task_input: TaskInputSource,
+    pub task_output: TaskOutputSource,
+    pub task_region: RegionId,
+    pub task_requirements: Vec<S::TaskRequirement>,
+    pub task_terminations: Vec<S::TaskTermination>,
+    pub task_prices: Vec<S::TaskPrice>,
+    pub task_service: TaskService
+}
+
+impl <S: TaskServiceType> RawTaskConfig<S> {
+    #[cfg(feature = "native")]
+    pub fn to_task_config_buffer(
+        self,
+    ) -> anyhow::Result<TaskConfigRequest> {
+        let config = self.try_to_vec()?;
+
+
+        Ok(TaskConfigRequest {
+            service: self.task_service,
+            config,
         })
     }
 }
 
 impl TaskRequirement {
+    #[cfg(feature = "native")]
     pub fn is_ok(&self, rhs: &U256) -> bool {
         match self.operator {
             TaskRequirementOperator::Equal => self.value == *rhs,
@@ -114,13 +133,9 @@ impl TaskRequirement {
     }
 }
 
-#[cfg(feature = "all")]
+#[cfg(feature = "native")]
 impl Display for OnChainTaskConfig {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "TaskConfig {{ owner: {}, id: {}, input: {:?}, output: {:?}, requirements: {:?}, offer: {:?}, config: {:?}, type: {:?} }}",
-            self.owner, self.id, self.input, self.output, self.requirements, self.offer, self.config, self.r#type
-        )
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "OnChainTaskConfig {{ owner: {}, id: {}, service: {} }}", self.owner, self.id, self.service)
     }
 }

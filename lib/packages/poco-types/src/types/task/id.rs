@@ -1,4 +1,4 @@
-#[cfg(feature = "all")]
+#[cfg(feature = "native")]
 use std::fmt::Display;
 
 use impl_serde::serde::de::Error;
@@ -49,6 +49,7 @@ impl<'de> Deserialize<'de> for TaskId {
     }
 }
 
+#[cfg(feature = "native")]
 impl TryFrom<&str> for TaskId {
     type Error = anyhow::Error;
 
@@ -59,6 +60,7 @@ impl TryFrom<&str> for TaskId {
     }
 }
 
+#[cfg(feature = "native")]
 impl TryFrom<String> for TaskId {
     type Error = anyhow::Error;
 
@@ -66,6 +68,7 @@ impl TryFrom<String> for TaskId {
         TryFrom::<&str>::try_from(value.as_str())
     }
 }
+
 
 impl From<u64> for TaskId {
     fn from(value: u64) -> Self {
@@ -84,12 +87,14 @@ impl From<&TaskId> for u64 {
     }
 }
 
+#[cfg(feature = "native")]
 impl From<TaskId> for u64 {
     fn from(value: TaskId) -> Self {
         From::from(&value)
     }
 }
 
+#[cfg(feature = "native")]
 impl From<&TaskId> for String {
     fn from(task_id: &TaskId) -> Self {
         let task_id: u64 = task_id.into();
@@ -98,6 +103,7 @@ impl From<&TaskId> for String {
     }
 }
 
+#[cfg(feature = "native")]
 impl From<TaskId> for String {
     fn from(task_id: TaskId) -> Self {
         From::from(&task_id)
@@ -121,7 +127,7 @@ impl TaskId {
     }
 }
 
-#[cfg(feature = "all")]
+#[cfg(feature = "native")]
 impl Display for TaskId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:x}", u64::from(self))
