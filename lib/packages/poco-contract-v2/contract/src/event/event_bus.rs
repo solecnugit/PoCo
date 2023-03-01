@@ -16,7 +16,7 @@ impl EventBus {
 
     #[inline]
     pub fn emit(&mut self, event: Events) {
-        event.log_event();
+        event.emit_event();
 
         self.events.push(event);
     }

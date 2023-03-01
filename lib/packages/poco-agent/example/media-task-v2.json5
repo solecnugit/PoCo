@@ -1,0 +1,94 @@
+{
+  // Task 输入参数
+  "taskInput": {
+    // Task 的输入类型 IPFS | URL
+    "type": "IPFS",
+    // 当 Task 的输入类型为 IPFS 时，该字段为 IPFS CID
+    "value": "Qmcs5KX6ADuJhQHxERCiGUg7kPt7dVE2qXQiM7CrqSMJTR"
+  },
+  // Task 输出参数
+  "taskOutput": {
+    // Task 的输出类型 IPFS | URL
+    "type": "URL",
+    // 当 Task 的输出类型为 URL 时，该字段为输出接口的 URL
+    "value": "https://upload.abc.com/?token=xyz"
+  },
+  // Task 的 Region
+  "taskRegion": "us-east-1",
+  // Task 的需求
+  // 此处表示：
+  // 1. 服务质量指数大于等于 1.0
+  // 2. 用户的抵押量大于等于 100
+  "taskRequirements": [
+    {
+      // Task 的需求类型
+      // SERVICE_SLA_FACTOR 为服务质量指数，表示相对于 Region 的平均质量指数的倍数
+      "property": "SERVICE_SLA_FACTOR",
+      // Task 的需求类型的比较运算符
+      "operator": "GTE",
+      // Task 的需求类型的比较值
+      "value": "1.0"
+    },
+    {
+      // USER_STAKE 为用户的抵押量，单位为 NEAR
+      "property": "USER_STAKE_AMOUNT",
+      "operator": "GTE",
+      "value": "100"
+    }
+  ],
+  // Task 的终止条件
+  "taskTerminations": [
+    {
+      // Task 的终止条件类型
+      // 在此处，BLOCK_HEIGHT 为区块高度
+      "property": "BLOCK_HEIGHT",
+      // Task 的终止条件类型的比较运算符
+      "operator": "GTE",
+      // Task 的终止条件类型的比较值
+      "value": "100"
+    },
+    {
+      // ROUND_ID 为轮次 ID
+      "property": "ROUND_ID",
+      "operator": "GTE",
+      "value": "2"
+    },
+    {
+      // SUBMITTER_COUNT 为提交者数量
+      "property": "SUBMITTER_COUNT",
+      "operator": "GTE",
+      "value": "2"
+    }
+  ],
+  // Task 的出价
+  // 此处出价条件表示：
+  // 当递交时，若区块高度小于等于 50 时，提供 100 报偿
+  // 当递交时，始终提供 10 报偿
+  "taskPrices": [
+    {
+      // Task 的出价值
+      "value": "100",
+      "conditions": [
+        {
+          // Task 的出价条件类型
+          "property": "BLOCK_HEIGHT",
+          // Task 的出价条件类型的比较运算符
+          "operator": "LTE",
+          // Task 的出价条件类型的比较值
+          "value": "50"
+        }
+      ]
+    },
+    {
+      "value": "10",
+      "conditions": []
+    }
+  ],
+  // Task 的 Service 类型
+  "taskService": {
+    // Task 的 Service 分类
+    "category": "MEDIA_TRANSCODING",
+    // Task 具体的 Service 类型
+    "type": "ffmpeg-30s-mp4-from-h264-1080p-to-h265-1080p"
+  }
+}

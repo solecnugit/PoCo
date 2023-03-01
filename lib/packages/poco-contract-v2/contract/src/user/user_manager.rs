@@ -1,11 +1,11 @@
 use near_sdk::AccountId;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::store::LookupMap;
-use poco_types::types::user::{InternalUserProfile, UserProfile};
+use poco_types::types::user::{OnchainUserProfile, UserProfile};
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct UserManager {
-    user_map: LookupMap<AccountId, InternalUserProfile>,
+    user_map: LookupMap<AccountId, OnchainUserProfile>,
 }
 
 impl UserManager {
@@ -28,7 +28,7 @@ impl UserManager {
                 .unwrap()
                 .set_endpoint(endpoint);
         } else {
-            let mut profile = InternalUserProfile::new(account);
+            let mut profile = OnchainUserProfile::new(account);
 
             profile.set_endpoint(endpoint);
 

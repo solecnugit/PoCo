@@ -2,7 +2,7 @@ use near_sdk::{AccountId, env};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::store::{LookupMap, Vector};
 use poco_types::types::round::RoundId;
-use poco_types::types::task::{OnChainTaskConfig, TaskConfig};
+use poco_types::types::task::{OnChainTaskConfig, TaskConfigRequest, TaskNonce};
 use poco_types::types::task::id::TaskId;
 
 #[derive(BorshDeserialize, BorshSerialize)]
@@ -23,8 +23,8 @@ impl TaskManager {
         &mut self,
         round_id: RoundId,
         owner: AccountId,
-        config: TaskConfig,
-    ) -> (TaskId, OnChainTaskConfig) {
+        config: TaskConfigRequest,
+    ) -> TaskId {
         let tasks_for_round = self.tasks.entry(round_id).or_insert_with(|| {
             Vector::new(
                 format!("task-manager:tasks:{round_id}")
@@ -33,17 +33,17 @@ impl TaskManager {
             )
         });
 
-        let task_id = TaskId::new(round_id, tasks_for_round.len());
+        let task_id = TaskId::new(round_id, tasks_for_round.len() as TaskNonce);
         let config = config.to_on_chain_task_config(owner, task_id.clone());
 
         if let Ok(config) = config {
-            tasks_for_round.push(config.clone());
+            tasks_for_round.push(config);
 
             self.count += 1;
 
-            (task_id, config)
+            task_id
         } else {
-            env::panic_str("Failed to publish task");
+            env::panic_str("Task config is invalid");
         }
     }
 

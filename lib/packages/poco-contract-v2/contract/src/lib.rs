@@ -3,7 +3,7 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use poco_types::types::event::{Events, IndexedEvent};
 use poco_types::types::round::{RoundId, RoundInfo, RoundStatus};
 use poco_types::types::task::id::TaskId;
-use poco_types::types::task::TaskConfig;
+use poco_types::types::task::TaskConfigRequest;
 use poco_types::types::user::UserProfile;
 
 use event::EventBus;
@@ -132,7 +132,7 @@ impl Contract {
             .map(|e| e.to_string())
     }
 
-    pub fn publish_task(&mut self, config: TaskConfig) -> TaskId {
+    pub fn publish_task(&mut self, config: TaskConfigRequest) -> TaskId {
         assert_eq!(
             self.get_round_status(),
             RoundStatus::Running,
@@ -142,13 +142,15 @@ impl Contract {
         let owner = near_sdk::env::signer_account_id();
         let current_round_id = self.get_round_id();
 
-        let (task_id, config) =
+        let service = config.service.clone();
+
+        let task_id =
             self.task_manager
-                .publish_task(current_round_id, owner, config.clone());
+                .publish_task(current_round_id, owner, config);
 
         self.event_bus.emit(Events::NewTaskEvent {
             task_id: task_id.clone(),
-            task_config: config,
+            task_service: service,
         });
 
         task_id
