@@ -1,8 +1,11 @@
 #![feature(async_closure)]
 #![feature(fn_traits)]
-#![feature(box_syntax)]
+#![feature(rustc_attrs)]
+
+// #![feature(box_syntax)]
 #![feature(box_into_inner)]
 #![feature(marker_trait_attr)]
+#[rustc_box]
 
 use time::{format_description, UtcOffset};
 use tracing_subscriber::fmt::time::OffsetTime;
@@ -30,6 +33,7 @@ fn main() -> anyhow::Result<()> {
 
     let app = App::new(config);
     // Init Tracing
+    // 配置tracing 框架
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::fmt::layer()
