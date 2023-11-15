@@ -1,8 +1,10 @@
 #![feature(async_closure)]
 #![feature(fn_traits)]
-#![feature(box_syntax)]
+// #![feature(box_syntax)]
+#![feature(rustc_attrs)]
 #![feature(box_into_inner)]
 #![feature(marker_trait_attr)]
+#[rustc_box]
 
 use time::{format_description, UtcOffset};
 use tracing_subscriber::fmt::time::OffsetTime;
