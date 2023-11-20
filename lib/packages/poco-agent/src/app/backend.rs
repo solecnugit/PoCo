@@ -162,19 +162,18 @@ impl Backend {
         {
             // event microtask
 
-            let config = self.config.clone();
-            let ui_sender = self.ui_sender.clone();
-            let agent = self.agent.clone();
-            let db = self.db.clone();
-            let runtime = self.runtime.clone();
+            // let config = self.config.clone();
+            // let ui_sender = self.ui_sender.clone();
+            // let agent = self.agent.clone();
+            // let db = self.db.clone();
+            // let runtime = self.runtime.clone();
 
-            self.runtime.spawn(microtask::event_microtask(
-                config, db, agent, ui_sender, runtime,
-            ));
+            self.runtime.spawn(microtask::event_microtask(self.clone()));
         }
     }
 
     pub fn run_backend_thread(self) -> std::thread::JoinHandle<()> {
+        // 创建线程构建器
         let builder = std::thread::Builder::new().name("backend".to_string());
 
         builder

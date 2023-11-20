@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use poco_types::types::round::RoundId;
 use poco_types::types::task::id::TaskId;
 use poco_types::types::task::OnChainTaskConfig;
+use poco_types::types::convert_account_id_from_sdk_to_primitives;
 
 use poco_agent::types::AccountId;
 
@@ -9,7 +10,9 @@ use crate::app::backend::Backend;
 use crate::app::ui::util::log_string;
 use crate::config::PocoTaskPolicy;
 
-pub type ContractEvent = poco_types::types::event::Events;
+pub type ContractEvent = poco_types::types::event::IndexedEvent;
+// 修改原来的type
+pub type ContractEventPayload = poco_types::types::event::Events;
 
 #[async_trait]
 pub trait ContractEventHandler {
@@ -18,19 +21,19 @@ pub trait ContractEventHandler {
 
     fn handle_event(&self, event: ContractEvent);
 
-    async fn handle_new_round_event(&self, round_id: RoundId) -> Result<Self::Output, Self::Error>;
+    async fn handle_new_round_event(&self, round_id: &RoundId) -> Result<Self::Output, Self::Error>;
 
     async fn handle_new_task_event(
         &self,
-        task_id: TaskId,
-        task_config: OnChainTaskConfig,
+        task_id: &TaskId,
+        task_config: &OnChainTaskConfig,
     ) -> Result<Self::Output, Self::Error>;
 
     async fn handle_user_profile_field_update_event(
         &self,
-        user_id: AccountId,
-        field: String,
-        value: String,
+        user_id: &AccountId,
+        field: &str,
+        value: &str,
     ) -> Result<Self::Output, Self::Error>;
 }
 
@@ -46,25 +49,24 @@ impl ContractEventHandler for Backend {
         let backend = self.clone();
 
         self.runtime.spawn(async move {
-            let _ret = match event {
-                ContractEvent::NewRoundEvent { round_id } => {
-                    backend.handle_new_round_event(round_id)
+            let _ret = match &event.payload {
+                ContractEventPayload::NewRoundEvent { round_id } => {
+                    backend.handle_new_round_event(round_id).await
                 }
-                ContractEvent::NewTaskEvent {
+                ContractEventPayload::NewTaskEvent {
                     task_id,
                     task_config,
-                } => backend.handle_new_task_event(task_id, task_config),
-                ContractEvent::UserProfileFieldUpdateEvent {
+                } => backend.handle_new_task_event(task_id, task_config).await,
+                ContractEventPayload::UserProfileFieldUpdateEvent {
                     user_id,
                     field,
                     value,
                 } => {
-                    let user_id = user_id.as_str().parse().unwrap();
+                    let user_id = convert_account_id_from_sdk_to_primitives(user_id);
 
-                    backend.handle_user_profile_field_update_event(user_id, field, value)
+                    backend.handle_user_profile_field_update_event(&user_id, field, value).await
                 }
-            }
-                .await;
+            };
 
             // if let Err(e) = ret {
             //     log_string(&self.ui_sender, format!("Error happened during handle event {event:?}, error {e:?}"));
@@ -72,7 +74,7 @@ impl ContractEventHandler for Backend {
         });
     }
 
-    async fn handle_new_round_event(&self, round_id: RoundId) -> Result<Self::Output, Self::Error> {
+    async fn handle_new_round_event(&self, round_id: &RoundId) -> Result<Self::Output, Self::Error> {
         log_string(&self.ui_sender, format!("New round: {round_id}"));
 
         Ok(())
@@ -80,8 +82,8 @@ impl ContractEventHandler for Backend {
 
     async fn handle_new_task_event(
         &self,
-        task_id: TaskId,
-        task_config: OnChainTaskConfig,
+        task_id: &TaskId,
+        task_config: &OnChainTaskConfig,
     ) -> Result<Self::Output, Self::Error> {
         log_string(&self.ui_sender, format!("New task: {task_id}"));
 
@@ -103,9 +105,9 @@ impl ContractEventHandler for Backend {
 
     async fn handle_user_profile_field_update_event(
         &self,
-        user_id: AccountId,
-        field: String,
-        value: String,
+        user_id: &AccountId,
+        field: &str,
+        value: &str,
     ) -> Result<Self::Output, Self::Error> {
         log_string(
             &self.ui_sender,
