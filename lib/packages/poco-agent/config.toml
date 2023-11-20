@@ -17,10 +17,10 @@ ipfsEndpoint = "http://49.52.27.50:5001"
 [agent]
 verbose = true
 connectionTimeoutInMs = 1000
-nearRpcEndpoint = "http://49.52.27.50:8332"
-nearSignerAccountId = "test.near"
-nearSignerSecretKey = "ed25519:2ykcMLiM7vCmsSECcgfmUzihBtNdBv7v2CxNi94sNt4R8ar4xsrMMYvtsSNGQDfSRhNWXEnZvgx2wzS9ViBiS9jW"
-pocoContractAccount = "dev-1675229835031-47999882804967"
+nearRpcEndpoint = "https://rpc.testnet.near.org"
+nearSignerAccountId = "wuoody.testnet"
+nearSignerSecretKey = "ed25519:3HGBTrj3hMB5sFcTsUaTqXyw1Xm8BFmAwz3u7KQjVsoTmLtnNYoiuSUx8idyMfDxttheNt2NhPUiC96L8Fep1Wwa"
+pocoContractAccount = "dev-1699848063836-18477754701708"
 
 [db]
 dbPath = "poco.db"
