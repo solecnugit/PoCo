@@ -153,6 +153,10 @@ impl Contract {
 
         task_id
     }
+
+    pub fn count_tasks(&self) -> u64 {
+        self.task_manager.len()
+    }
 }
 
 #[cfg(test)]

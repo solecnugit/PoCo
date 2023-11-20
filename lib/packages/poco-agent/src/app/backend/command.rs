@@ -33,6 +33,7 @@ pub enum BackendCommand {
     RoundStatusCommand,
     RoundInfoCommand,
     CountEventsCommand,
+    CountTasksCommand,
     QueryEventsCommand {
         from: u32,
         count: u32,
@@ -62,6 +63,7 @@ impl Display for CommandSource {
     }
 }
 
+// 根据in_ui_mode的值来创建一个闭包。这个闭包接收一个字符串参数，然后创建一个新的命令
 pub fn get_command_instance(in_ui_mode: bool) -> Command {
     let subcommand = if in_ui_mode {
         |name: &'static str| {
@@ -81,6 +83,7 @@ pub fn get_command_instance(in_ui_mode: bool) -> Command {
         }
     };
 
+    // 定义了一系列的子命令，这些子命令将会被添加到主命令中。
     let subcommands = [
         subcommand("help")
             .about("Get help for poco-agent")
@@ -94,6 +97,7 @@ pub fn get_command_instance(in_ui_mode: bool) -> Command {
         subcommand("round-status").about("Get round status"),
         subcommand("round-info").about("Get round info"),
         subcommand("count-events").about("Count events"),
+        subcommand("count-tasks").about("Count tasks"),
         subcommand("query-events")
             .about("Query events")
             .arg(

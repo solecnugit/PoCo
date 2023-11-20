@@ -3,7 +3,7 @@ use clap::error::ErrorKind;
 use crate::app::backend::Backend;
 use crate::app::backend::command::{BackendCommand, commands};
 use crate::app::backend::command::BackendCommand::{
-    CountEventsCommand, GasPriceCommand, GetUserEndpointCommand, HelpCommand, IpfsAddFileCommand,
+    CountEventsCommand, CountTasksCommand, GasPriceCommand, GetUserEndpointCommand, HelpCommand, IpfsAddFileCommand,
     IpfsCatFileCommand, IpfsFileStatusCommand, IpfsGetFileCommand, NetworkStatusCommand,
     PublishTaskCommand, QueryEventsCommand, RoundInfoCommand, RoundStatusCommand,
     SetUserEndpointCommand, StartRoundCommand, StatusCommand, ViewAccountCommand,
@@ -59,6 +59,7 @@ impl CommandParser for Backend {
             Some(("round-status", _)) => Ok(RoundStatusCommand),
             Some(("round-info", _)) => Ok(RoundInfoCommand),
             Some(("count-events", _)) => Ok(CountEventsCommand),
+            Some(("count-tasks", _)) => Ok(CountTasksCommand),
             Some(("query-events", args)) => {
                 let from = args
                     .get_one::<String>("from")

@@ -384,6 +384,14 @@ impl PocoAgent {
 
         Ok(response)
     }
+    
+    pub async fn count_tasks(&self) -> Result<u32, PocoAgentError> {
+        let response = self
+            .call_view_function_json("count_tasks", &json!({}))
+            .await?;
+
+        Ok(response)
+    }
 
     pub async fn query_events(
         &self,
