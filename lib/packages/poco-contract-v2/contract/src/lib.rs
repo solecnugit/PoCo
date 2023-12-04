@@ -3,7 +3,7 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use poco_types::types::event::{Events, IndexedEvent};
 use poco_types::types::round::{RoundId, RoundInfo, RoundStatus};
 use poco_types::types::task::id::TaskId;
-use poco_types::types::task::TaskConfig;
+use poco_types::types::task::{TaskConfig, OnChainTaskConfig};
 use poco_types::types::user::UserProfile;
 
 use event::EventBus;
@@ -92,6 +92,18 @@ impl Contract {
 
     pub fn count_events(&self) -> u32 {
         self.event_bus.len()
+    }
+
+    pub fn query_specific_task(&self, round_id: u32, task_nounce: u32) -> OnChainTaskConfig {
+        self.task_manager.query_specific_task(round_id, task_nounce)
+    }
+
+    // pub fn query_specific_task(&self, task_id: TaskId) -> OnChainTaskConfig {
+    //     self.task_manager.query_specific_task(task_id)
+    // }
+
+    pub fn show_tasks(&self, round_id: u32) {
+        self.task_manager.show_tasks(round_id);
     }
 
     pub fn query_events(&self, from: u32, count: u32) -> Vec<IndexedEvent> {

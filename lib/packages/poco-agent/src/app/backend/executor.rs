@@ -1,5 +1,6 @@
 use std::path::Path;
 
+// use anyhow::Ok;
 use poco_types::types::round::RoundStatus;
 
 use poco_actuator::config::{RawTaskConfigFile, RawTaskInputSource};
@@ -10,10 +11,10 @@ use poco_ipfs::client::GetFileProgress;
 use crate::app::backend::Backend;
 use crate::app::backend::command::{BackendCommand, CommandSource};
 use crate::app::backend::command::BackendCommand::{
-    CountEventsCommand, GasPriceCommand, GetUserEndpointCommand, HelpCommand, IpfsAddFileCommand,
+    CountEventsCommand, CountTasksCommand, GasPriceCommand, GetUserEndpointCommand, HelpCommand, IpfsAddFileCommand,
     IpfsCatFileCommand, IpfsFileStatusCommand, IpfsGetFileCommand, NetworkStatusCommand,
     PublishTaskCommand, QueryEventsCommand, RoundInfoCommand, RoundStatusCommand,
-    SetUserEndpointCommand, StartRoundCommand, StatusCommand, ViewAccountCommand,
+    SetUserEndpointCommand, StartRoundCommand, StatusCommand, ViewAccountCommand,QuerySpecificTaskCommand
 };
 use crate::app::ui::event::{CommandExecutionStage, CommandExecutionStatus};
 use crate::app::ui::event::UIActionSender;
@@ -32,6 +33,7 @@ pub trait CommandExecutor {
             RoundStatusCommand => self.execute_round_status_command(command_source),
             RoundInfoCommand => self.execute_round_info_command(command_source),
             CountEventsCommand => self.execute_count_events_command(command_source),
+            CountTasksCommand => self.execute_count_tasks_command(command_source),
             QueryEventsCommand { from, count } => {
                 self.execute_query_events_command(command_source, from, count)
             }
@@ -55,6 +57,9 @@ pub trait CommandExecutor {
                 self.execute_ipfs_file_status_command(command_source, file_hash)
             }
             StartRoundCommand => self.execute_start_round_command(command_source),
+            QuerySpecificTaskCommand { task_id } => {
+                self.execute_query_specific_task_command(command_source, task_id)
+            }
             PublishTaskCommand { task_config_path } => {
                 self.execute_publish_task_command(command_source, task_config_path)
             }
@@ -80,7 +85,9 @@ pub trait CommandExecutor {
         account_id: Option<AccountId>,
     );
     fn execute_query_events_command(&self, command_source: CommandSource, from: u32, count: u32);
+    fn execute_query_specific_task_command(&self, command_source: CommandSource, task_id: u64);
     fn execute_count_events_command(&self, command_source: CommandSource);
+    fn execute_count_tasks_command(&self, command_source: CommandSource);
     fn execute_round_info_command(&self, command_source: CommandSource);
     fn execute_round_status_command(&self, command_source: CommandSource);
     fn execute_view_account_command(&self, command_source: CommandSource, account_id: AccountId);
@@ -107,6 +114,7 @@ impl CommandExecutor for Backend {
 
             // Read task config file
             let task_config = tokio::fs::read_to_string(task_config_path).await?;
+            // it.log_string(format!("task_config: {task_config}"))?;
             let task_config = serde_json::from_str::<RawTaskConfigFile>(&task_config)?;
 
             let actuator = if let Some(actuator) = get_actuator(&task_config.r#type) {
@@ -172,6 +180,17 @@ impl CommandExecutor for Backend {
                 "Task published. Gas used: {}, Task ID: {task_id}",
                 pretty_gas(gas)
             ))?;
+
+            Ok(())
+        });
+    }
+
+    fn execute_query_specific_task_command(&self, command_source: CommandSource, task_id: u64) {
+        self.execute_command_block(command_source, async move |it| {
+            it.log_string(format!("task_id: {task_id}"))?;
+            let task = it.agent.query_specific_task(task_id.into()).await?;
+
+            it.log_string(format!("Task: {task}"))?;
 
             Ok(())
         });
@@ -357,6 +376,16 @@ impl CommandExecutor for Backend {
             let count = it.agent.count_events().await?;
 
             it.log_string(format!("Events count: {count}"))?;
+
+            Ok(())
+        })
+    }
+
+    fn execute_count_tasks_command(&self, command_source: CommandSource) {
+        self.execute_command_block(command_source, async move |it|{
+            let count = it.agent.count_tasks().await?;
+
+            it.log_string(format!("Tasks count: {count}"))?;
 
             Ok(())
         })

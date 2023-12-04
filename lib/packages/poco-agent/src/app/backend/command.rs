@@ -34,10 +34,14 @@ pub enum BackendCommand {
     RoundInfoCommand,
     CountEventsCommand,
     CountTasksCommand,
+    QuerySpecificTaskCommand {
+        task_id: u64,
+    },
     QueryEventsCommand {
         from: u32,
         count: u32,
     },
+
     GetUserEndpointCommand {
         account_id: Option<AccountId>,
     },
@@ -138,6 +142,9 @@ pub fn get_command_instance(in_ui_mode: bool) -> Command {
                     .arg(Arg::new("hash").required(false).index(1)),
             ]),
         subcommand("start-round").about("Start new round"),
+        subcommand("query-specific-task")
+            .about("Query specific task")
+            .arg(Arg::new("task-id").required(true).index(1)),
         subcommand("publish-task")
             .about("Publish task")
             .arg(Arg::new("task-config-path").required(true).index(1)),

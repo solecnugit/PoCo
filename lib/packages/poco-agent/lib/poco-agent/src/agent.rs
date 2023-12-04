@@ -16,7 +16,7 @@ use near_primitives::views::{AccessKeyView, AccountView, FinalExecutionStatus, Q
 use poco_types::types::event::IndexedEvent;
 use poco_types::types::round::{RoundId, RoundInfo, RoundStatus};
 use poco_types::types::task::id::TaskId;
-use poco_types::types::task::TaskConfig;
+use poco_types::types::task::{TaskConfig, OnChainTaskConfig};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::json;
@@ -457,5 +457,18 @@ impl PocoAgent {
             .await?;
 
         Ok(result)
+    }
+
+    pub async fn query_specific_task(
+        &self,
+        task_id: TaskId
+    ) -> Result<(OnChainTaskConfig), PocoAgentError> {
+        let round_id = task_id.get_round_id();
+        let task_nounce = task_id.get_task_nonce();
+
+        let response = self
+        .call_view_function_json("query_specific_task", &json!({ "round_id": round_id, "task_nounce": task_nounce})).await?;
+
+        Ok(response)
     }
 }

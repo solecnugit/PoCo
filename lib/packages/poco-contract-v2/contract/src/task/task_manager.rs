@@ -15,8 +15,45 @@ impl TaskManager {
     pub fn new() -> Self {
         let tasks = LookupMap::new(b"task-manager:tasks".to_vec());
 
+        // 这里要多做一个数据结构，用于保存每一个task的完成状态（可能有多次尝试）
+
         TaskManager { tasks, count: 0 }
     }
+
+    // #[inline]
+    // pub fn query_specific_task(
+    //     &self,
+    //     task_id: TaskId,
+    // ) -> OnChainTaskConfig {
+    //     self.tasks
+    //         .get(&task_id.get_round_id())
+    //         .and_then(|tasks| tasks.get(*(&task_id.get_task_nonce())).cloned()).unwrap()
+    // }
+
+    #[inline]
+    pub fn query_specific_task(
+        &self,
+        round_id: u32,
+        task_nounce: u32
+    ) -> OnChainTaskConfig {
+        self.tasks
+            .get(&round_id)
+            .and_then(|tasks| tasks.get(task_nounce).cloned()).unwrap()
+    }
+
+    #[inline]
+    pub fn show_tasks(
+        &self,
+        round_id: u32,
+    ) -> Option<&Vector<OnChainTaskConfig>> {
+        self.tasks.get(&round_id)
+    }
+
+    // #[inline]
+    // pub fn commit_task(
+    //     &mut self,
+
+    // )
 
     #[inline]
     pub fn publish_task(
