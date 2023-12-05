@@ -1,6 +1,8 @@
 use std::future::Future;
 use std::ops::Deref;
+use std::pin::Pin;
 use std::sync::Arc;
+use tokio::task;
 
 use anyhow::Error;
 use clap::error::ErrorKind;
@@ -172,21 +174,29 @@ impl Backend {
         }
     }
 
-    pub fn run_backend_thread(self) -> std::thread::JoinHandle<()> {
-        // 创建线程构建器
-        let builder = std::thread::Builder::new().name("backend".to_string());
+    pub async fn run_backend_thread(self) -> task::JoinHandle<()> {
+    // pub async fn run_backend_thread(self) -> std::thread::JoinHandle<()> {
 
-        builder
-            .spawn(move || 'outer: loop {
+        tracing::event!(
+            Level::INFO,
+            message = "start initializing backend thread",
+            category = format!("{:?}", TracingCategory::Agent)
+        );
+
+        let handle = task::spawn(async move {
+            'outer: loop {
                 if self.running_mode != AppRunningMode::DIRECT {
                     self.start_backend_microtasks();
                 }
-
+    
                 loop {
                     match self.ui_receiver.recv() {
                         Ok(command_source) => {
                             match self.parse_command(command_source.source.trim()) {
-                                Ok(command) => self.dispatch_command(command_source, command),
+                                Ok(command) => {
+                                    // self.log_string(format!("Received command: {}", command_source.source.trim()));
+                                    self.dispatch_command(command_source, command).await
+                                },
                                 Err(error) => {
                                     match &error.kind() {
                                         ErrorKind::DisplayHelp => {}
@@ -194,7 +204,7 @@ impl Backend {
                                         ErrorKind::DisplayVersion => {}
                                         _ => tracing::error!(error = ?error, "Failed to parse command"),
                                     }
-
+    
                                     log_command_execution(
                                         &self.ui_sender,
                                         command_source,
@@ -211,12 +221,61 @@ impl Backend {
                                 message = "backend channel disconnected",
                                 category = format!("{:?}", TracingCategory::Backend)
                             );
-
+    
                             break 'outer;
                         }
                     }
                 }
-            })
-            .unwrap()
+            }
+        });
+    
+        handle
+
+
+        // 创建线程构建器
+        // let builder = std::thread::Builder::new().name("backend".to_string());
+
+        // builder
+        //     .spawn(move || 'outer: loop {
+        //         if self.running_mode != AppRunningMode::DIRECT {
+        //             self.start_backend_microtasks();
+        //         }
+
+        //         loop {
+        //             match self.ui_receiver.recv() {
+        //                 Ok(command_source) => {
+        //                     match self.parse_command(command_source.source.trim()) {
+        //                         Ok(command) => self.dispatch_command(command_source, command),
+        //                         Err(error) => {
+        //                             match &error.kind() {
+        //                                 ErrorKind::DisplayHelp => {}
+        //                                 ErrorKind::DisplayHelpOnMissingArgumentOrSubcommand => {}
+        //                                 ErrorKind::DisplayVersion => {}
+        //                                 _ => tracing::error!(error = ?error, "Failed to parse command"),
+        //                             }
+
+        //                             log_command_execution(
+        //                                 &self.ui_sender,
+        //                                 command_source,
+        //                                 CommandExecutionStage::Parsing,
+        //                                 CommandExecutionStatus::Failed,
+        //                                 Some(Box::new(anyhow::anyhow!(error))),
+        //                             );
+        //                         }
+        //                     }
+        //                 }
+        //                 Err(_) => {
+        //                     tracing::event!(
+        //                         Level::ERROR,
+        //                         message = "backend channel disconnected",
+        //                         category = format!("{:?}", TracingCategory::Backend)
+        //                     );
+
+        //                     break 'outer;
+        //                 }
+        //             }
+        //         }
+        //     })
+        //     .unwrap()
     }
 }

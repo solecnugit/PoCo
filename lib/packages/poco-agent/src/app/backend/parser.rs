@@ -6,7 +6,7 @@ use crate::app::backend::command::BackendCommand::{
     CountEventsCommand, CountTasksCommand, GasPriceCommand, GetUserEndpointCommand, HelpCommand, IpfsAddFileCommand,
     IpfsCatFileCommand, IpfsFileStatusCommand, IpfsGetFileCommand, NetworkStatusCommand,
     PublishTaskCommand, QueryEventsCommand, RoundInfoCommand, RoundStatusCommand,
-    SetUserEndpointCommand, StartRoundCommand, StatusCommand, ViewAccountCommand, QuerySpecificTaskCommand
+    SetUserEndpointCommand, StartRoundCommand, StatusCommand, ViewAccountCommand, QuerySpecificTaskCommand, ExecuteTaskCommand
 };
 
 pub type ParseBackendCommandError = clap::Error;
@@ -67,6 +67,14 @@ impl CommandParser for Backend {
                     .expect("argument must be a valid u64");
 
                 Ok(QuerySpecificTaskCommand { task_id })
+            }
+            Some(("execute-task", args)) => {
+                let task_id = args
+                    .get_one::<String>("task-id")
+                    .and_then(|e| u64::from_str_radix(&e, 16).ok())
+                    .expect("argument must be a valid u64");
+
+                Ok(ExecuteTaskCommand  { task_id })
             }
             Some(("query-events", args)) => {
                 let from = args

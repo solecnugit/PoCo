@@ -50,6 +50,7 @@ impl TaskConfigFactory for MediaTranscodingActuator {
 #[async_trait]
 impl TaskActuator for MediaTranscodingActuator {
     async fn execute(&mut self, _config: &OnChainTaskConfig) -> anyhow::Result<()> {
+        // Send an RPC request to invoke the server to execute the transcoding task.
         todo!()
     }
 
@@ -61,6 +62,13 @@ impl TaskActuator for MediaTranscodingActuator {
 
     fn r#type(&self) -> &'static str {
         MEDIA_TRANSCODING_TASK_TYPE
+    }
+
+    fn decode_task_config(&self, bytes: &[u8]) -> anyhow::Result<Value> {
+        let config: <Self as TaskConfigFactory>::Config =
+            <Self as TaskConfigFactory>::Config::try_from_slice(&mut &*bytes)?;
+
+        Ok(serde_json::to_value(config)?)
     }
 }
 

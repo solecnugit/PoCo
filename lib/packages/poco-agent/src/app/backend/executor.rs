@@ -1,10 +1,15 @@
 use std::path::Path;
+use std::pin::Pin;
+use async_trait::async_trait;
+use futures::Future;
+use tokio::sync::mpsc;
 
 // use anyhow::Ok;
 use poco_types::types::round::RoundStatus;
 
-use poco_actuator::config::{RawTaskConfigFile, RawTaskInputSource};
+use poco_actuator::config::{RawTaskConfigFile, RawTaskInputSource, ConvertRPCConfig};
 use poco_actuator::get_actuator;
+use poco_actuator::rpc::client;
 use poco_agent::types::AccountId;
 use poco_ipfs::client::GetFileProgress;
 
@@ -14,14 +19,15 @@ use crate::app::backend::command::BackendCommand::{
     CountEventsCommand, CountTasksCommand, GasPriceCommand, GetUserEndpointCommand, HelpCommand, IpfsAddFileCommand,
     IpfsCatFileCommand, IpfsFileStatusCommand, IpfsGetFileCommand, NetworkStatusCommand,
     PublishTaskCommand, QueryEventsCommand, RoundInfoCommand, RoundStatusCommand,
-    SetUserEndpointCommand, StartRoundCommand, StatusCommand, ViewAccountCommand,QuerySpecificTaskCommand
+    SetUserEndpointCommand, StartRoundCommand, StatusCommand, ViewAccountCommand,QuerySpecificTaskCommand, ExecuteTaskCommand
 };
 use crate::app::ui::event::{CommandExecutionStage, CommandExecutionStatus};
 use crate::app::ui::event::UIActionSender;
 use crate::util::{pretty_bytes, pretty_gas};
 
+#[async_trait]
 pub trait CommandExecutor {
-    fn dispatch_command(&self, command_source: CommandSource, command: BackendCommand) {
+    async fn dispatch_command(&self, command_source: CommandSource, command: BackendCommand) {
         match command {
             HelpCommand(help) => self.execute_help_command(command_source, help),
             GasPriceCommand => self.execute_gas_price_command(command_source),
@@ -36,6 +42,9 @@ pub trait CommandExecutor {
             CountTasksCommand => self.execute_count_tasks_command(command_source),
             QueryEventsCommand { from, count } => {
                 self.execute_query_events_command(command_source, from, count)
+            }
+            QuerySpecificTaskCommand { task_id } => {
+                self.execute_query_specific_task_command(command_source, task_id)
             }
             GetUserEndpointCommand { account_id } => {
                 self.execute_get_user_endpoint_command(command_source, account_id)
@@ -57,11 +66,11 @@ pub trait CommandExecutor {
                 self.execute_ipfs_file_status_command(command_source, file_hash)
             }
             StartRoundCommand => self.execute_start_round_command(command_source),
-            QuerySpecificTaskCommand { task_id } => {
-                self.execute_query_specific_task_command(command_source, task_id)
-            }
             PublishTaskCommand { task_config_path } => {
                 self.execute_publish_task_command(command_source, task_config_path)
+            }
+            ExecuteTaskCommand { task_id } => {
+                self.execute_task_command(command_source, task_id).await;
             }
         }
     }
@@ -94,8 +103,10 @@ pub trait CommandExecutor {
     fn execute_status_command(&self, command_source: CommandSource);
     fn execute_network_status_command(&self, command_source: CommandSource);
     fn execute_help_command(&self, command_source: CommandSource, help: Vec<String>);
+    async fn execute_task_command(&self, command_source: CommandSource, task_id: u64);
 }
 
+#[async_trait]
 impl CommandExecutor for Backend {
     fn execute_publish_task_command(
         &self,
@@ -187,12 +198,78 @@ impl CommandExecutor for Backend {
 
     fn execute_query_specific_task_command(&self, command_source: CommandSource, task_id: u64) {
         self.execute_command_block(command_source, async move |it| {
-            it.log_string(format!("task_id: {task_id}"))?;
+            // it.log_string(format!("task_id: {task_id}"))?;
             let task = it.agent.query_specific_task(task_id.into()).await?;
 
             it.log_string(format!("Task: {task}"))?;
 
             Ok(())
+        });
+    }
+
+    async fn execute_task_command(&self, command_source: CommandSource, task_id: u64) {
+
+        let (tx , mut rx) = mpsc::channel(100);
+        self.execute_command_block(command_source, async move |it| {
+
+            // breakpoint for debugging, to check if an error will occur before this point.
+            it.log_string(format!("task_id: {task_id}"))?;
+            // communicate with chain to get task config
+            let task = it.agent.query_specific_task(task_id.into()).await?;
+
+            // it.log_string(format!("OnchainTask: {task}"))?;
+
+            let actuator = if let Some(actuator) = get_actuator(&task.r#type) {
+                actuator
+            } else {
+                anyhow::bail!("Unsupported task type: {}", task.r#type);
+            };
+
+            let task = task.to_rpc_task_config(task_id, &actuator)?;
+            
+            // Spawn the dispatch_vod_task task.
+            tokio::spawn(async move {
+                if let Err(e) = client::send_rpc_request(task, tx).await {
+                    eprintln!("Error: {}", e);
+                }
+            });
+
+            while let Some(message) = rx.recv().await {
+                println!("Status: {}", message);
+            }
+
+            Ok(())
+
+            
+
+            // let codec = task.config["target"]["video"]["codec"].as_str().unwrap();
+
+            // it.log_string(format!("videocodec: {codec}"))?;
+
+            
+            // client::send_rpc_request(task).await?;
+
+            // it.log_string(format!("RPCTask: {task}"))?;
+
+             // Check if round is started
+            //  let round_status = it.agent.get_round_status().await?;
+
+            //  if let RoundStatus::Pending = round_status {
+            //      anyhow::bail!("Round is not started yet. Please wait for the round to start.");
+            //  }
+
+            // let task_id = task.task_id;
+            // let task_config = task.task_config;
+
+            // let actuator = if let Some(actuator) = get_actuator(&task_config.r#type) {
+            //     actuator
+            // } else {
+            //     anyhow::bail!("Unsupported task type: {}", task_config.r#type);
+            // };
+
+            // let task_result = actuator.execute_task(task_config).await?;
+
+            // it.log_string(format!("Task result: {task_result}"))?;
         });
     }
 

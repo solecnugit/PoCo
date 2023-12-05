@@ -22,7 +22,8 @@ pub mod app;
 pub mod config;
 pub mod util;
 
-fn main() -> anyhow::Result<()> {
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
     let app_run_config = config::parse();
     let config = app_run_config.get_config().expect("Failed to load config");
     let log_file_appender =
@@ -55,5 +56,5 @@ fn main() -> anyhow::Result<()> {
         BoxedTaskActuator::new(MediaTranscodingActuator::new()),
     )?;
 
-    app.run(app_run_config.mode)
+    app.run(app_run_config.mode).await
 }

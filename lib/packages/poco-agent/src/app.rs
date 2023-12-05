@@ -52,7 +52,7 @@ impl App {
         }
     }
 
-    pub fn run(mut self, mode: AppRunningMode) -> anyhow::Result<()> {
+    pub async fn run(mut self, mode: AppRunningMode) -> anyhow::Result<()> {
         let backend = Backend::new(
             mode,
             self.config.clone(),
@@ -60,7 +60,7 @@ impl App {
             self.ui_channel.0.clone(),
         );
 
-        backend.run_backend_thread();
+        backend.run_backend_thread().await;
 
         let result = if mode != AppRunningMode::UI {
             let command = std::env::args()

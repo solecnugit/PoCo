@@ -53,6 +53,9 @@ pub enum BackendCommand {
     PublishTaskCommand {
         task_config_path: String,
     },
+    ExecuteTaskCommand {
+        task_id: u64,
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -148,6 +151,9 @@ pub fn get_command_instance(in_ui_mode: bool) -> Command {
         subcommand("publish-task")
             .about("Publish task")
             .arg(Arg::new("task-config-path").required(true).index(1)),
+        subcommand("execute-task")
+            .about("Execute task")
+            .arg(Arg::new("task-id").required(true).index(1)),
     ];
 
     let command = if in_ui_mode {

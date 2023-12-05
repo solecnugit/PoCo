@@ -10,6 +10,7 @@ use crate::config::DomainTaskConfig;
 
 pub mod config;
 pub mod media;
+pub mod rpc;
 
 pub type ActuatorPredicate = fn(&TaskConfig) -> bool;
 
@@ -61,6 +62,8 @@ pub trait TaskActuator: Send + Sync {
 
     fn encode_task_config(&self, config: serde_json::Value) -> anyhow::Result<Vec<u8>>;
 
+    fn decode_task_config(&self, bytes: &[u8]) -> anyhow::Result<serde_json::Value>;
+
     fn r#type(&self) -> &'static str;
 }
 
@@ -85,6 +88,8 @@ impl Deref for BoxedTaskActuator {
     }
 }
 
+// 使用懒加载的方式注册actuator，以优化初始化开销
+// acuator是全局静态的，使用读写锁进行保护
 lazy_static! {
     pub static ref ACTUATORS: RwLock<HashMap<String, BoxedTaskActuator>> =
         RwLock::new(HashMap::new());
