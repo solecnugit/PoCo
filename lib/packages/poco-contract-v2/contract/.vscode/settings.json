@@ -1,5 +1,8 @@
 {
     "cSpell.words": [
         "Borsh"
+    ],
+    "rust-analyzer.linkedProjects": [
+        "./Cargo.toml",
     ]
 }
