@@ -10,8 +10,9 @@ anyhow = "1.0.68"
 
 serde = { version = "1.0.147", features = ["derive"] }
 
-tokio = { version = "1.21.2", features = ["rt-multi-thread", "time", "sync", "signal", "fs", "io-util", "macros"] }
-tokio-util = { version = "0.7.4", features = ["compat"] }
+tokio = { version = "1.19.0", features = ["rt-multi-thread", "time", "sync", "signal", "fs", "io-util", "macros"] }
+# tokio = { version = "1.21.2", features = ["rt-multi-thread", "time", "sync", "signal", "fs", "io-util", "macros"] }
+tokio-util = { version = "0.7.5", features = ["compat"] }
 futures = "0.3.25"
 
 ipfs-api-prelude = "0.6.0"

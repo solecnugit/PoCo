@@ -3,6 +3,7 @@ name = "poco-client"
 version = "0.1.0"
 edition = "2021"
 
+
 [workspace]
 members = [
     "lib/poco-agent",
@@ -23,7 +24,7 @@ either = "1.8.0"
 lazy_static = "1.4.0"
 thread_local = "1.1.4"
 
-chrono = "0.4.23"
+chrono = "0.4.34"
 time = "0.3.17"
 
 tracing = "0.1.37"
@@ -39,18 +40,29 @@ serde_json = "1.0.89"
 tui = "0.19.0"
 crossterm = "0.25"
 unicode-width = "0.1"
+ahash = "0.8"
 
-tokio = { version = "1.21.2", features = ["rt-multi-thread", "time", "sync", "signal", "fs", "io-util", "macros"] }
-tokio-util = { version = "0.7.4", features = ["compat"] }
+near-jsonrpc-client = "0.8.0"
+near-jsonrpc-primitives = "0.21.2"
+near-crypto = "0.21.2"
+near-primitives = "0.21.2"
+near-sdk = "5.0.0"
+
+tokio = { version = "^1.19.0", features = ["rt-multi-thread", "time", "sync", "signal", "fs", "io-util", "macros"] }
+# tokio = { version = "1.21.2", features = ["rt-multi-thread", "time", "sync", "signal", "fs", "io-util", "macros"] }
+tokio-util = { version = "0.7.5", features = ["compat"] }
 futures = "0.3.25"
 async-trait = "0.1.63"
 
 crossbeam-channel = "0.5.6"
 
-poco-types = { path = "../poco-types", features = ["all"] }
+poco-types = { path = "../poco-types"}
 poco-agent = { path = "lib/poco-agent" }
 poco-actuator = { path = "lib/poco-actuator" }
 poco-ipfs = { path = "lib/poco-ipfs" }
 poco-db = { path = "lib/poco-db" }
 
 [build-dependencies]
+
+[patch.crates-io]
+near-sdk = { path = "/home/sole/near-sdk-rs/near-sdk" }

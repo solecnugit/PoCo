@@ -5,7 +5,15 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+# uncertain to use this
+[[bin]] # Bin to run the HelloWorld gRPC server
+name = "test-serde"
+path = "testserde.rs"
+
 [dependencies]
+tonic = "0.10"
+prost = "0.12"
+tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
 lazy_static = "1.4.0"
 async-trait = "0.1.63"
 
@@ -17,4 +25,7 @@ serde_json = "1.0.89"
 
 borsh = "0.10.0"
 
-poco-types = { path = "../../../poco-types", features = ["all"] }
+poco-types = { path = "../../../poco-types" }
+
+[build-dependencies]
+tonic-build = "0.10"

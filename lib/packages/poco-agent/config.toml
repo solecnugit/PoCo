@@ -18,9 +18,11 @@ ipfsEndpoint = "http://49.52.27.50:5001"
 verbose = true
 connectionTimeoutInMs = 1000
 nearRpcEndpoint = "https://rpc.testnet.near.org"
-nearSignerAccountId = "wuoody.testnet"
-nearSignerSecretKey = "ed25519:3HGBTrj3hMB5sFcTsUaTqXyw1Xm8BFmAwz3u7KQjVsoTmLtnNYoiuSUx8idyMfDxttheNt2NhPUiC96L8Fep1Wwa"
-pocoContractAccount = "dev-1699848063836-18477754701708"
+nearSignerAccountId = "soletest.testnet"
+nearSignerSecretKey = "ed25519:4Y54VupqpE51sQfmMhn5hLL9SsgjeqbxUB8VvDiSymHd5xt3Z8fn4aGpSU5UB3SWsLcw6iw7XbXj4TCVd8jdMuW4"
+# nearSignerAccountId = "wuoody.testnet"
+# nearSignerSecretKey = "ed25519:3HGBTrj3hMB5sFcTsUaTqXyw1Xm8BFmAwz3u7KQjVsoTmLtnNYoiuSUx8idyMfDxttheNt2NhPUiC96L8Fep1Wwa"
+pocoContractAccount = "poqos.testnet"
 
 [db]
 dbPath = "poco.db"
