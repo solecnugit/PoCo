@@ -2,7 +2,7 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::Serialize;
 use near_sdk::store::{LazyOption, UnorderedMap};
 use near_sdk::AccountId;
-use schemars::JsonSchema;
+use near_sdk::schemars::JsonSchema;
 
 use crate::types::uint::U256;
 
@@ -14,18 +14,23 @@ pub struct InternalUserProfile {
 
 #[derive(Serialize, JsonSchema)]
 #[serde(crate = "near_sdk::serde")]
+#[schemars(crate = "near_sdk::schemars")]
 pub struct UserProperty<'a> {
     pub key: &'a str,
     pub value: &'a U256,
 }
 
 #[derive(Serialize, JsonSchema)]
+#[schemars(crate = "near_sdk::schemars")]
 #[serde(crate = "near_sdk::serde")]
 pub struct UserProfile<'a> {
     props: Vec<UserProperty<'a>>,
     endpoint: &'a Option<String>,
 }
 
+// 问题：在这个Props可能用来放什么东西呢？
+// 1. hash签名
+// 2. 余额
 impl InternalUserProfile {
     #[inline]
     pub fn new(account: &AccountId) -> Self {

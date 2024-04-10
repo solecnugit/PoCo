@@ -5,7 +5,7 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::near_bindgen;
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::AccountId;
-use schemars::JsonSchema;
+use near_sdk::schemars::JsonSchema;
 
 use crate::types::round::RoundId;
 use crate::types::task::id::TaskId;
@@ -15,6 +15,7 @@ pub type EventNonce = u32;
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(crate = "near_sdk::serde")]
+#[schemars(crate = "near_sdk::schemars")]
 pub struct IndexedEvent {
     pub event_id: u32,
     pub payload: Events,
@@ -33,6 +34,7 @@ impl Display for IndexedEvent {
 
 #[near_bindgen(event_json(standard = "nep297"))]
 #[derive(BorshDeserialize, BorshSerialize, Deserialize, JsonSchema, Clone, Debug)]
+#[schemars(crate = "near_sdk::schemars")]
 pub enum Events {
     #[event_version("0.0.1")]
     NewRoundEvent { round_id: RoundId },

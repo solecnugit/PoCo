@@ -2,7 +2,7 @@
 use chrono::TimeZone;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
-use schemars::JsonSchema;
+use near_sdk::schemars::JsonSchema;
 #[cfg(feature = "all")]
 use std::fmt::{Display, Formatter};
 use std::ops::{Add, Sub};
@@ -26,6 +26,8 @@ pub type RoundId = u32;
     Clone,
 )]
 #[serde(crate = "near_sdk::serde")]
+#[borsh(crate = "near_sdk::borsh")]
+#[schemars(crate = "near_sdk::schemars")]
 pub struct BlockTimestamp {
     timestamp_in_ms: u64,
 }
@@ -88,6 +90,8 @@ impl Sub for BlockTimestamp {
     Clone,
 )]
 #[serde(crate = "near_sdk::serde")]
+#[borsh(crate = "near_sdk::borsh")]
+#[schemars(crate = "near_sdk::schemars")]
 pub struct RoundDuration {
     duration_in_ms: u64,
 }
@@ -108,6 +112,7 @@ impl From<u64> for RoundDuration {
     BorshDeserialize, BorshSerialize, Serialize, Deserialize, JsonSchema, Debug, PartialEq, Display,
 )]
 #[serde(crate = "near_sdk::serde")]
+#[schemars(crate = "near_sdk::schemars")]
 #[serde(rename_all = "UPPERCASE")]
 pub enum RoundStatus {
     Running,
@@ -116,6 +121,7 @@ pub enum RoundStatus {
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, PartialEq)]
 #[serde(crate = "near_sdk::serde")]
+#[schemars(crate = "near_sdk::schemars")]
 pub struct RoundInfo {
     pub id: RoundId,
     pub status: RoundStatus,
@@ -129,6 +135,7 @@ pub struct RoundInfo {
 #[cfg(feature = "all")]
 impl Display for RoundInfo {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+
         let start_time = chrono::Local
             .timestamp_millis_opt(self.start_time.timestamp_in_ms as i64)
             .unwrap();
@@ -140,6 +147,9 @@ impl Display for RoundInfo {
 
         let start_time = start_time.format("%Y-%m-%d %H:%M:%S");
         let end_time = end_time.format("%Y-%m-%d %H:%M:%S");
+
+        // let start_time = "2022-01-01 00:00:00";jing
+        // let end_time = "2022-01-01 01:00:00";
 
         write!(
             f,
