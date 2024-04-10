@@ -1,5 +1,6 @@
 use std::path::Path;
 use std::pin::Pin;
+use std::sync::Arc;
 use async_trait::async_trait;
 use futures::Future;
 use tokio::sync::mpsc;
@@ -12,6 +13,7 @@ use poco_actuator::get_actuator;
 use poco_actuator::rpc::client;
 use poco_agent::types::AccountId;
 use poco_ipfs::client::GetFileProgress;
+use tui::backend;
 
 use crate::app::backend::Backend;
 use crate::app::backend::command::{BackendCommand, CommandSource};
@@ -113,7 +115,7 @@ impl CommandExecutor for Backend {
         command_source: CommandSource,
         task_config_path: String,
     ) {
-        self.execute_command_block(command_source, async move |it| {
+        self.execute_command_block(command_source, async move |it: Backend| {
             let task_config_path = Path::new(&task_config_path);
 
             // Check if task config file exists
@@ -188,8 +190,9 @@ impl CommandExecutor for Backend {
             let (gas, task_id) = it.agent.publish_task(task_config).await?;
 
             it.log_string(format!(
-                "Task published. Gas used: {}, Task ID: {task_id}",
-                pretty_gas(gas)
+                "Task published. Gas used: {}, Task ID: {:?}",
+                pretty_gas(gas),
+                task_id
             ))?;
 
             Ok(())
@@ -197,24 +200,21 @@ impl CommandExecutor for Backend {
     }
 
     fn execute_query_specific_task_command(&self, command_source: CommandSource, task_id: u64) {
-        self.execute_command_block(command_source, async move |it| {
+        self.execute_command_block(command_source, async move |it: Backend| {
             // it.log_string(format!("task_id: {task_id}"))?;
             let task = it.agent.query_specific_task(task_id.into()).await?;
 
-            it.log_string(format!("Task: {task}"))?;
+            it.log_string(format!("Task: {:?}", task))?;
 
             Ok(())
         });
     }
 
     async fn execute_task_command(&self, command_source: CommandSource, task_id: u64) {
-
+        // let task_id = Arc::new(task_id);
         let (tx , mut rx) = mpsc::channel(100);
-        self.execute_command_block(command_source, async move |it| {
+        self.execute_command_block(command_source, async move |it: Backend| {
 
-            // breakpoint for debugging, to check if an error will occur before this point.
-            it.log_string(format!("task_id: {task_id}"))?;
-            // communicate with chain to get task config
             let task = it.agent.query_specific_task(task_id.into()).await?;
 
             // it.log_string(format!("OnchainTask: {task}"))?;
@@ -226,10 +226,12 @@ impl CommandExecutor for Backend {
             };
 
             let task = task.to_rpc_task_config(task_id, &actuator)?;
+
+            let tx_clone = tx.clone();
             
             // Spawn the dispatch_vod_task task.
             tokio::spawn(async move {
-                if let Err(e) = client::send_rpc_request(task, tx).await {
+                if let Err(e) = client::send_rpc_request(task, tx_clone).await {
                     eprintln!("Error: {}", e);
                 }
             });
@@ -274,7 +276,7 @@ impl CommandExecutor for Backend {
     }
 
     fn execute_ipfs_cat_file_command(&self, command_source: CommandSource, file_hash: String) {
-        self.execute_command_block(command_source, async move |it| {
+        self.execute_command_block(command_source, async move |it: Backend| {
             let buffer = it.ipfs_client.cat_file(file_hash.as_str()).await?;
             let buffer = String::from_utf8(buffer)?;
 
@@ -285,7 +287,7 @@ impl CommandExecutor for Backend {
     }
 
     fn execute_ipfs_file_status_command(&self, command_source: CommandSource, file_hash: String) {
-        self.execute_command_block(command_source, async move |it| {
+        self.execute_command_block(command_source, async move |it: Backend| {
             let status = it.ipfs_client.file_status(file_hash.as_str()).await?;
 
             it.log_multiple_strings(vec![
@@ -309,7 +311,7 @@ impl CommandExecutor for Backend {
     ) {
         self.execute_command_block(
             command_source,
-            async move |it| {
+            async move |it: Backend| {
                 let mut interval = tokio::time::interval(std::time::Duration::from_millis(1000));
                 let (tx, mut rx) = tokio::sync::mpsc::channel(1);
 
@@ -363,7 +365,7 @@ impl CommandExecutor for Backend {
     }
 
     fn execute_ipfs_add_file_command(&self, command_source: CommandSource, file_path: String) {
-        self.execute_command_block(command_source, async move |it| {
+        self.execute_command_block(command_source, async move |it: Backend| {
             let file_hash = it.ipfs_client.add_file(file_path.as_str()).await?;
 
             it.log_string(format!("File uploaded to ipfs: {file_hash}"))?;
@@ -373,7 +375,7 @@ impl CommandExecutor for Backend {
     }
 
     fn execute_start_round_command(&self, command_source: CommandSource) {
-        self.execute_command_block(command_source, async move |it| {
+        self.execute_command_block(command_source, async move |it: Backend| {
             let round_status = it.agent.get_round_status().await?;
 
             let (gas, round_id) = if let RoundStatus::Pending = round_status {
@@ -392,7 +394,7 @@ impl CommandExecutor for Backend {
     }
 
     fn execute_set_user_endpoint_command(&self, command_source: CommandSource, endpoint: String) {
-        self.execute_command_block(command_source, async move |it| {
+        self.execute_command_block(command_source, async move |it:Backend| {
             let gas = it.agent.set_user_endpoint(endpoint.as_str()).await?;
 
             it.log_string(format!(
@@ -405,7 +407,7 @@ impl CommandExecutor for Backend {
     }
 
     fn execute_gas_price_command(&self, command_source: CommandSource) {
-        self.execute_command_block(command_source, async move |it| {
+        self.execute_command_block(command_source, async move |it: Backend| {
             let gas_price = it.agent.gas_price().await?;
 
             it.log_string(format!("Gas price: {gas_price}"))?;
@@ -419,7 +421,7 @@ impl CommandExecutor for Backend {
         command_source: CommandSource,
         account_id: Option<AccountId>,
     ) {
-        self.execute_command_block(command_source, async move |it| {
+        self.execute_command_block(command_source, async move |it: Backend| {
             let endpoint = it.agent.get_user_endpoint(account_id).await?;
 
             if let Some(endpoint) = endpoint {
@@ -433,14 +435,14 @@ impl CommandExecutor for Backend {
     }
 
     fn execute_query_events_command(&self, command_source: CommandSource, from: u32, count: u32) {
-        self.execute_command_block(command_source, async move |it| {
+        self.execute_command_block(command_source, async move |it: Backend| {
             let events = it.agent.query_events(from, count).await?;
 
             if events.is_empty() {
                 it.log_string("No events found".to_string())?;
             } else {
                 for event in events {
-                    it.log_string(format!("{event}"))?;
+                    it.log_string(format!("{:?}", event))?;
                 }
             }
 
@@ -449,7 +451,7 @@ impl CommandExecutor for Backend {
     }
 
     fn execute_count_events_command(&self, command_source: CommandSource) {
-        self.execute_command_block(command_source, async move |it| {
+        self.execute_command_block(command_source, async move |it: Backend| {
             let count = it.agent.count_events().await?;
 
             it.log_string(format!("Events count: {count}"))?;
@@ -459,7 +461,7 @@ impl CommandExecutor for Backend {
     }
 
     fn execute_count_tasks_command(&self, command_source: CommandSource) {
-        self.execute_command_block(command_source, async move |it|{
+        self.execute_command_block(command_source, async move |it: Backend|{
             let count = it.agent.count_tasks().await?;
 
             it.log_string(format!("Tasks count: {count}"))?;
@@ -469,104 +471,205 @@ impl CommandExecutor for Backend {
     }
 
     fn execute_round_info_command(&self, command_source: CommandSource) {
-        self.execute_command_block(command_source, async move |it| {
-            let round_info = it.agent.get_round_info().await?;
+        // self.execute_command_block(command_source, async move |it| {
+        //     let round_info = it.agent.get_round_info().await?;
 
-            it.log_string(format!("Round info: {round_info}"))?;
+        //     it.log_string(format!("Round info: {round_info}"))?;
 
-            Ok(())
-        })
+        //     async { Ok(()) }.await
+        // })
+        self.execute_command_block(command_source, move |it: Backend| {
+            Box::pin(async move {
+                let round_info = it.agent.get_round_info().await?;
+
+                it.log_string(format!("Round info: {:?}", round_info))?;
+    
+                async { Ok(()) }.await
+            })
+            })
     }
 
     fn execute_round_status_command(&self, command_source: CommandSource) {
-        self.execute_command_block(command_source, async move |it| {
-            let round_status = it.agent.get_round_status().await?;
+        // self.execute_command_block(command_source, async move |it| {
+        //     let round_status = it.agent.get_round_status().await?;
 
-            it.log_string(format!("Round status: {round_status}"))?;
+        //     it.log_string(format!("Round status: {round_status}"))?;
 
-            Ok(())
+        //     Ok(())
+        // })
+
+        self.execute_command_block(command_source, move |it: Backend| {
+            Box::pin(async move{
+                let round_status = it.agent.get_round_status().await?;
+
+                it.log_string(format!("Round status: {round_status}"))?;
+    
+                Ok(())
+            })
+
         })
     }
 
     fn execute_view_account_command(&self, command_source: CommandSource, account_id: AccountId) {
-        self.execute_command_block(command_source, async move |it| {
-            let account_id_in_string = account_id.to_string();
+        self.execute_command_block(command_source,  move |it: Backend| {
+            Box::pin(async move {
+                let account_id_in_string = account_id.to_string();
 
-            let account = it.agent.view_account(account_id).await?;
+                let account = it.agent.view_account(account_id).await?;
+    
+                it.log_multiple_strings(vec![
+                    format!("Account ID: {account_id_in_string}"),
+                    format!("Amount: {}", account.amount),
+                    format!("Locked: {}", account.locked),
+                    format!("Code Hash: {}", account.code_hash),
+                    format!("Storage Usage: {}", account.storage_usage),
+                    format!("Storage Paid At: {}", account.storage_paid_at),
+                ])?;
+    
+                Ok(())
+            })
 
-            it.log_multiple_strings(vec![
-                format!("Account ID: {account_id_in_string}"),
-                format!("Amount: {}", account.amount),
-                format!("Locked: {}", account.locked),
-                format!("Code Hash: {}", account.code_hash),
-                format!("Storage Usage: {}", account.storage_usage),
-                format!("Storage Paid At: {}", account.storage_paid_at),
-            ])?;
-
-            Ok(())
         })
+        // self.execute_command_block(command_source, async move |it| {
+        //     let account_id_in_string = account_id.to_string();
+
+        //     let account = it.agent.view_account(account_id).await?;
+
+        //     it.log_multiple_strings(vec![
+        //         format!("Account ID: {account_id_in_string}"),
+        //         format!("Amount: {}", account.amount),
+        //         format!("Locked: {}", account.locked),
+        //         format!("Code Hash: {}", account.code_hash),
+        //         format!("Storage Usage: {}", account.storage_usage),
+        //         format!("Storage Paid At: {}", account.storage_paid_at),
+        //     ])?;
+
+        //     Ok(())
+        // })
     }
 
     fn execute_status_command(&self, command_source: CommandSource) {
-        self.execute_command_block(command_source, async move |it| {
-            let status = it.agent.status().await?;
+        // self.execute_command_block(command_source, async move |it| {
+        //     let status = it.agent.status().await?;
 
-            it.log_multiple_strings(vec![
-                format!("Version: {}", status.version.version),
-                format!("Build: {}", status.version.build),
-                format!("Protocol Version: {}", status.protocol_version),
-                format!(
-                    "Latest Protocol Version: {}",
-                    status.latest_protocol_version
-                ),
-                format!("Rpc Address: {}", status.rpc_addr.unwrap_or_default()),
-                format!("Sync Info: "),
-                format!(
-                    "  Latest Block Hash: {}",
-                    status.sync_info.latest_block_hash
-                ),
-                format!(
-                    "  Latest Block Height: {}",
-                    status.sync_info.latest_block_height
-                ),
-                format!(
-                    "  Latest State Root: {}",
-                    status.sync_info.latest_state_root
-                ),
-                format!("  Syncing: {}", status.sync_info.syncing),
-            ])?;
+        //     it.log_multiple_strings(vec![
+        //         format!("Version: {}", status.version.version),
+        //         format!("Build: {}", status.version.build),
+        //         format!("Protocol Version: {}", status.protocol_version),
+        //         format!(
+        //             "Latest Protocol Version: {}",
+        //             status.latest_protocol_version
+        //         ),
+        //         format!("Rpc Address: {}", status.rpc_addr.unwrap_or_default()),
+        //         format!("Sync Info: "),
+        //         format!(
+        //             "  Latest Block Hash: {}",
+        //             status.sync_info.latest_block_hash
+        //         ),
+        //         format!(
+        //             "  Latest Block Height: {}",
+        //             status.sync_info.latest_block_height
+        //         ),
+        //         format!(
+        //             "  Latest State Root: {}",
+        //             status.sync_info.latest_state_root
+        //         ),
+        //         format!("  Syncing: {}", status.sync_info.syncing),
+        //     ])?;
 
-            Ok(())
+        //     Ok(())
+        // })
+
+        self.execute_command_block(command_source, move |it: Backend| {
+            Box::pin(async move {
+                let status = it.agent.status().await?;
+
+                it.log_multiple_strings(vec![
+                    format!("Version: {}", status.version.version),
+                    format!("Build: {}", status.version.build),
+                    format!("Protocol Version: {}", status.protocol_version),
+                    format!(
+                        "Latest Protocol Version: {}",
+                        status.latest_protocol_version
+                    ),
+                    format!("Rpc Address: {}", status.rpc_addr.unwrap_or_default()),
+                    format!("Sync Info: "),
+                    format!(
+                        "  Latest Block Hash: {}",
+                        status.sync_info.latest_block_hash
+                    ),
+                    format!(
+                        "  Latest Block Height: {}",
+                        status.sync_info.latest_block_height
+                    ),
+                    format!(
+                        "  Latest State Root: {}",
+                        status.sync_info.latest_state_root
+                    ),
+                    format!("  Syncing: {}", status.sync_info.syncing),
+                ])?;
+    
+                Ok(())
+            })
+            
         })
     }
 
     fn execute_network_status_command(&self, command_source: CommandSource) {
-        self.execute_command_block(command_source, async move |it| {
-            let status = it.agent.network_status().await?;
+        // self.execute_command_block(command_source, async move |it| {
+        //     let status = it.agent.network_status().await?;
 
-            it.log_multiple_strings(vec![
-                format!("Num Active Peers: {}", status.num_active_peers),
-                format!("Sent Bytes Per Sec: {}", status.sent_bytes_per_sec),
-                format!("Received Bytes Per Sec: {}", status.received_bytes_per_sec),
-            ])?;
+        //     it.log_multiple_strings(vec![
+        //         format!("Num Active Peers: {}", status.num_active_peers),
+        //         format!("Sent Bytes Per Sec: {}", status.sent_bytes_per_sec),
+        //         format!("Received Bytes Per Sec: {}", status.received_bytes_per_sec),
+        //     ])?;
 
-            Ok(())
+        //     Ok(())
+        // });
+        self.execute_command_block(command_source, move |it:Backend| {
+            Box::pin(async move {
+                let status = it.agent.network_status().await?;
+
+                it.log_multiple_strings(vec![
+                    format!("Num Active Peers: {}", status.num_active_peers),
+                    format!("Sent Bytes Per Sec: {}", status.sent_bytes_per_sec),
+                    format!("Received Bytes Per Sec: {}", status.received_bytes_per_sec),
+                ])?;
+    
+                Ok(())
+            })
+            
         });
     }
 
+
+            // self.execute_command_block(command_source, async move |it: Backend| {
+        //     it.log_multiple_strings(help)?;
+        //     it.log_command_execution(
+        //         c1,
+        //         CommandExecutionStage::Executed,
+        //         CommandExecutionStatus::Succeed,
+        //         None,
+        //     )?;
+
+        //     Ok(())
+        // });
     fn execute_help_command(&self, command_source: CommandSource, help: Vec<String>) {
         let c1 = command_source.clone();
 
-        self.execute_command_block(command_source, async move |it| {
-            it.log_multiple_strings(help)?;
-            it.log_command_execution(
-                c1,
-                CommandExecutionStage::Executed,
-                CommandExecutionStatus::Succeed,
-                None,
-            )?;
-
-            Ok(())
+        self.execute_command_block(command_source, move |it: Backend| {
+            Box::pin(async move {
+                it.log_multiple_strings(help)?;
+                it.log_command_execution(
+                    c1,
+                    CommandExecutionStage::Executed,
+                    CommandExecutionStatus::Succeed,
+                    None,
+                )?;
+        
+                async { Ok(123) }.await
+            })
         });
     }
 }
