@@ -15,7 +15,8 @@ if [ "$NEAR_ENV" = "local" ]; then
   NEAR_DEPLOY_COMMAND="pnpm exec near dev-deploy"
 elif [ "$NEAR_ENV" = "testnet" ]; then
   echo ">> Use near testnet"
-  NEAR_DEPLOY_COMMAND="pnpm exec near dev-deploy --helperUrl https://near-contract-helper.onrender.com"
+  # NEAR_DEPLOY_COMMAND="pnpm exec near deploy dev-1699848063836-18477754701708 --helperUrl https://near-contract-helper.onrender.com"
+  NEAR_DEPLOY_COMMAND="pnpm exec near deploy poqos.testnet contract/target/wasm32-unknown-unknown/release/poco.wasm"
 else
   echo "Unsupport NEAR_ENV : ${NEAR_ENV}"
   exit 1
