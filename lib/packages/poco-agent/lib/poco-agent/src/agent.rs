@@ -268,12 +268,12 @@ impl PocoAgent {
             nonce: current_nonce + 1,
             receiver_id: self.contract_id.clone(),
             block_hash: access_key_response.block_hash,
-            actions: vec![Action::FunctionCall(FunctionCallAction {
+            actions: vec![Action::FunctionCall(Box::new(FunctionCallAction {
                 method_name: method_name.to_string(),
                 args: self.encode_args(args, r#type),
                 gas,
                 deposit,
-            })],
+            }))],
         };
 
         let request = methods::broadcast_tx_commit::RpcBroadcastTxCommitRequest {
