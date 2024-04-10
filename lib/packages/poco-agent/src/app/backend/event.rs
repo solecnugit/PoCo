@@ -2,7 +2,8 @@ use async_trait::async_trait;
 use poco_types::types::round::RoundId;
 use poco_types::types::task::id::TaskId;
 use poco_types::types::task::OnChainTaskConfig;
-use poco_types::types::convert_account_id_from_sdk_to_primitives;
+use super::super::super::util::convert_account_id_from_sdk_to_primitives;
+// use poco_types::types::convert_account_id_from_sdk_to_primitives;
 
 use poco_agent::types::AccountId;
 
@@ -85,7 +86,7 @@ impl ContractEventHandler for Backend {
         task_id: &TaskId,
         task_config: &OnChainTaskConfig,
     ) -> Result<Self::Output, Self::Error> {
-        log_string(&self.ui_sender, format!("New task: {task_id}"));
+        log_string(&self.ui_sender, format!("New task: {:?}", task_id));
 
         let task_id_u64: u64 = task_id.into();
 
