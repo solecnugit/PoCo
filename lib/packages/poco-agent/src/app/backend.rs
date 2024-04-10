@@ -129,7 +129,8 @@ impl Backend {
         let backend = self.clone();
         let sender = self.ui_sender.clone();
 
-        self.runtime.spawn(f(backend).then(async move |r| {
+        // async move |r| {}
+        self.runtime.spawn(f(backend).then(move |r| async move {
             match r {
                 Ok(_) => {
                     log_command_execution(
