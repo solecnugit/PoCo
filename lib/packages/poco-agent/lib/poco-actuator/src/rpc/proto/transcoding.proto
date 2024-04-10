@@ -1,0 +1,128 @@
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+import public "google/protobuf/timestamp.proto";
+
+// option java_multiple_files = true;
+// option java_package = "io.grpc.examples.helloworld";
+// option java_outer_classname = "HelloWorldProto";
+// option objc_class_prefix = "HLW";
+
+package transcode;
+
+// The greeting service definition.
+service Transcoder {
+  // Sends a greeting
+  rpc DispatchVoDTask (DispatchVoDRequest) returns (stream TaskResult) {}
+
+  // rpc FinishTask (FinishVoDRequest) returns (FinishVoDReply) {}
+
+//   rpc SayHelloStreamReply (HelloRequest) returns (stream HelloReply) {}
+}
+
+enum TaskStatus {
+  ENQUEUE = 0;
+  DOWNLOADED = 1;
+  EXECUTED = 2;
+  EVALUATED = 3;
+  FAILED = 4;
+};
+
+enum VideoCodec {
+  H264 = 0;
+  H265 = 1;
+  VP9 = 2;
+  AV1 = 3;
+};
+
+enum AudioCodec {
+  AAC = 0;
+  NONE = 1;
+};
+
+enum Resolution {
+  SD = 0;
+  HD = 1;
+  FHD = 2;
+};
+
+enum Bitrate {
+  LOW = 0;
+  MEDIUM = 1;
+  HIGH = 2;
+  ULTRA = 3;  
+}
+
+
+message VideoInfo {
+    string vid = 1;
+    string duration = 2;
+    VideoCodec origincodec = 3;
+    Resolution originresolution = 4;  
+    AudioCodec originaudiocodec = 5;
+    string originframerate = 6;
+    string originbitrate = 7;
+}
+
+enum TaskType {
+  VOD = 0;
+  LATENCY = 1;
+  LIVE = 2;
+};
+
+message DispatchVoDRequest {
+    string taskid = 1;
+    // 这里去除videoinfo，思考以后发现传这个东西并没有被直接使用到。
+    // VideoInfo videoinfo = 2;
+    string originurl = 2;
+    // 在ipfs场景中，不会直接输出到本地，返回的hash值事先也不知道，所以暂时不设置
+    // 但是可以要求返回方式，例如link或者ipfs的hash
+    // string outputurl = 4;
+    VideoCodec outputcodec = 3;
+    // 这个暂时也没有用
+    // Resolution outputresolution = 6;
+    // 在假设copy的情况下，这个暂时也没有用
+    // AudioCodec outputaudiocodec = 7;
+    // 目前精简场景中，默认copy，暂时也不设置
+    // string outputframerate = 8;
+    // 精简场景中，默认，暂时也不设置
+    // Bitrate bitrate = 9;
+    // 精简场景，默认VoD，暂时也不设置（考虑到设置了的话要和链上同步）
+    // TaskType tasktype = 4;
+    // 这个uniqueid应当作为一个唯一标识符，用于上链时进行区分，可以不设置
+    string uniqueid = 4;
+}
+
+// message DispatchVoDReply {
+//   string taskid = 1;
+// }
+
+// message FinishVoDRequest {
+//   string taskid = 1;
+//   TaskResult result = 2;
+// }
+
+message TaskResult {
+  TaskStatus status = 1;
+  string taskid = 2;
+  // string hash = 1;
+  // google.protobuf.Timestamp finishtime = 2;
+  // string error = 3;
+}
+
+
+// message FinishVoDReply {
+//   string taskid = 1;
+// }
