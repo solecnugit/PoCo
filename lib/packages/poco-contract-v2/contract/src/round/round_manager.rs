@@ -41,7 +41,7 @@ impl RoundManager {
 
     #[inline]
     pub fn get_round_status(&self) -> RoundStatus {
-        let block_time : BlockTimestamp = near_sdk::env::block_timestamp_ms().into();
+        let block_time: BlockTimestamp = near_sdk::env::block_timestamp_ms().into();
         let start_time = self.round_start_time;
         let end_time = self.round_start_time + self.round_duration;
 

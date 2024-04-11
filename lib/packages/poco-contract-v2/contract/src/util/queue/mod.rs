@@ -1,15 +1,15 @@
 use std::fmt::Debug;
 
 use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
-use near_sdk::IntoStorageKey;
 use near_sdk::store::Vector;
+use near_sdk::IntoStorageKey;
 
 mod iter;
 
 #[derive(Debug)]
 pub struct CircularQueue<T>
-    where
-        T: BorshDeserialize + BorshSerialize,
+where
+    T: BorshDeserialize + BorshSerialize,
 {
     buf: Vector<T>,
     head: u64,
@@ -19,8 +19,8 @@ pub struct CircularQueue<T>
 }
 
 impl<T> CircularQueue<T>
-    where
-        T: BorshDeserialize + BorshSerialize,
+where
+    T: BorshDeserialize + BorshSerialize,
 {
     pub fn new<S: IntoStorageKey>(length: u64, prefix: S) -> Self {
         let length = length + 1;
@@ -130,8 +130,8 @@ impl<T> CircularQueue<T>
 }
 
 impl<T> CircularQueue<T>
-    where
-        T: BorshDeserialize + BorshSerialize + Clone,
+where
+    T: BorshDeserialize + BorshSerialize + Clone,
 {
     pub fn pop_front(&mut self) -> Option<T> {
         if self.is_empty() {

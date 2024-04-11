@@ -1,20 +1,20 @@
-use near_sdk::{AccountId, NearToken};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::store::LookupMap;
+use near_sdk::{AccountId, NearToken};
 use poco_types::types::user::{InternalUserProfile, UserProfile};
 
 #[derive(BorshDeserialize, BorshSerialize)]
 #[borsh(crate = "near_sdk::borsh")]
 pub struct UserManager {
     user_map: LookupMap<AccountId, InternalUserProfile>,
-    stake_map: LookupMap<AccountId, NearToken>
+    stake_map: LookupMap<AccountId, NearToken>,
 }
 
 impl UserManager {
     pub fn new() -> Self {
         UserManager {
             user_map: LookupMap::new(b"user-manager:usermap".to_vec()),
-            stake_map: LookupMap::new(b"user-manager:stakemap".to_vec())
+            stake_map: LookupMap::new(b"user-manager:stakemap".to_vec()),
         }
     }
 
@@ -82,8 +82,17 @@ mod tests {
         user_manager.set_user_stake(&user3, 20_u128);
 
         // Check the stakes
-        assert_eq!(user_manager.get_user_stake(&user1), NearToken::from_yoctonear(50_u128));
-        assert_eq!(user_manager.get_user_stake(&user2), NearToken::from_yoctonear(30_u128));
-        assert_eq!(user_manager.get_user_stake(&user3), NearToken::from_yoctonear(20_u128));
+        assert_eq!(
+            user_manager.get_user_stake(&user1),
+            NearToken::from_yoctonear(50_u128)
+        );
+        assert_eq!(
+            user_manager.get_user_stake(&user2),
+            NearToken::from_yoctonear(30_u128)
+        );
+        assert_eq!(
+            user_manager.get_user_stake(&user3),
+            NearToken::from_yoctonear(20_u128)
+        );
     }
 }
