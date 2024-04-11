@@ -8,21 +8,34 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-near-sdk = { version = "4.1.1", features = ["abi"] }
-uint = { version = "0.9.3", default-features = false }
-schemars = "0.8.11"
-poco-types = { path = "../../poco-types", features = [] }
+near-sdk = "5.0.0"
+# near-sdk = { version = "4.1.1", features = ["abi"] }
+# uint = { version = "0.9.3", default-features = false }
+# schemars = "0.8.11"
+# poco-types = { path = "../../poco-types", features = ["all"] }
+poco-types = { path = "../../poco-types", features = ["protocol"] }
+rand = "0.8.4"
+getrandom = { version = "0.2", features = ["js"] }
+# borsh = "^1.0.0"
+# near-abi = "0.4.2"
+
 
 [dev-dependencies]
-rand = { version = "0.8.5", features = ["getrandom"] }
+near-sdk = { version = "5.0.0", features = ["unit-testing"] }
+# rand = { version = "0.8.5", features = ["getrandom"] }
 rand_xorshift = "0.3.0"
+tokio = { version = "1.37.0", features = ["sync"] , default-features = false}
+# near-abi = "0.4.2"
+
+[patch.crates-io]
+near-sdk = { path = "/home/sole/near-sdk-rs/near-sdk" }
 
 [profile.release]
 codegen-units = 1
 opt-level = "z"
 lto = true
-debug = false
-panic = "abort"
+# debug = false
+# panic = "abort"
 overflow-checks = true
 
 [workspace]
