@@ -6,6 +6,7 @@ use poco_types::types::task::{OnChainTaskConfig, TaskConfig};
 use poco_types::types::task::id::TaskId;
 
 #[derive(BorshDeserialize, BorshSerialize)]
+#[borsh(crate = "near_sdk::borsh")]
 pub struct TaskManager {
     tasks: LookupMap<RoundId, Vector<OnChainTaskConfig>>,
     count: u64,
@@ -20,15 +21,6 @@ impl TaskManager {
         TaskManager { tasks, count: 0 }
     }
 
-    // #[inline]
-    // pub fn query_specific_task(
-    //     &self,
-    //     task_id: TaskId,
-    // ) -> OnChainTaskConfig {
-    //     self.tasks
-    //         .get(&task_id.get_round_id())
-    //         .and_then(|tasks| tasks.get(*(&task_id.get_task_nonce())).cloned()).unwrap()
-    // }
 
     #[inline]
     pub fn query_specific_task(

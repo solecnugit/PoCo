@@ -1,8 +1,11 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+use near_sdk::serde::{Deserialize, Serialize};
 use poco_types::types::event::EventNonce;
 use poco_types::types::round::{BlockTimestamp, RoundDuration, RoundId, RoundStatus};
 
-#[derive(BorshDeserialize, BorshSerialize)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Debug, PartialEq)]
+#[borsh(crate = "near_sdk::borsh")]
+#[serde(crate = "near_sdk::serde")]
 pub struct RoundManager {
     round_id: RoundId,
     round_start_time: BlockTimestamp,

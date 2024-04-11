@@ -3,6 +3,7 @@ use near_sdk::store::Vector;
 use poco_types::types::event::{Events, IndexedEvent};
 
 #[derive(BorshDeserialize, BorshSerialize)]
+#[borsh(crate = "near_sdk::borsh")]
 pub struct EventBus {
     events: Vector<Events>,
 }
