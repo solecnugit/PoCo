@@ -1,0 +1,14 @@
+{
+  "name": "poco-committee",
+  "version": "1.0.0",
+  "description": "Use PoCo-Committee to achieve off-chain consensus on QoS of worker.",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "wuoody wu",
+  "license": "ISC"
+}
