@@ -7,8 +7,18 @@
     "test": "test"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
   "author": "wuoody wu",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "axios": "^1.6.8",
+    "body-parser": "^1.19.0",
+    "crypto-js": "^3.1.9-1",
+    "elliptic": "^6.5.0",
+    "express": "^4.17.1",
+    "uuid": "^3.3.2",
+    "ws": "^7.1.1"
+  }
 }
