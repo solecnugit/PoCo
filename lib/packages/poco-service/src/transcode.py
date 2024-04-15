@@ -1,12 +1,17 @@
-from enums import Resolution, VideoCodec, Bitrate, AudioCodec, Accelerator, Mode
-from loguru import logger
+"""
+This module provides functions for transcoding video files.
+It includes functions to execute the transcoding and to generate the necessary commands.
+"""
+
 import os
-import subprocess
+import json
+import random
 import datetime
+import subprocess
+from loguru import logger
+from enums import VideoCodec, Accelerator
 from config_parser import parse_config_file, get_config_value
 from hw_capabilities import get_nvenc_capability
-import random
-import json
 
 
 def execute_ez_vod_transcode(
@@ -25,6 +30,18 @@ def execute_ez_vod_transcode(
 def generate_transcode_command(
     inputurl: str, outputurl: str, outputcodec: VideoCodec, taskid: str
 ):
+    """
+    Generate a command to transcode a video file.
+
+    Args:
+        inputurl (str): The URL of the input video file.
+        outputurl (str): The URL of the output video file.
+        outputcodec (VideoCodec): The codec to use for the output video.
+        taskid (str): The ID of the task.
+
+    Returns:
+        tuple: The command to execute and the path of the output file.
+    """
     accelerator = get_random_accelerator(outputcodec)
     logger.info(f"Selected {accelerator.value}  for {taskid}.")
 
@@ -45,7 +62,7 @@ def generate_transcode_command(
     command = ""
     # if videotask.mode == Mode.Normal:
     outputpath = os.path.join(outputurl, f"{filename}_{timestamp}{extension}")
-    command = "ffmpeg -y -i {} -c:v {} -c:a copy {}".format(inputurl, codec, outputpath)
+    command = f"ffmpeg -y -i {inputurl} -c:v {codec} -c:a copy {outputpath}"
 
     return command, outputpath
 
@@ -84,7 +101,7 @@ def read_capability():
     parent_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     file_path = os.path.join(parent_path, "capabilities.json")
     if os.path.exists(file_path):
-        with open(file_path, "r") as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             capability = json.load(f)
         f.close()
     else:
@@ -104,7 +121,7 @@ def read_encode_ini():
     logger.info(f"file_path is {file_path}")
     try:
         encode_lib = parse_config_file(file_path)
-    except FileNotFoundError:
-        raise FileNotFoundError(f"文件{file_path}不存在")
+    except FileNotFoundError as exc:
+        raise FileNotFoundError(f"file {file_path} doesn't exist.") from exc
 
     return encode_lib
