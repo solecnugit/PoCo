@@ -9,39 +9,30 @@ import random
 import datetime
 import subprocess
 from loguru import logger
+from measure import QoSAnalyzer
 from enums import VideoCodec, Accelerator
 from config_parser import parse_config_file, get_config_value
 from hw_capabilities import get_nvenc_capability
 
 
 def execute_ez_vod_transcode(
-    taskid: str, inputurl: str, outputcodec: VideoCodec, contractid: str
+    taskid: str, inputurl: str, outputcodec: VideoCodec, mac: str, contractid: str
 ):
     outputurl = os.path.dirname(inputurl)
-    command, outputpath = generate_transcode_command(
-        inputurl, outputurl, outputcodec, taskid
-    )
-    logger.info(f"finish build {taskid} instruction: {command}.")
+    command, outputpath = prepare_ez_transcode(inputurl, outputurl, outputcodec, mac)
+    logger.info(f"generate {taskid} instruction: {command}.")
 
-    subprocess.run(command, shell=True, stdout=subprocess.PIPE)
-    logger.success(f"Transcode {taskid} finished.")
+    def transcoding():
+        subprocess.run(command, shell=True, stdout=subprocess.PIPE, check=True)
+        logger.success(f"Transcode {taskid} finished.")
+
+    analyzer = QoSAnalyzer(inputurl, outputpath)
+    analyzer.measure(transcoding, contractid)
 
 
-def generate_transcode_command(
+def prepare_ez_transcode(
     inputurl: str, outputurl: str, outputcodec: VideoCodec, taskid: str
 ):
-    """
-    Generate a command to transcode a video file.
-
-    Args:
-        inputurl (str): The URL of the input video file.
-        outputurl (str): The URL of the output video file.
-        outputcodec (VideoCodec): The codec to use for the output video.
-        taskid (str): The ID of the task.
-
-    Returns:
-        tuple: The command to execute and the path of the output file.
-    """
     accelerator = get_random_accelerator(outputcodec)
     logger.info(f"Selected {accelerator.value}  for {taskid}.")
 
@@ -122,6 +113,86 @@ def read_encode_ini():
     try:
         encode_lib = parse_config_file(file_path)
     except FileNotFoundError as exc:
-        raise FileNotFoundError(f"file {file_path} doesn't exist.") from exc
+        raise FileNotFoundError(f"文件{file_path}不存在") from exc
 
     return encode_lib
+
+
+# 这里的代码改自transcode/transcode.py
+# def execute_vod_transcode(videotask: VideoTask, mac: str, contractid: str):
+
+# command, outputpath = prepare_transcode(videotask, mac, contractid)
+# logger.info(f"finish build {videotask.taskid} instruction: {command}.")
+# print(videotask.outputcodec)
+
+# 创建QoSAnalyzer对象
+# 但是，实际上的QoSAnalyzer评估，应该由实际server做一份，并且作为证明的一部分返回，但是并不应该在这里进行？
+# analyzer = QoSAnalyzer(videotask, outputpath)
+
+# subprocess.run(command, shell=True, stdout=subprocess.PIPE)
+# logger.success(f"Transcode {videotask.taskid} finished.")
+
+#  这里把具体的transcode指令作为参数传入
+# callback_func = functools.partial(handle_transcode, command)
+# if videotask.mode == Mode.Normal:
+#     analyzer.measure(callback_func, contractid)
+# elif videotask.mode == Mode.Latency:
+#     analyzer.measure_latency(callback_func, contractid, outputpath)
+
+# print(qosmetric)
+# helper = MySQLHelper()
+# helper.connect()
+# helper.insert_metric(qosmetric)
+# # helper.disconnect()
+
+# 这里需要更改数据库任务结果
+# helper = MySQLHelper()
+# helper.connect()
+# helper.update_mac_task(videotask.taskid, mac)
+# helper.disconnect()
+
+
+# def prepare_transcode(videotask: VideoTask, mac: str, contractid: str):
+#     task_outputcodec = videotask.outputcodec
+#     task_resolution = videotask.outputresolution
+#     task_bitrate = videotask.bitrate
+#     accelerator = get_random_accelerator(task_outputcodec)
+#     logger.info(f"Selected {accelerator.value}  for {videotask.taskid}.")
+
+#     # 访问test.ini获取转码参数
+#     encode_lib = read_encode_ini()
+#     logger.info(f"encode_lib is {encode_lib}")
+#     # 获取具体编码库
+#     codec = get_config_value(encode_lib, task_outputcodec.value, accelerator.value)
+
+#     logger.info(f"Selected {codec}  for {videotask.taskid}.")
+#     # 获取具体比特率
+#     bitrate = get_config_value(encode_lib, task_resolution.value, task_bitrate.value)
+
+#     path = videotask.path
+
+#     # 获取文件名和后缀
+#     filename, extension = os.path.splitext(os.path.basename(path))
+
+#     # 获取当前时间戳
+#     timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+
+#     command = ""
+#     if videotask.mode == Mode.Normal:
+#         outputpath = os.path.join(
+#             videotask.outputpath, f"{filename}_{timestamp}{extension}"
+#         )
+#         command = "ffmpeg -y -i {} -c:v {} -b:v {} -c:a copy {}".format(
+#             path, codec, bitrate, outputpath
+#         )
+# 暂时不考虑latency场景，假定所有的都是
+# elif videotask.mode == Mode.Latency:
+#     outputpath = os.path.join(videotask.outputpath, f"{filename}_{timestamp}")
+#     if not os.path.exists(outputpath):
+#         os.mkdir(outputpath)
+#     build_m3u8(outputpath, float(videotask.duration))
+#     command = "ffmpeg -y -i {} -c:v {} -b:v {} -c:a copy -f segment -segment_time 10 -segment_list {}/out.m3u8 -segment_format mpegts {}/output_%03d.ts".format(path, codec, bitrate, outputpath, outputpath)
+
+# print("当前command")
+# print(outputpath)
+# return command, outputpath
