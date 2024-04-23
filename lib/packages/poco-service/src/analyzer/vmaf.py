@@ -1,10 +1,10 @@
-from video_quality_analyzer import VideoQualityAnalyzer
-from key_frame_extractor import KeyFrameExtractor
 import os
 import subprocess
 import concurrent.futures
 import time
 import re
+from video_quality_analyzer import VideoQualityAnalyzer
+from ..key_frame_extractor import KeyFrameExtractor
 
 
 class VMAFAnalyzer(VideoQualityAnalyzer):
@@ -28,21 +28,15 @@ class VMAFAnalyzer(VideoQualityAnalyzer):
 
         """
         # ...
-        command = 'ffmpeg -nostats -i {} -i {} -lavfi libvmaf="feature=name=psnr:n_threads=8" -loglevel info -f null - 2> {} '.format(
-            transcoded_video,
-            origin_video,
-            transcoded_video.split(".")[0] + "-vmaf-result.txt",
-        )
-        print("当前执行vmaf指令：{}".format(command))
-        result = subprocess.run(command, shell=True, stdout=subprocess.PIPE)
+        command = f'ffmpeg -nostats -i {transcoded_video} -i {origin_video} -lavfi libvmaf="feature=name=psnr:n_threads=8" -loglevel info -f null - 2> {transcoded_video.split(".")[0]}-vmaf-result.txt'
+        print(f"当前执行vmaf指令：{command}")
+        result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, check=True)
         return transcoded_video.split(".")[0] + "-vmaf-result.txt"
 
     def _run_vmaf(self, origin_video, transcoded_video, vmaf_path):
-        command = 'ffmpeg -i "{}" -i "{}" -lavfi "[0:v][1:v]libvmaf=psnr=1:n_threads=8:log_path={}" -f null -'.format(
-            transcoded_video, origin_video, vmaf_path
-        )
-        print("当前执行指令：{}".format(command))
-        subprocess.run(command, shell=True)
+        command = f'ffmpeg -i "{transcoded_video}" -i "{origin_video}" -lavfi "[0:v][1:v]libvmaf=psnr=1:n_threads=8:log_path={vmaf_path}" -f null -'
+        print("当前执行指令：{command}")
+        subprocess.run(command, shell=True, check=True)
 
     def _calculate_final_vmaf(self, scores, numbers):
         # 计算分数加权平均值
