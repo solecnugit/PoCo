@@ -31,8 +31,10 @@ The Decentralized Media Transcoding Service aims to capitalize on the wealth of 
   - 它的实现在 lib/packages/poco-contract-v2 中
 - ### 开发并实现转码领域特定 QoS 的评估框架。
   - 我们为非实时场景下的转码服务定制了领域特定的服务质量标准。具体而言，我们从两个维度评估服务提供商的媒体转码质量：一是对比转码后视频与源视频在视觉上的质量差异，以体现人眼可感知的视频质量变化；二是通过计算服务提供商在单位时间内转码的帧数，以此来衡量其服务的处理速度。这两个指标共同构成了我们评估媒体转码服务质量的标准。
+  - 它的实现在 lib/packages/poco-service 中
 - ### 开发并实现一个区块链原型作为委员会实现对服务提供商服务质量的共识。
   - 我们开发并实现了一个区块链原型，用以通过委员会机制，在特定服务场景中实现针对服务提供商服务质量的共识。鉴于此场景下闲置计算资源的非固定性，大量不稳定节点所进行的共识可能会耗费宝贵的计算力并浪费时间，这与我们项目的初衷——充分利用分散计算资源——背道而驰。因此，我们挑选了表现优异的节点组成委员会(Committee)，这个委员会负责完成服务质量(QoS)的共识并将其上链。其他工作节点则将链上信息同步到自己的本地副本中，委员会本身将周期性重建并且重新选择节点加入其中。这一策略有效地提升了共识性能，同时兼顾了资源使用的高效性。
+  - 它的实现在 lib/packages/poco-committee 中
 
 ## Key Achievements
 
@@ -43,8 +45,10 @@ In the past year, aligning with our pre-established objectives and tackling the 
   - The implementation can be found in lib/packages/poco-contract-v2.
 - ### Developed and implemented a domain-specific QoS assessment framework for transcoding.
   - We crafted service quality standards tailored to non-real-time transcoding scenarios. Specifically, we evaluate the media transcoding quality from service providers on two fronts: one, by comparing the visual quality difference between the post-transcoded video and the source video, reflecting perceptible changes in video quality to the human eye; and two, by calculating the number of frames transcoded by the service provider per unit of time, thereby gauging the efficiency of their service delivery. These two metrics together form our standards for assessing media transcoding service quality.
+  - The implementation can be found in lib/packages/poco-service.
 - ### Developed and implemented a blockchain prototype to facilitate consensus on service provider quality via a committee.
   - We have developed and deployed a blockchain prototype that employs a committee mechanism to achieve consensus on service provider quality in specific service scenarios. Given the inherent variability of idle computing resources in this context, consensus amongst a large number of unstable nodes could consume valuable computational resources and time. This runs counter to our project's original intent to fully leverage distributed computing resources. Hence, we selected a group of top-performing nodes to form a Committee, tasked with reaching a consensus on the Quality of Service (QoS) and recording it on the chain. Other working nodes synchronize chain information to their local copies, a strategy that effectively boosts consensus performance while maintaining efficient use of resources.
+  - The implementation can be found in lib/packages/poco-committee.
 
 ## 模块变动简介
 
