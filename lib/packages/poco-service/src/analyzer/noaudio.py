@@ -2,7 +2,7 @@
  AudioQualityAnalyzer for videos without audio.
 """
 
-from audio_quality_analyzer import AudioQualityAnalyzer
+from analyzer.audio_quality_analyzer import AudioQualityAnalyzer
 
 # import os
 # import subprocess

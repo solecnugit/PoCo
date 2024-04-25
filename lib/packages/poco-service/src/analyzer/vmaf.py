@@ -3,8 +3,8 @@ import subprocess
 import concurrent.futures
 import time
 import re
-from video_quality_analyzer import VideoQualityAnalyzer
-from ..key_frame_extractor import KeyFrameExtractor
+from analyzer.video_quality_analyzer import VideoQualityAnalyzer
+from key_frame_extractor import KeyFrameExtractor
 
 
 class VMAFAnalyzer(VideoQualityAnalyzer):

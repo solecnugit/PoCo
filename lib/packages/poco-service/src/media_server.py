@@ -4,15 +4,20 @@ import traceback
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor
 import grpc
-from enums.videotask import VideoTask
-from type.video import Video
-from type.task import Task
+
+# from enums.videotask import VideoTask
+# from type.video import Video
+# from type.task import Task
 import transcoding_pb2
 import transcoding_pb2_grpc
-from enums.resolution import Resolution
+
+# from . import transcoding_pb2_grpc
+
+# from enums.resolution import Resolution
 from enums.video_codec import VideoCodec
-from enums.audio_codec import AudioCodec
-from enums.bitrate import Bitrate
+
+# from enums.audio_codec import AudioCodec
+# from enums.bitrate import Bitrate
 from enums.mode import Mode
 import os
 
@@ -140,11 +145,8 @@ def worker(request: transcoding_pb2.DispatchVoDRequest, inputfile: str):
 
     # logger.info(f"successfully build {request.taskid} videotask.")
     # 读取本地设备号
-    with open("rpc/device.txt", "r") as f:
-        mac = f.readline().strip()
-    f.close()
     execute_ez_vod_transcode(
-        request.taskid, inputfile, outputcodec, mac, request.uniqueid
+        request.taskid, inputfile, outputcodec, request.uniqueid
     )
 
 
@@ -177,7 +179,7 @@ class Transcoder:
     def download_video_via_ipfs(self):
 
         current_file_path = os.path.abspath(__file__)
-        current_directory = os.path.dirname(current_file_path)
+        current_directory = os.path.dirname(os.path.dirname(current_file_path))
         inputfile = os.path.join(
             current_directory, "source", self.request.originurl + ".mp4"
         )

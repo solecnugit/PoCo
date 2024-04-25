@@ -5,7 +5,7 @@ subclass of AudioQualityAnalyzer that analyzes the audio quality of videos using
 import subprocess
 from scipy.io import wavfile
 from pesq import pesq
-from audio_quality_analyzer import AudioQualityAnalyzer
+from analyzer.audio_quality_analyzer import AudioQualityAnalyzer
 
 # import os
 

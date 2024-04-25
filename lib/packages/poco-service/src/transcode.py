@@ -16,10 +16,10 @@ from hw_capabilities import get_nvenc_capability
 
 
 def execute_ez_vod_transcode(
-    taskid: str, inputurl: str, outputcodec: VideoCodec, mac: str, contractid: str
+    taskid: str, inputurl: str, outputcodec: VideoCodec, contractid: str
 ):
     outputurl = os.path.dirname(inputurl)
-    command, outputpath = prepare_ez_transcode(inputurl, outputurl, outputcodec, mac)
+    command, outputpath = prepare_ez_transcode(inputurl, outputurl, outputcodec, taskid)
     logger.info(f"generate {taskid} instruction: {command}.")
 
     def transcoding():
