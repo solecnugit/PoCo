@@ -59,7 +59,7 @@ In the past year, aligning with our pre-established objectives and tackling the 
 - 目的：作为基于 NEAR 协议构建的智能合约，本模块设定了广播商和服务提供商，委员会之间的所有链上的工作流程，并详细记录了所有媒体转码任务及服务提供商的服务质量表现。该模块确保了体系中所有记录的可追溯性，并利用智能合约实施控制节点在链上的行为。
 
 - 主要更新：
-  - 将原本部署在以太坊上的智能合约迁移到 NEAR 平台，目的是提高系统的吞吐能力与成本效率，完成了从 poco-contract 到 poco-contract-v2 的重大升级。
+  - 将原本部署在以太坊上的智能合约迁移到 NEAR 平台，目的是提高系统的吞吐能力与成本效率，完成了从 `poco-contract` 到 `poco-contract-v2` 的重大升级。
 - Changelog：
 
   - 首次引入：2023.02
@@ -75,7 +75,7 @@ In the past year, aligning with our pre-established objectives and tackling the 
 
 - 主要更新：
 
-  - 基于原 poco-codec 模块的功能，整合并迁移了 QoS 评估模块的相关代码，实现更为统一和高效的服务运作。
+  - 基于原 `poco-codec` 模块的功能，整合并迁移了 QoS 评估模块的相关代码，实现更为统一和高效的服务运作。
 
 - Changelog：
   - 首次引入：2023.05
@@ -84,7 +84,7 @@ In the past year, aligning with our pre-established objectives and tackling the 
     - 2023.6 尝试基于 GOP（Group of picture）优化 VMAF。
     - 2023.7 寻找 benchmark 验证优化算法结果。
     - 2023.9 设计多种场景下（延时敏感，直播，空间敏感）三种场景下的 QoS 采集方式。（后搁置）
-    - 2023.12 处理和 poco-contract-v2 merge 时遇到的问题。
+    - 2023.12 处理和 `poco-contract-v2` merge 时遇到的问题。
 
 ### `poco-committee`
 
@@ -97,8 +97,8 @@ In the past year, aligning with our pre-established objectives and tackling the 
 - Changelog：
   - 首次引入：2024.03
   - 变更记录：
-    - 【进行中】2024.04 处理和 poco-service 交互时遇到的问题。
-    - 2024.04 处理和 poco-agent 交互时遇到的问题。
+    - 【进行中】2024.04 处理和 `poco-service` 交互时遇到的问题。
+    - 2024.04 处理和 `poco-agent` 交互时遇到的问题。
 
 ### `poco-agent`
 
@@ -106,7 +106,7 @@ In the past year, aligning with our pre-established objectives and tackling the 
 
 - 主要更新：
 
-  - 通过对旧版 poco-client 的全面重构，增强了模块的可用性和性能。
+  - 通过对旧版 `poco-client` 的全面重构，增强了模块的可用性和性能。
 
 - Changelog:
 
@@ -137,7 +137,7 @@ As our project has evolved, significant updates have been made to various module
 
 - Main Updates:
 
-  - Migrated the smart contract from Ethereum to NEAR to enhance system throughput and cost efficiency, marking a significant upgrade from poco-contract to poco-contract-v2.
+  - Migrated the smart contract from Ethereum to NEAR to enhance system throughput and cost efficiency, marking a significant upgrade from `poco-contract` to `poco-contract-v2` .
 
 - Changelog:
 
@@ -165,7 +165,7 @@ As our project has evolved, significant updates have been made to various module
     - 2023.6 Tested optimizations based on GOP (Group of picture) for VMAF.
     - 2023.7 Sought benchmarks to validate optimization algorithm outcomes.
     - 2023.9 Designed QoS collection methods for various scenarios (latency-sensitive, live streaming, space-sensitive) (later shelved).
-    - 2023.12 Addressed issues encountered during merging with poco-contract-v2.
+    - 2023.12 Addressed issues encountered during merging with `poco-contract-v2` .
 
 ### `poco-committee`
 
@@ -204,3 +204,91 @@ As our project has evolved, significant updates have been made to various module
   - Introduced: 2022.10
   - Changes:
     - 2022.10-Present Adapted as needed.
+
+## 完整任务流程
+
+完整任务流程从委员会的组建开始，涵盖了任务发布、调度、执行及自我评估，最终通过质量评估与共识形成服务质量的评定，进而执行奖励分配和记录同步。
+
+### 委员会组建
+
+1. 选择优质服务提供商：在每一轮开始之前，智能合约( `poco-contract-v2` )根据链上记录的服务质量信息，选择出若干个长期提供优质服务质量的服务提供商组成委员会。
+
+2. 委员会内部协作：委员会成员根据预先定义的链下交互方式彼此联系，组成委员会，并将在委员会内部对服务提供商的服务质量进行共识。
+
+### 任务发布
+
+1. 服务请求提交：服务请求者通过 `poco-agent` 将媒体转码任务提交到智能合约( `poco-contract-v2` )，明确转码需求及链下交互方式。
+
+### 任务调度
+
+1. 任务监听：服务提供商通过 `poco-agent` 监听智能合约的任务发布事件，根据当前的工作负载和能力评估是否承担新任务。
+
+2. 链下协商：选择接受任务的服务提供商将通过任务发布者预定义的链下交互方式与发布者沟通，确保对任务细节的共识。
+
+3. 服务提供商选择：服务请求者基于服务提供商的服务质量记录，自主选择合适的服务提供商执行任务，优先保证高质量的服务交付。
+
+### 任务执行与自我评估
+
+7. 独立完成任务：选定的服务提供商根据任务需求在链下独立完成媒体转码任务。
+
+8. 质量自我评估：任务完成后，服务提供商将运用视频质量评估算法对转码后的结果进行自我评估，作为服务质量的基准。以上过程充分利用了 `poco-service` 模块中的转码逻辑和工具。
+
+9. 提交结果：自我评估完成后，服务提供商将评估结果反馈给智能合约和服务请求者，供后续评估参考。
+
+### 质量评估与共识
+
+10. 双重服务质量评估：这包含了视频质量评估和编码速度评估。智能合约随机选定服务提供商参与视频质量的第三方评估，委员会汇总评估结果作为服务质量综合判断的依据
+
+11. 质量共识决策：委员会成员对采集到的服务质量 metric 采用 PBFT 算法进行共识，共识过程中委员会成员可自行以领域特定的方式验证服务提供商的服务质量和产出结果。共识结果由委员会领导者记录在区块链上，更新服务提供商的质量评分。
+
+### 奖励与记录同步
+
+12. 自动奖励分配：智能合约根据服务质量评分，向表现优异的服务提供商自动分配奖励。
+
+13. 同步链上记录：服务提供商定期复制并同步链上的任务记录和服务质量记录到本地数据库，保持数据一致性。
+
+此完整任务流程描绘了从任务发布到完成的全过程，并通过共识机制强化了服务质量的客观评估，最终通过奖励机制激励优质服务，确保了整个系统的高效和公正。
+
+## Complete Task Process
+
+The complete task process commences with the formation of a committee and encompasses task publication, scheduling, execution, and self-assessment. It concludes with the evaluation of service quality through quality assessment and consensus, followed by reward distribution and record synchronization.
+
+### Committee Formation
+
+1. Selecting High-quality Service Providers: At the start of each cycle, the smart contract (poco-contract-v2) selects several service providers with a history of high-quality service based on service quality records on the blockchain.
+
+2. Internal Collaboration: Committee members contact each other according to predefined off-chain interactions, form a committee, and achieve consensus on the service quality of providers internally.
+
+### Task Publication
+
+3. Service Request Submission: Service requesters submit media transcoding tasks to the smart contract (poco-contract-v2) via poco-agent, specifying transcoding requirements and off-chain interaction methods.
+
+### Task Scheduling
+
+4. Task Monitoring: Service providers monitor task announcements from the smart contract through poco-agent, evaluating whether to undertake a new task based on their current workload and capabilities.
+
+5. Off-chain Negotiation: Service providers accepting tasks communicate with the requester via predefined off-chain methods to ensure consensus on task details.
+
+6. Service Provider Selection: Requesters independently choose a service provider based on their service quality records, prioritizing the delivery of high-quality services.
+
+### Task Execution and Self-assessment
+
+7. Independent Task Completion: The selected service provider independently completes the media transcoding task off-chain based on task requirements.
+
+8. Quality Self-assessment: After completion, the service provider uses a video quality assessment algorithm to self-evaluate the transcoded output as a benchmark for service quality.
+
+9. Result Submission: The service provider submits the self-assessment results to the smart contract and requester for subsequent evaluations.
+
+### Quality Assessment and Consensus
+
+10. Dual Service Quality Evaluation: This includes video quality and encoding speed assessments. The smart contract randomly selects providers for third-party video quality assessment, with the committee consolidating results as a basis for overall service quality judgment.
+
+11. Consensus on Quality Decision: Committee members use the PBFT algorithm for consensus on collected service quality metrics, with members independently verifying service quality and outputs. The consensus outcome is recorded on the blockchain by the committee leader, updating the service provider’s quality rating.
+
+### Rewards and Record Synchronization
+
+12. Automatic Reward Distribution: Based on the service quality rating, the smart contract automatically distributes rewards to outstanding service providers.
+
+13. Synchronizing Blockchain Records: Service providers regularly duplicate and synchronize blockchain task records and service quality records to their local database, ensuring data consistency.
+
+This entire process outlines the sequential flow from task publication to completion, strengthening objective evaluation of service quality through a consensus mechanism, and ultimately, incentivizing high-quality service through a rewards system to ensure efficiency and fairness of the entire system.
