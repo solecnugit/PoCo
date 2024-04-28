@@ -32,6 +32,12 @@ We upgraded the `poco-contract-v2`, transitioning the technical platform from Et
 
 In this version, we formally introduced the `poco-service` module, which defines specific Quality of Service standards for media transcoding, and includes off-chain media transcoding logic and domain-specific algorithmic logic executed by service providers. This detailed assessment of service quality ensures every media transcoding service is objectively and accurately evaluated.
 
+<p align="center">
+  <img src="png/self-evaluated.png" alt="Self-Evaluated QoS">
+  <br>
+  <em>Figure2：Self-Evaluated QoS</em>
+</p>
+
 #### Introduction of Committee for QoS consensus:
 
 To further enhance the credibility and transparency of service quality assessments, this update introduced the `poco-committee` module, implementing an innovative Committee mechanism to facilitate collective consensus decision-making on Quality of Service (QoS). This multi-verifier consensus strategy enhances the objectivity and fairness of assessment results, effectively curbing potential dishonesty and bolstering the platform's overall reputation.
