@@ -4,6 +4,12 @@
 
 The Decentralized Media Transcoding Service aims to capitalize on the wealth of unused computational resources around the world, crafting an efficient, cost-effective video transcoding network that places a premium on service quality. By offering fully traceable and transparent service records and assessment mechanisms, our project solidifies the network's autonomy. We are dedicated to generating income for providers of idle computing resources while delivering high-quality, more economical transcoding services to our customers.
 
+<p align="center">
+  <img src="png/overview.png" alt="System Overview">
+  <br>
+  <em>Figure1：System Overview</em>
+</p>
+
 ### Key Features
 
 - Traceability: Our system diligently records the outcomes and quality of each transcoding service, enhancing trust and enabling effective quality monitoring of service providers. This also bolsters security measures against malicious activities or attacks.
