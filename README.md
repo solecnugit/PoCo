@@ -96,11 +96,11 @@ This decentralized workflow ensures transparent, fair, and efficient media trans
 
 Each component has its own README with detailed installation and usage instructions. Please refer to the respective directories for more information:
 
-- [PoCo-Contract](./PoCo-Contract/README.md)
-- [PoCo-Broadcaster](./PoCo-Broadcaster/README.md)
-- [PoCo-Worker](./PoCo-Worker/README.md)
-- [PoCo-Verifier](./PoCo-Verifier/README.md)
-- [PoCo-Committee](./PoCo-Committee/README.md)
+- [PoCo-Contract](delivery/PoCo-Contract/README.md)
+- [PoCo-Broadcaster](delivery/PoCo-Broadcaster/README.md)
+- [PoCo-Worker](delivery/PoCo-Worker/README.md)
+- [PoCo-Verifier](delivery/PoCo-Verifier/README.md)
+- [PoCo-Committee](delivery/PoCo-Committee/README.md)
 
 
 ### Key Features
