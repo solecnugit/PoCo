@@ -13,12 +13,18 @@ PoCo-Committee is a critical component of the blockchain-based QoS-aware media t
 
 ## Usage
 
-To run the Committee node:
+### Starting a Committee Node
 
+**Configure environment variables for the node**
 ```bash
-cd PoCo-Committee
-npm install
-npm start
+export NODE_ID=committee-1
+export PORT=8000
+export IS_LEADER=true
+export PEERS="committee-2:host2:port2,committee-3:host3:port3"
+export TOTAL_NODES=4
+
+# Start the node
+npx ts-node start-node.ts
 ```
 
 
@@ -136,3 +142,50 @@ await nearConnection.submitConsensusProof({
 });
 ```
 
+### API Endpoints
+The Committee node exposes these main API endpoints:
+```
+GET /health: Basic health check
+GET /status: Detailed node status
+POST /proof: Submit QoS proof for consensus
+POST /proofs/batch: Submit multiple QoS proofs
+POST /proof/:taskId/supplementary: Submit supplementary proof
+GET /proof/:taskId/status: Get task processing status
+```
+
+### Monitoring Consensus
+```bash
+# Check status of a specific task
+curl http://localhost:9000/proof/task-123/status
+
+# Response example
+{
+  "taskId": "task-123",
+  "state": "finalized",
+  "proofCount": 3,
+  "verifierIds": ["verifier-1", "verifier-2", "verifier-3"],
+  "result": {
+    "consensusTimestamp": "2025-04-22T10:15:30.123Z",
+    "videoScore": 92.75,
+    "audioScore": 4.2,
+    "syncScore": 0.98
+  }
+}
+```
+
+### Configuration
+```typescript
+# Configure the system through the committee-config.ts file:
+const config: CommitteeConfig = {
+  nearConfig: {
+    networkId: 'testnet',
+    nodeUrl: 'https://rpc.testnet.near.org',
+    // Other NEAR settings...
+  },
+  contractId: 'pococontract11.testnet',
+  leaderAccountId: 'pocoleader.testnet',
+  credentialsPath: '~/.near-credentials',
+  // Other configuration parameters...
+};
+```
+This system provides robust, Byzantine fault-tolerant consensus for QoS verification in decentralized media transcoding services.
