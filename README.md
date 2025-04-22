@@ -10,6 +10,99 @@ The Decentralized Media Transcoding Service aims to capitalize on the wealth of 
   <em>Figure1：System Overview</em>
 </p>
 
+## Project Structure Description
+
+This repository contains the final implementation of our blockchain-based QoS-aware media transcoding system. The system has been completely redesigned and reimplemented to provide a more efficient, reliable, and decentralized media transcoding service with quality assurance.
+
+## System Architecture and Interaction
+
+Our system follows a modular design with five key components that interact to form a complete decentralized QoS-aware media transcoding ecosystem:
+
+
+### `PoCo-Contract`
+
+The core smart contract implemented in Rust that defines:
+- Key data structures for media transcoding tasks
+- Methods for on-chain interactions
+- QoS record storage and verification
+- Monitor task status through the UI interface
+- Access quality assessment results provided by Verifiers
+- Obtain final consensus-based QoS proof data
+
+This contract serves as the foundation for the entire system, ensuring transparent and verifiable transactions between all participants.
+
+### `PoCo-Broadcaster`
+
+The task publisher component that allows content creators to:
+- Submit media transcoding tasks to the blockchain
+- Define quality requirements and specifications
+- Select service providers based on QoS records
+- Verify transcoding results through the Verifier network
+
+### `PoCo-Worker`
+The service provider component that:
+- Monitors the blockchain for available tasks
+- Executes media transcoding based on defined specifications
+- Submits results and quality proofs to the blockchain
+- Utilizes FFmpeg for efficient media processing
+- Leverages IPFS for distributed storage of media assets
+
+### `PoCo-Verifier`
+
+The quality assessment component that:
+- Independently verifies the quality of transcoded media
+- Implements the GOP-based lightweight quality assessment framework
+- Provides objective third-party verification of service quality
+- Submits individual verification QoS proofs to the blockchain for complete service quality tracking
+- Forwards verification results to the Committee for consensus
+
+### `PoCo-Committee`
+
+The consensus component that:
+- Forms a decentralized verification committee from high-performing nodes
+- Implements a PBFT-based consensus protocol with domain-specific verification
+- Reaches agreement on service quality assessments
+- Records consensus results on the blockchain
+- Ensures fair and transparent quality evaluation
+
+Our system consists of five key components with three core roles engaging in a cyclic workflow for quality assessment and consensus.
+
+<p align="center">
+  <img src="png/role.png" alt="Role Interaction">
+  <br>
+  <em>Figure2: Core Role Interaction in QoS Assessment</em>
+</p>
+
+As illustrated above, the core interaction flow involves:
+- Workers providing transcoding services and producing media files
+- Verifiers assessing the quality of those files and generating off-chain service quality proofs
+- Committee members processing these proofs to reach consensus and recording final QoS results on the blockchain
+- Workers receiving updated QoS records that influence future task assignments
+
+## Interaction Flow
+
+The system operates through the following key interactions:
+
+1. **Task Publication**: Broadcasters publish transcoding tasks with quality requirements to the smart contract.
+2. **Task Assignment**: Workers query the blockchain for available tasks and apply based on their capabilities.
+3. **Service Execution**: Selected Workers perform the transcoding task using the integrated media processing technologies.
+4. **Quality Assessment**: Verifiers independently evaluate the transcoding quality.
+5. **Quality Consensus**: The Committee reaches consensus on the assessed quality using the PBFT-based protocol.
+6. **Record and Quality Update**: Quality assessments are recorded on the blockchain, and service providers' QoS metrics are updated in real-time.
+
+This decentralized workflow ensures transparent, fair, and efficient media transcoding with built-in quality assurance.
+
+## Installation and Usage
+
+Each component has its own README with detailed installation and usage instructions. Please refer to the respective directories for more information:
+
+- [PoCo-Contract](./PoCo-Contract/README.md)
+- [PoCo-Broadcaster](./PoCo-Broadcaster/README.md)
+- [PoCo-Worker](./PoCo-Worker/README.md)
+- [PoCo-Verifier](./PoCo-Verifier/README.md)
+- [PoCo-Committee](./PoCo-Committee/README.md)
+
+
 ### Key Features
 
 - Traceability: Our system diligently records the outcomes and quality of each transcoding service, enhancing trust and enabling effective quality monitoring of service providers. This also bolsters security measures against malicious activities or attacks.
@@ -19,6 +112,40 @@ The Decentralized Media Transcoding Service aims to capitalize on the wealth of 
 ## Version Updates
 
 This project adheres to Semantic Versioning rules. Each update reflects our commitment to continuous improvement and feature enhancement. Here is a history of the version iterations since the project's inception.
+
+### v0.3.0 - April 2025
+Key highlights of this update include:
+
+#### Complete System Redesign:
+We have completely redesigned and reimplemented the system with a modular architecture consisting of five core components: PoCo-Contract, PoCo-Broadcaster, PoCo-Worker, PoCo-Verifier, and PoCo-Committee. This modular approach enhances maintainability, scalability, and allows for independent component upgrades while maintaining system integrity.
+
+#### Enhanced GOP-based QoS Assessment Framework:
+Our lightweight GOP-based quality assessment framework is now fully implemented in the PoCo-Verifier component. This approach significantly reduces computational requirements while maintaining high accuracy in quality assessment, addressing a critical challenge in decentralized media transcoding environments.
+
+<p align="center">
+  <img src="png/vmaf.png" alt="GOP Sampling Framework">
+  <br>
+  <em>Figure3: GOP Sampling-based Quality Assessment Framework</em>
+</p>
+
+
+#### Distributed Quality Consensus Implementation:
+The PoCo-Committee component now implements a complete distributed consensus mechanism that combines domain-specific verification with PBFT, allowing for efficient and reliable consensus on service quality assessments in a decentralized environment. This implementation ensures quality assessments remain trustworthy even in the presence of potentially malicious nodes.
+
+<p align="center">
+  <img src="png/contribution2.png" alt="Verification and Consensus Process">
+  <br>
+  <em>Figure3: Domain-specific Verification and PBFT Consensus Process</em>
+</p>
+
+<p align="center">
+  <img src="png/conflict.png" alt="Verification and Consensus Process">
+  <br>
+  <em>Figure5: Multi-stage Verification and Conflict Resolution Process</em>
+</p>
+
+#### Real-time QoS Tracking System:
+The new implementation features a comprehensive QoS tracking system where quality assessments from independent verification are recorded on the blockchain in real-time. This transparency allows all participants to monitor service quality trends and make informed decisions based on historical performance data.
 
 ### v0.2.0 - May 2024
 
@@ -35,7 +162,7 @@ In this version, we formally introduced the `poco-service` module, which defines
 <p align="center">
   <img src="png/self-evaluated.png" alt="Self-Evaluated QoS">
   <br>
-  <em>Figure2：Self-Evaluated QoS</em>
+  <em>Figure4：Self-Evaluated QoS</em>
 </p>
 
 #### Introduction of Committee for QoS consensus:
