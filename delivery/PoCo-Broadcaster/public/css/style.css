@@ -1,0 +1,67 @@
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  main {
+    flex: 1;
+  }
+  
+  .footer {
+    margin-top: auto;
+  }
+  
+  .jumbotron {
+    padding: 2rem 1rem;
+    margin-bottom: 2rem;
+    background-color: #e9ecef;
+    border-radius: 0.3rem;
+  }
+  
+  .task-card {
+    transition: transform 0.2s;
+  }
+  
+  .task-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  }
+  
+  /* 状态标签样式 */
+  .status-published {
+    background-color: #6c757d;
+  }
+  
+  .status-assigned {
+    background-color: #ffc107;
+  }
+  
+  .status-completed {
+    background-color: #28a745;
+  }
+  
+  .status-verified {
+    background-color: #007bff;
+  }
+  
+  /* 文件上传区样式 */
+  .file-drop-area {
+    border: 2px dashed #adb5bd;
+    border-radius: 0.5rem;
+    padding: 2rem;
+    text-align: center;
+    transition: background-color 0.2s;
+  }
+  
+  .file-drop-area.drag-over {
+    background-color: #e9ecef;
+    border-color: #007bff;
+  }
+  
+  /* 媒体预览 */
+  .media-preview {
+    max-width: 100%;
+    border-radius: 0.3rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }

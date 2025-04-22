@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PoCo - 区块链媒体转码</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+      <a class="navbar-brand" href="#">PoCo 媒体转码系统</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav">
+          <li class="nav-item">
+            <a class="nav-link active" href="#" id="nav-home">首页</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" id="nav-tasks">我的任务</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" id="nav-new-task">创建任务</a>
+          </li>
+        </ul>
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <span class="nav-link" id="wallet-status">未连接钱包</span>
+          </li>
+          <li class="nav-item">
+            <button class="btn btn-light" id="wallet-connect">连接钱包</button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container mt-4">
+    <!-- 首页 -->
+    <section id="section-home" class="content-section">
+      <div class="jumbotron">
+        <h1>欢迎使用PoCo媒体转码平台</h1>
+        <p class="lead">PoCo是一个基于区块链的分布式媒体转码系统，提供高质量、低成本的媒体转码服务。</p>
+        <hr class="my-4">
+        <p>通过区块链技术，我们将闲置的计算资源整合起来，提供可靠的媒体转码服务，同时保证服务质量。</p>
+        <a class="btn btn-primary btn-lg" href="#" id="get-started-btn">开始使用</a>
+      </div>
+    </section>
+
+    <!-- 任务列表 -->
+    <section id="section-tasks" class="content-section d-none">
+      <h2>我的任务列表</h2>
+      <div class="d-flex justify-content-between mb-3">
+        <button class="btn btn-primary" id="refresh-tasks-btn">刷新任务</button>
+        <button class="btn btn-success" id="create-task-btn">创建新任务</button>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-striped table-hover">
+          <thead>
+            <tr>
+              <th>任务ID</th>
+              <th>状态</th>
+              <th>源文件</th>
+              <th>目标格式</th>
+              <th>创建时间</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="tasks-table-body">
+            <!-- 任务列表将通过JavaScript动态生成 -->
+            <tr>
+              <td colspan="6" class="text-center">加载中...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 创建任务 -->
+    <section id="section-new-task" class="content-section d-none">
+      <h2>创建新转码任务</h2>
+      <form id="new-task-form">
+        <div class="mb-3">
+          <label for="source-file" class="form-label">源文件</label>
+          <input type="file" class="form-control" id="source-file" accept="video/*" required>
+          <div class="form-text">支持的格式: MP4, MOV, AVI, MKV等。</div>
+        </div>
+        
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label for="target-codec" class="form-label">目标编解码器</label>
+            <select class="form-select" id="target-codec" required>
+              <option value="">请选择...</option>
+              <option value="h264">H.264 (AVC)</option>
+              <option value="h265">H.265 (HEVC)</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label for="target-resolution" class="form-label">目标分辨率</label>
+            <select class="form-select" id="target-resolution" required>
+              <option value="original">保持原始分辨率</option>
+              <option value="1920x1080">1080p (1920x1080)</option>
+              <option value="1280x720">720p (1280x720)</option>
+              <option value="854x480">480p (854x480)</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label for="target-bitrate" class="form-label">目标比特率</label>
+            <select class="form-select" id="target-bitrate" required>
+              <option value="">请选择...</option>
+              <option value="500k">低 (500 kbps)</option>
+              <option value="1500k">中 (1500 kbps)</option>
+              <option value="3000k">高 (3000 kbps)</option>
+              <option value="5000k">超高 (5000 kbps)</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label for="target-framerate" class="form-label">目标帧率</label>
+            <select class="form-select" id="target-framerate">
+              <option value="original">保持原始帧率</option>
+              <option value="30">30 fps</option>
+              <option value="25">25 fps</option>
+              <option value="24">24 fps</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="mb-3">
+          <label for="additional-params" class="form-label">额外参数</label>
+          <input type="text" class="form-control" id="additional-params" placeholder="可选的FFmpeg参数">
+          <div class="form-text">高级选项：可添加额外的FFmpeg转码参数。</div>
+        </div>
+        
+        <div id="upload-progress" class="progress mb-3 d-none">
+          <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary" id="submit-task-btn">创建任务</button>
+        <button type="reset" class="btn btn-secondary">重置</button>
+      </form>
+    </section>
+
+    <!-- 任务详情 -->
+    <section id="section-task-detail" class="content-section d-none">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>任务详情</h2>
+        <button class="btn btn-outline-primary" id="back-to-tasks-btn">返回任务列表</button>
+      </div>
+      <div id="task-detail-content">
+        <!-- 任务详情将通过JavaScript动态生成 -->
+        <div class="text-center">
+          <div class="spinner-border" role="status">
+            <span class="visually-hidden">加载中...</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer mt-5 py-3 bg-light">
+    <div class="container text-center">
+      <span class="text-muted">PoCo 媒体转码系统 &copy; 2023</span>
+    </div>
+  </footer>
+
+  <!-- 模态框 -->
+  <div class="modal fade" id="alert-modal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="alert-modal-title">提示</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="alert-modal-body">
+          <!-- 消息内容 -->
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" data-bs-dismiss="modal">确定</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 脚本 -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/app.js" type="module"></script>
+</body>
+</html>

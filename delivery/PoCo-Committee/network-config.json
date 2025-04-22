@@ -1,0 +1,24 @@
+{
+    "nodes": [
+      {
+        "nodeId": "leader",
+        "host": "10.24.136.124",
+        "apiPort": 9000
+      },
+      {
+        "nodeId": "follower1",
+        "host": "10.24.216.33",
+        "apiPort": 9000
+      },
+      {
+        "nodeId": "follower2",
+        "host": "10.24.198.225",
+        "apiPort": 9000
+      },
+      {
+        "nodeId": "follower3",
+        "host": "10.24.161.186",
+        "apiPort": 9000
+      }
+    ]
+  }

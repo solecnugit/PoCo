@@ -1,0 +1,25 @@
+{
+    "nodeId": "leader",
+    "isLeader": true,
+    "host": "10.24.136.124",  // 替换为Leader节点的实际内网IP
+    "port": 8000,
+    "apiPort": 9000,
+    "totalNodes": 4,
+    "peers": [
+      {
+        "nodeId": "follower1",
+        "host": "192.168.1.101",  // 替换为follower1的实际内网IP
+        "port": 8000
+      },
+      {
+        "nodeId": "follower2",
+        "host": "192.168.1.102",  // 替换为follower2的实际内网IP
+        "port": 8000
+      },
+      {
+        "nodeId": "follower3",
+        "host": "192.168.1.103",  // 替换为follower3的实际内网IP
+        "port": 8000
+      }
+    ]
+  }
